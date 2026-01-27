@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  api:
+    env_file:
+      - ./api/.env
+    environment:
+      - NODE_ENV=production
+      # Add production-specific environment variables here
+      # - DATABASE_URL=your_prod_mongo_url
+      # - REDIS_URL=your_prod_redis_url
+    # For production, you might want to use a pre-built image instead of building
+    # image: your-registry/orafi-api:latest
+    # Remove build if using image
+    restart: always
+
+  email-worker:
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+
+  transaction-worker:
+    env_file:
+      - /.env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mongodb://mongo:27017/orafi
+      - REDIS_URL=redis://redis:6379
+
+  webhook-worker:
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379

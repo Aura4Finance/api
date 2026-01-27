@@ -1,0 +1,338 @@
+import { CreatePaymentDto, VerifyPaymentDto } from "@/dto/payment.dto";
+import { PaymentRepository } from "@/repositories/payment.repository";
+import { Service } from "typedi";
+import { WalletService } from "./wallet.service";
+import { CustomerRepository } from "@/repositories/customer.repository";
+import { APIError } from "@/utils/error-handler";
+import { STATUS } from "@/constants/status.constant";
+import { UserRepository } from "@/repositories/user/user.repository";
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { Mode } from "../../generated/prisma";
+import { redisClient } from "@/middlewares/rate-limit.middleware";
+import { WebhookQueue } from "./schedule.webhook.service";
+import { EventType } from "@/dto/webhook.dto";
+import { EmailQueue } from "./schedule.email.service";
+import { PayoutService } from "./payout.service";
+import { transactionQueue } from "@/queues/transaction.queue";
+
+@Service()
+export class PaymentService {
+  private client!: SuiClient;
+
+  constructor(
+    private readonly paymentRepository: PaymentRepository,
+    private readonly walletService: WalletService,
+    private readonly customerRepository: CustomerRepository,
+    private readonly userRepository: UserRepository,
+    private readonly webhookQueue: WebhookQueue,
+    private readonly emailQueue: EmailQueue,
+    private readonly payoutService: PayoutService
+  ) { }
+
+  private async setActiveNetwork(mode: Mode) {
+    if (mode === "live") this.client = new SuiClient({ url: getFullnodeUrl("mainnet") });
+    if (mode === "test") this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
+  }
+
+  async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
+    const user = await this.userRepository.findUserById(userId);
+    await this.setActiveNetwork(mode);
+    try {
+      const {
+        amount,
+        customer: { email: customerEmail, fullname: customerFullname },
+        txRef,
+        type,
+        redirectUrl,
+        payLink
+      } = data;
+
+      // Parse and validate customer name
+      const [customerFirstname, customerLastname] = customerFullname.split(" ");
+      if (!customerFirstname || !customerLastname) {
+        throw new APIError("Invalid customer name format", STATUS.bad);
+      }
+
+      // Check for existing customer
+      const existingCustomer = await this.customerRepository.findCustomer(
+        customerEmail
+      );
+      let customer = existingCustomer;
+      if (!customer) {
+        customer = await this.customerRepository.createCustomer(
+          customerFirstname,
+          customerLastname,
+          customerEmail,
+          user?.businessProfile?.id as string,
+          mode
+        );
+      }
+      await this.customerRepository.addModeToCustomer(customer.id, mode);
+      const amountToPay = await this.walletService.convertBetweenNGNAndUSDT(((payLink && type == "PAYMENT_LINK") ? payLink.amount : amount), "NGN_TO_USDT");
+      const depositAddress = await this.walletService.generatePaymentWallet(
+        user?.businessProfile?.wallet[0]?.pubKey as string,
+        amountToPay,
+        this.client
+      );
+      const transferAddress = await this.walletService.createWallet();
+      let transaction;
+      if (type == "HOSTED_CHECKOUT") {
+        if (!redirectUrl) throw new APIError("Redirect URL is required for the specified payment method", STATUS.bad)
+        transaction = await this.paymentRepository.createPayment(
+          amount,
+          amountToPay,
+          customer,
+          txRef,
+          depositAddress,
+          transferAddress,
+          <string>user?.businessProfile?.id,
+          mode,
+          {
+            paymentMethod: "HOSTED_CHECKOUT",
+            redirectUrl,
+          }
+        );
+      } else {
+        transaction = await this.paymentRepository.createPayment(
+          <number>payLink?.amount,
+          amountToPay,
+          customer,
+          txRef,
+          depositAddress,
+          transferAddress,
+          <string>user?.businessProfile?.id,
+          mode,
+          {
+            paymentMethod: "PAYMENT_LINK",
+            paylinkId: <string>payLink?.id,
+          }
+        );
+      }
+
+      await redisClient.set(transaction.id, JSON.stringify(
+        {
+          amount: transaction.amount,
+          amountInUSDC: transaction.amountInUSDC,
+          businessName: transaction.profile.businessName,
+          depositAddress: transaction.payment?.depositAddress,
+          transferAddress: transferAddress.publicKey,
+          redirectUrl: transaction.payment?.redirectUrl,
+          mode: transaction.mode
+        }
+      ), "EX", 6000);
+      return {
+        message: "Payment created successfully",
+        payload: {
+          transaction,
+          checkoutUrl: `${process.env.ORAFI_CHECHOUT_URL}/${transaction.id}`
+        },
+      };
+    } catch (error: any) {
+      throw new APIError(
+        error.message || "Failed to create payment",
+        error.status || STATUS.bad
+      );
+    }
+  }
+
+  private async sendEmailOnce(
+    paymentId: string,
+    type: "success" | "failed",
+    send: () => Promise<void>
+  ) {
+    const key = `payment_email_sent:${paymentId}`;
+
+    // Atomic lock (no race condition)
+    const locked = await redisClient.call(
+      "SET",
+      key,
+      type,
+      "NX",
+      "EX",
+      600
+    );
+    if (locked !== "OK") return;
+    await send();
+  }
+
+  private async confirmPayment(
+    paymentId: string,
+    customerId: string,
+    amount: number,
+    customerEmail: string,
+    customerName: string,
+    businessName: string,
+    businessEmail: string
+  ) {
+    await this.paymentRepository.confirmPaymentStatus(paymentId);
+    await this.customerRepository.updateAmountSpent(customerId, amount);
+
+    await this.sendEmailOnce(paymentId, "success", async () => {
+      await this.emailQueue.addPaymentSuccessScheduler(
+        customerEmail,
+        customerName,
+        amount,
+        paymentId,
+        businessName,
+        businessEmail
+      );
+    });
+  }
+
+  async verifyPayment(data: VerifyPaymentDto) {
+    const { paymentId } = data;
+    const tx = await this.paymentRepository.findPaymentById(paymentId);
+
+    if (!tx) {
+      throw new APIError("Payment session not found", STATUS.notFound);
+    }
+
+    const customer = await this.customerRepository.findCustomerById(
+      String(tx.customerId)
+    );
+
+    const merchantEmail = (
+      await this.userRepository.findUserById(String(tx.profile.userId))
+    )?.email;
+
+    await this.setActiveNetwork(tx.mode);
+
+    let event: EventType;
+
+    if(tx.status !== "COMPLETED") {
+    try {
+      const walletObject = await this.client.getObject({
+        id: <string>tx.payment?.depositAddress,
+        options: { showContent: true }
+      });
+
+      if (!walletObject.data) {
+        await this.confirmPayment(
+          tx.id,
+          String(tx.customerId),
+          tx.amount,
+          String(customer?.email),
+          String(customer?.firstname),
+          tx.profile.businessName,
+          String(merchantEmail)
+        );
+        event = "payment.success";
+      } else {
+        event = "payment.failed";
+        await this.sendEmailOnce(tx.id, "failed", async () => {
+          await this.emailQueue.addPaymentFailedScheduler(
+            String(customer?.email),
+            String(customer?.firstname),
+            tx.amount,
+            tx.id
+          );
+        });
+      }
+    } catch (error: any) {
+      if (
+        error.message?.includes("not find") ||
+        error.message?.includes("deleted")
+      ) {
+        await this.confirmPayment(
+          tx.id,
+          String(tx.customerId),
+          tx.amount,
+          String(customer?.email),
+          String(customer?.firstname),
+          tx.profile.businessName,
+          String(merchantEmail)
+        );
+        event = "payment.success";
+      } else {
+        event = "payment.failed";
+        await this.sendEmailOnce(tx.id, "failed", async () => {
+          await this.emailQueue.addPaymentFailedScheduler(
+            String(customer?.email),
+            String(customer?.firstname),
+            tx.amount,
+            tx.id
+          );
+        });
+      }
+    }
+  } else {
+    event = "payment.success";
+  }
+
+    await this.webhookQueue.addScheduler(tx.profileId, {
+      event,
+      data: {
+        transactionId: tx.id,
+        amount: tx.amount,
+        currency: "NGN",
+        status: event === "payment.success" ? "success" : "failed",
+        occuredAt: new Date().toISOString()
+      }
+    });
+
+    return {
+      message: "Payment verification completed",
+      payload: {
+        status: event === "payment.success" ? "completed" : "failed",
+        paymentId
+      }
+    };
+  }
+
+  async verifyTransfer(data: VerifyPaymentDto) {
+    const { paymentId } = data;
+    const tx = await this.paymentRepository.findPaymentById(paymentId);
+
+    if (!tx) {
+      throw new APIError("Payment session not found", STATUS.notFound);
+    }
+    await this.setActiveNetwork(tx.mode);
+
+    const USDT = await this.client.getCoins({
+      owner: <string>tx.payment?.wallet.pubKey,
+      coinType: this.payoutService.cointype
+    });
+    const { amountInUSDC, payment } = tx;
+    const target = BigInt(Math.floor(Number(amountInUSDC) * 1_000_000));
+    const matchingCoin = USDT.data.find(
+      coin => BigInt(coin.balance) >= this.twoSigFig(target)
+    );
+
+    if (!matchingCoin) {
+      throw new APIError("No matching coin found for the transfer", STATUS.notFound);
+    }
+
+    await transactionQueue.add("transfer-usdt", {
+      walletPrivateKey: payment?.wallet.privateKey,
+      coinObjectId: matchingCoin.coinObjectId,
+      amount: target,
+      toAddress: <string>tx?.profile.wallet[0]?.pubKey,
+      client: this.client
+    })
+
+    await this.confirmPayment(
+      tx.id,
+      <string>tx.customerId,
+      tx.amount,
+      <string>tx.customer?.email,
+      <string>tx.customer?.firstname,
+      tx.profile.businessName,
+      <string>tx.profile.user?.email
+    )
+
+    return {
+      message: "Transfer verification completed",
+      payload: {
+        status: "completed",
+        paymentId
+      }
+    };
+  }
+
+  private twoSigFig = (num: any) => {
+    const n = Number(num);
+    if (n === 0) return 0;
+    const digits = Math.floor(Math.log10(Math.abs(n)));
+    return Number((n / 10 ** digits).toFixed(2 - 1)) * 10 ** digits;
+  };
+}

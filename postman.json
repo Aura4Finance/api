@@ -1,0 +1,565 @@
+{
+  "info": {
+    "name": "Orafi Postman Colection",
+    "_postman_id": "a1b2c3d4-5678-9012-3456-abcdef123456",
+    "description": "Professional Postman collection for Merchant and Admin API. Includes routes for authentication, API key management, and admin merchant operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication routes for users.",
+      "item": [
+        {
+          "name": "Create Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/create-account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "create-account"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\",\n  \"password\": \"Password123\",\n  \"name\": \"John Doe\"\n}"
+            },
+            "description": "Registers a new user account."
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-email",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\",\n  \"otp\": \"123456\"\n}"
+            },
+            "description": "Verifies a user's email using OTP."
+          }
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/resend-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "resend-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\"\n}"
+            },
+            "description": "Resends OTP for email verification."
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\",\n  \"password\": \"Password123\"\n}"
+            },
+            "description": "Logs in a registered user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const responseData = pm.response.json();",
+                  "",
+                  "const token = responseData.data.token;",
+                  "",
+                  "// Save the token to an environment variable",
+                  "if (token) {",
+                  "    pm.environment.set('token', token);",
+                  "    console.log('Token saved successfully:', token);",
+                  "} else {",
+                  "    console.warn('Token not found in response');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "forgot-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\"\n}"
+            },
+            "description": "Sends reset password link or OTP to user's email."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reset-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"NewPassword123\"\n}"
+            },
+            "description": "Resets user password using OTP."
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Keys (Merchant)",
+      "description": "Routes for merchants to manage API keys.",
+      "item": [
+        {
+          "name": "Get All API Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api-keys"
+              ]
+            },
+            "description": "Fetches all API keys for the authenticated merchant."
+          }
+        },
+        {
+          "name": "Generate API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api-keys"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Key\"\n}"
+            },
+            "description": "Creates a new API key for the merchant."
+          }
+        },
+        {
+          "name": "Get API Key Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api-keys/{{keyId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api-keys",
+                "{{keyId}}"
+              ]
+            },
+            "description": "Fetch details of a specific API key."
+          }
+        },
+        {
+          "name": "Update API Key",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api-keys/{{keyId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api-keys",
+                "{{keyId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "description": "Updates an existing API key."
+          }
+        },
+        {
+          "name": "Delete API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api-keys/{{keyId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api-keys",
+                "{{keyId}}"
+              ]
+            },
+            "description": "Deletes an API key."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Routes for administrative control.",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@email.com\",\n  \"password\": \"Admin123\"\n}"
+            },
+            "description": "Authenticate admin account."
+          }
+        },
+        {
+          "name": "Change Admin Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/auth/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "auth",
+                "change-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"OldPass123\",\n  \"newPassword\": \"NewPass456\"\n}"
+            },
+            "description": "Changes the admin’s password."
+          }
+        },
+        {
+          "name": "Get Merchants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/merchants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "merchants"
+              ]
+            },
+            "description": "Fetch list of all merchants."
+          }
+        },
+        {
+          "name": "Get Merchant Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/merchants/{{merchantId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "merchants",
+                "{{merchantId}}"
+              ]
+            },
+            "description": "Fetch a merchant's details by ID."
+          }
+        },
+        {
+          "name": "Disable Merchant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/merchants/{{merchantId}}/disable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "merchants",
+                "{{merchantId}}",
+                "disable"
+              ]
+            },
+            "description": "Disable a merchant account."
+          }
+        },
+        {
+          "name": "Enable Merchant",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/merchants/{{merchantId}}/enable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "merchants",
+                "{{merchantId}}",
+                "enable"
+              ]
+            },
+            "description": "Enable a previously disabled merchant."
+          }
+        },
+        {
+          "name": "Get Merchant API Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/merchants/{{merchantId}}/api-keys",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "merchants",
+                "{{merchantId}}",
+                "api-keys"
+              ]
+            },
+            "description": "Fetch all API keys of a specific merchant."
+          }
+        },
+        {
+          "name": "Delete API Key (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/api-keys/{{keyId}}/delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "api-keys",
+                "{{keyId}}",
+                "delete"
+              ]
+            },
+            "description": "Delete a merchant's API key."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "keyId",
+      "value": ""
+    },
+    {
+      "key": "merchantId",
+      "value": ""
+    }
+  ]
+}

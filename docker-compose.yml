@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: orafi-api:latest   # 👈 build once
+    ports:
+      - "80:80"
+    depends_on:
+      - mongo
+      - redis
+      - email-worker
+      - transaction-worker
+      - webhook-worker
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mongodb://mongo:27017/orafi
+      - REDIS_HOST=redis
+    restart: unless-stopped
+
+  email-worker:
+    image: orafi-api:latest   # 👈 reuse image
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    command: node dist/jobs/email.job.js
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+    restart: unless-stopped
+
+  transaction-worker:
+    image: orafi-api:latest
+    depends_on:
+      - mongo
+      - redis
+    env_file:
+      - .env
+    command: node dist/jobs/transaction.job.js
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - DATABASE_URL=mongo://mongo:27017/orafi
+    restart: unless-stopped
+
+  webhook-worker:
+    image: orafi-api:latest
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    command: node dist/jobs/webhook.job.js
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  redis_data:

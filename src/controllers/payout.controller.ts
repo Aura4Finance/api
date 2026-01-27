@@ -1,0 +1,68 @@
+import { Service } from "typedi";
+import { PayoutService } from "@/services/payout.service";
+import { RequestAuth } from "@/@types/request";
+import { STATUS } from "@/constants/status.constant";
+import { Response } from "express";
+import { formatErrorValidation } from "@/utils/format-validation-error";
+import { cryptoPayoutSchemaValidation, retryCryptoPayoutValidation } from "@/validation/payout.validation";
+import { CryptoPayOutDto, RetryCryptoPayoutDto } from "@/dto/payout.dto";
+
+@Service()
+export class PayoutController {
+    constructor(
+        private readonly payoutService: PayoutService,
+    ) { }
+
+    async getBalances(req: RequestAuth, res: Response) {
+        const userId = req.user?.id as string;
+
+        const { message, payload } = await this.payoutService.getBalances(userId);
+
+        return res.status(STATUS.ok).json({
+            success: true,
+            message,
+            data: payload,
+        });
+    }
+
+    async cryptoPayout(req: RequestAuth, res: Response) {
+        const userId = req.user?.id as string;
+        const { error, value } = cryptoPayoutSchemaValidation(req.body);
+
+        if (error) {
+            return res.status(STATUS.bad).json({
+                success: false,
+                message: formatErrorValidation(error),
+            });
+        }
+        const body: CryptoPayOutDto = value;
+        const { message, payload } = await this.payoutService.initiateCryptoPayout(body, userId);
+
+        return res.status(STATUS.ok).json({
+            success: true,
+            message,
+            data: payload,
+        });
+    }
+
+    async retryCryptoPayout(req: RequestAuth, res: Response) {
+        const userId = req.user?.id as string;
+        const { error, value } = retryCryptoPayoutValidation(req.body);
+
+        if (error) {
+            return res.status(STATUS.bad).json({
+                success: false,
+                message: formatErrorValidation(error),
+            });
+        }
+
+        const { transactionId }: RetryCryptoPayoutDto = value;
+        const { message, payload } = await this.payoutService.retryCryptoPayout(transactionId, userId);
+        
+        return res.status(STATUS.ok).json({
+            success: true,
+            message,
+            data: payload,
+        });
+    }
+}

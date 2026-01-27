@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  api:
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    restart: "no"
+
+  email-worker:
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    command: npx ts-node-dev -r tsconfig-paths/register src/jobs/email.job.ts
+    environment:
+      - NODE_ENV=development
+    restart: "no"
+
+  transaction-worker:
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    command: npx ts-node-dev -r tsconfig-paths/register src/jobs/transaction.job.ts
+    environment:
+      - NODE_ENV=development
+    restart: "no"
+
+  webhook-worker:
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    command: npx ts-node-dev -r tsconfig-paths/register src/jobs/webhook.job.ts
+    environment:
+      - NODE_ENV=development
+    restart: "no"

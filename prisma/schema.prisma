@@ -1,0 +1,272 @@
+generator client {
+  provider       = "prisma-client-js"
+  output         = "../generated/prisma"
+  binaryTargets  = ["native", "linux-musl-openssl-3.0.x"]
+  previewFeature = ["mongoDbTransactionless"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(uuid()) @map("_id")
+  firstname       String
+  lastname        String
+  email           String           @unique
+  password        String
+  otp             OTP?
+  provider        Provider
+  googleId        String?
+  role            Role             @default(MERCHANT)
+  businessProfile BusinessProfile?
+  emailVerified   Boolean          @default(false)
+  disabled        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+}
+
+enum Provider {
+  LOCAL
+  GOOGLE
+}
+
+enum Role {
+  MERCHANT
+  ADMIN
+}
+
+model BusinessProfile {
+  id             String          @id @default(uuid()) @map("_id")
+  userId         String          @unique
+  user           User            @relation(fields: [userId], references: [id])
+  apiKey         ApiKey[]        @relation("ProfileApiKeys")
+  wallet         Wallet[]        @relation("ProfileWallets")
+  businessName   String
+  businessSector String
+  country        String
+  websiteLink    String?
+  onboarded      Boolean         @default(false)
+  webhook        Webhook?
+  userCustomers  UserCustomer[]  @relation("ProfileUserCustomers")
+  transactions   Transaction[]   @relation("ProfileTransactions")
+  paylinks       Paylink[]       @relation("ProfilePaylinks")
+  fiatAccounts   FiatAccount[]   @relation("ProfileFiatAccounts")
+  CryptoAccount  CryptoAccount[]
+  isLive         Boolean         @default(false)
+}
+
+model Webhook {
+  id              String            @id @default(cuid()) @map("_id")
+  url             String
+  secret          String
+  events          String[]
+  webhookDelivery WebhookDelivery[] @relation("WebhookDeliveryRegister")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now())
+  profileId       String            @unique
+  profile         BusinessProfile   @relation(fields: [profileId], references: [id])
+}
+
+model OTP {
+  id        String   @id @default(nanoid()) @map("_id")
+  secret    String
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+}
+
+model Wallet {
+  id         String           @id @default(cuid()) @map("_id")
+  pubKey     String
+  privateKey EncryptedKey?
+  profile    BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
+  profileId  String?
+  paymentId  String?
+  payment    Payment? @relation("PaymentWallets")
+}
+
+model EncryptedKey {
+  id                  String                @id @default(cuid()) @map("_id")
+  encryptedData       String
+  iv                  String
+  tag                 String
+  key                 String
+  wallet              Wallet               @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId            String               @unique
+}
+
+model ApiKey {
+  id         String          @id @default(cuid()) @map("_id")
+  liveKey    String
+  testKey    String
+  createdAt  DateTime        @default(now())
+  lastUsedAt DateTime?
+  profile    BusinessProfile @relation("ProfileApiKeys", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+}
+
+model Customer {
+  id            String         @id @default(cuid()) @map("_id")
+  firstname     String
+  lastname      String
+  email         String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now())
+  mode          Mode[]
+  totalSpent    Int            @default(0)
+  userCustomers UserCustomer[]
+  transactions  Transaction[]  @relation("CustomerTransactions")
+}
+
+model UserCustomer {
+  id         String          @id @default(cuid()) @map("_id")
+  profile    BusinessProfile @relation("ProfileUserCustomers", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId  String
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+  createdAt  DateTime        @default(now())
+
+  @@unique([profileId, customerId])
+}
+
+enum PaymentMethod {
+  PAYMENT_LINK
+  HOSTED_CHECKOUT
+}
+
+enum PayOutMethod {
+  CRYPTO
+  FIAT
+}
+
+enum Token {
+  USDC
+}
+
+enum TransactionStatus {
+  COMPLETED
+  PENDING
+  FAILED
+}
+
+enum TransactionType {
+  PAYMENT
+  PAYOUT
+  REFUND
+}
+
+model Transaction {
+  id                String            @id @default(cuid()) @map("_id")
+  type              TransactionType
+  status            TransactionStatus @default(PENDING)
+  amount            Float
+  amountInUSDC      Float
+  mode              Mode
+  createdAt         DateTime          @default(now())
+  confirmedAt       DateTime?
+  token             Token             @default(USDC)
+  profile           BusinessProfile   @relation("ProfileTransactions", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId         String
+  customer          Customer?         @relation("CustomerTransactions", fields: [customerId], references: [id])
+  customerId        String?
+  webhookDelivery   WebhookDelivery[] @relation("WebhookDeliveryTransactionMap")
+  webhookDeliveryId String?
+  payment           Payment?
+  payout            Payout?
+  refund            Refund?
+}
+
+model Paylink {
+  id           String          @id @default(cuid()) @map("_id")
+  title        String
+  description  String
+  mode         Mode
+  amount       Int
+  imageBlobIds String[]
+  payments     Payment[]       @relation("PaylinkPayments")
+  profile      BusinessProfile @relation("ProfilePaylinks", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId    String
+}
+
+model Payout {
+  id              String         @id @default(cuid()) @map("_id")
+  method          PayOutMethod
+  walletAddress   String?
+  txDigest        String?
+  fiatAccountId   String?
+  fiatAccount     FiatAccount?   @relation(fields: [fiatAccountId], references: [id])
+  cryptoAccountId String?
+  cryptoAccount   CryptoAccount? @relation(fields: [cryptoAccountId], references: [id])
+  transactionId   String         @unique
+  transaction     Transaction    @relation(fields: [transactionId], references: [id])
+}
+
+model Refund {
+  id            String      @id @default(cuid()) @map("_id")
+  reason        String?
+  walletAddress String
+  originalTxId  String
+  txDigest      String?
+  transactionId String      @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+}
+
+enum Mode {
+  live
+  test
+}
+
+model Payment {
+  id              String        @id @default(cuid()) @map("_id")
+  token           String
+  refunded        Boolean       @default(false)
+  depositAddress  String
+  walletId        String        @unique
+  wallet          Wallet        @relation("PaymentWallets", fields: [walletId], references: [id])
+  txRef           String
+  paymentMethod   PaymentMethod
+  redirectUrl     String?       @default("")
+  paylinkId       String?
+  paylink         Paylink?      @relation("PaylinkPayments", fields: [paylinkId], references: [id])
+  transactionId   String        @unique
+  transaction     Transaction   @relation(fields: [transactionId], references: [id])
+}
+
+model FiatAccount {
+  id            String          @id @default(uuid()) @map("_id")
+  bankName      String
+  bankCode      String
+  accountNumber String
+  isPrimary     Boolean
+  profileId     String
+  profile       BusinessProfile @relation("ProfileFiatAccounts", fields: [profileId], references: [id], onDelete: Cascade)
+  payouts       Payout[]
+
+  @@unique([profileId, isPrimary])
+}
+
+model CryptoAccount {
+  id            String           @id @default(uuid()) @map("_id")
+  walletAddress String
+  payouts       Payout[]
+  profileId     String
+  profile       BusinessProfile? @relation(fields: [profileId], references: [id])
+}
+
+model WebhookDelivery {
+  id             String            @id @default(uuid()) @map("_id")
+  webhookId      String
+  webhook        Webhook           @relation("WebhookDeliveryRegister", fields: [webhookId], references: [id])
+  event          String
+  transaction    Transaction       @relation("WebhookDeliveryTransactionMap", fields: [transactionId], references: [id])
+  transactionId  String
+  payload        Json
+  status         TransactionStatus
+  attemptCount   Int
+  responseStatus String?
+  nextRetryAt    DateTime?
+  createdAt      DateTime          @default(now())
+  lastAttemptAt  DateTime          @default(now())
+}
+
