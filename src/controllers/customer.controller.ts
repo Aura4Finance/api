@@ -83,16 +83,23 @@ export class CustomerController {
 
   async deleteCustomer(req: RequestAuth, res: Response) {
     const userId = req.user?.id as string;
-    const customerId = req.params.id;
+    const {error , value } = getACustomerQueryValidation(req.params as any);
+
+    if(error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error)
+      })
+    }
+    const customerId: GetACustomerQueryDto = value as GetACustomerQueryDto;
 
     if (!customerId) {
       throw new APIError("Invalid request", STATUS.bad);
     }
-
-
+    
     const { message, payload } = await this.cusomerService.deleteCustomer(
       userId,
-      customerId
+      customerId.customerId
     );
 
     return res.status(STATUS.ok).json({
