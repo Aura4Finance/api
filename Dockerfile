@@ -8,10 +8,7 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 
 RUN npx prisma generate
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
-
-RUN if [ "$NODE_ENV" != "development" ]; then npm run build; fi
+RUN npm run build
 
 RUN npx tsc-alias
 
