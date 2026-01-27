@@ -1,4 +1,4 @@
-FROM node:20 AS builder
+FROM node:24 AS builder
 
 WORKDIR /app
 
@@ -8,13 +8,17 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 
 RUN npx prisma generate
-RUN npm run build
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
+RUN if [ "$NODE_ENV" != "development" ]; then npm run build; fi
+
 RUN npx tsc-alias
 
 # Copy HTML files into dist
 RUN cp -r src/html dist/html
 
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
