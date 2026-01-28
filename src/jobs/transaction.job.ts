@@ -8,6 +8,7 @@ import { APIError } from "@/utils/error-handler";
 import { redisConnection } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
 import { decrypt } from "@/utils/encryption-handler";
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/dist/cjs/client";
 
 export const startTransactionWorker = () => {
   const paymentService = Container.get(PaymentService);
@@ -53,7 +54,7 @@ export const startTransactionWorker = () => {
           coinObjectId,
           amount,
           toAddress,
-          client
+          mode
         } = job.data;
         const walletService = Container.get(WalletService);
 
@@ -64,6 +65,9 @@ export const startTransactionWorker = () => {
           <string>walletPrivateKey?.tag
         );
 
+        const client = new SuiClient({
+          url: getFullnodeUrl(`${mode === 'test' ? 'testnet' : 'mainnet'}`),
+        });
         await walletService.splitSendToMerchantsAndAdmin(
           privateKey,
           coinObjectId,

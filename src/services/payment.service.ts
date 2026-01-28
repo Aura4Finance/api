@@ -307,7 +307,7 @@ export class PaymentService {
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
       toAddress: <string>tx?.profile.wallet[0]?.pubKey,
-      client: this.client
+      mode: tx.mode
     })
 
     await this.confirmPayment(

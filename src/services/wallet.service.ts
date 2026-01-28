@@ -4,6 +4,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import axios from "axios";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
+import { SuiClient } from "@mysten/sui/client";
 
 type ConversionDirection = 'NGN_TO_USDT' | 'USDT_TO_NGN';
 @Service()
@@ -60,7 +61,7 @@ export class WalletService {
   private async sponsoredTransaction(
     tx: Transaction,
     merchantSecretKey: string,
-    client: any
+    client: SuiClient
   ) {
     // Merchant builds the transaction kind (no gas)
     const merchant_keypair = Ed25519Keypair.fromSecretKey(merchantSecretKey);
@@ -82,6 +83,9 @@ export class WalletService {
     }
 
     const sponsorCoin = sponsorCoins.data[0];
+    if(!sponsorCoin) {
+      throw new APIError("Unable to retrieve sponsor coin", STATUS.serverError);
+    }
 
     const sponsoredTx = Transaction.fromKind(kindBytes);
     sponsoredTx.setSender(merchant_address);
@@ -119,7 +123,7 @@ export class WalletService {
     secret_key: string,
     primaryCoinObjectId: string,
     mergeTargetsObjectIds: string[],
-    client: any
+    client: SuiClient
   ) {
     const tx = new Transaction();
 
@@ -143,7 +147,7 @@ export class WalletService {
     primaryCoinObjectId: string,
     amount: number,
     to: string,
-    client: any
+    client: SuiClient
   ) {
     const tx = new Transaction();
 
@@ -180,7 +184,7 @@ async splitSendToMerchantsAndAdmin(
   primaryCoinObjectId: string,
   amount: string, // amount in smallest unit (u64)
   to: string,
-  client: any
+  client: SuiClient
 ) {
   const tx = new Transaction();
 
