@@ -87,7 +87,7 @@ export class RefundServices {
         const gasUsed = result.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
 
-        return esting
+        return {
             message: "Refund Payout initiated successfully",
             payload: {
                 status: "COMPLETED",
