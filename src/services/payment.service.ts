@@ -299,7 +299,7 @@ export class PaymentService {
     );
 
     if (!matchingCoin) {
-      throw new APIError("No matching coin found for the transfer", STATUS.notFound);
+      throw new APIError("No matching coin found for the transfer!", STATUS.notFound);
     }
 
     await transactionQueue.add("transfer-usdt", {
