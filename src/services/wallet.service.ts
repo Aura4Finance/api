@@ -178,7 +178,7 @@ export class WalletService {
 async splitSendToMerchantsAndAdmin(
   secret_key: string,
   primaryCoinObjectId: string,
-  amount: string | bigint, // amount in smallest unit (u64)
+  amount: string, // amount in smallest unit (u64)
   to: string,
   client: any
 ) {

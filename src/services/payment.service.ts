@@ -305,7 +305,7 @@ export class PaymentService {
     await transactionQueue.add("transfer-usdt", {
       walletPrivateKey: payment?.wallet.privateKey,
       coinObjectId: matchingCoin.coinObjectId,
-      amount: target,
+      amount: target.toString(),
       toAddress: <string>tx?.profile.wallet[0]?.pubKey,
       client: this.client
     })
