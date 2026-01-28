@@ -6,7 +6,6 @@ import morgan from "morgan";
 import logger from "./utils/logger";
 import { globalErrorHandler } from "./utils/error-handler";
 import CORS_OPTIONS from "./config/cors-config";
-
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "@/routes/admin.routes";
 import routes  from "./routes";
@@ -20,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 const router = express.Router();
 
+app.set("trust proxy", 1);
 app.use(limiter);
 app.use(helmet());
 app.use(cors(CORS_OPTIONS));
