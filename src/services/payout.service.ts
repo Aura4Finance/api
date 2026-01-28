@@ -158,9 +158,9 @@ export class PayoutService {
                 payoutId,
                 result.digest
             );
-            const errorCode = result.abortError?.error_code;
+            const errorCode = result.effects?.abortError?.error_code;
             throw new APIError(
-                `Unable to process payout: ${errorCode !== 0
+                `Unable to process payout: ${errorCode !== "0"
                     ? "Insufficient Balance"
                     : errorCode != null
                         ? "Unknown error occurred"
@@ -173,15 +173,15 @@ export class PayoutService {
             payoutId,
             result.digest
         );
-        const gasUsed = result.effects.gasUsed;
-        const totalGas = Number(BigInt(gasUsed.computationCost) + BigInt(gasUsed.storageCost) - BigInt(gasUsed.storageRebate)) * 0.000000001;
+        const gasUsed = result.effects?.gasUsed;
+        const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
         return {
             message: "Payout initiated successfully",
             payload: {
                 status: "COMPLETED",
                 amount,
                 txDigest: result.digest,
-                executionTime: result.executedEpoch,
+                executionTime: result.effects?.executedEpoch,
                 gasFee: totalGas,
                 platformFee: amount * 0.01,
                 amountRecieved: amount * 0.99,

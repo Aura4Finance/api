@@ -84,16 +84,16 @@ export class RefundServices {
         await this.refundRepository.confirmRefund(refundTxId, result?.digest as string);
         const refundedPayment = await this.paymentRepository.refundPayment(paymentTxId);
         await this.customerRepository.updateAmountSpent(<string>refundedPayment?.customer?.id, amount, "remove");
-        const gasUsed = result.effects.gasUsed;
-        const totalGas = Number(BigInt(gasUsed.computationCost) + BigInt(gasUsed.storageCost) - BigInt(gasUsed.storageRebate)) * 0.000000001;
+        const gasUsed = result.effects?.gasUsed;
+        const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
 
-        return {
+        return esting
             message: "Refund Payout initiated successfully",
             payload: {
                 status: "COMPLETED",
                 amount: amount,
                 txDigest: result.digest,
-                executionTime: result.executedEpoch,
+                executionTime: result.effects?.executedEpoch,
                 gasFee: totalGas,
                 platformFee: null,
                 amountSent: amount,
