@@ -23,13 +23,14 @@ export class WalrusService {
                 ? "mainnet"
                 : "testnet";
 
+                
         const suiJsonRpcClient = new SuiJsonRpcClient({
             url: getFullnodeUrl(network),
             network,
         }).$extend(
             walrus({
                 uploadRelay: {
-                    host: "https://upload-relay.testnet.walrus.space",
+                    host: network ===  "testnet" ? "https://upload-relay.testnet.walrus.space" : "https://upload-relay.walrus.space",
                     sendTip: {
                         max: 1_000,
                     },

@@ -10,3 +10,12 @@ export const createPaylinkValidation = (data: CreatePaylinkDto) => {
 
   return schema.validate(data);
 };
+
+export const editPaylinkValidation = (data: Partial<CreatePaylinkDto>) => {
+  const schema = Joi.object({
+    title: Joi.string().min(3),
+    description: Joi.string(),
+    amount: Joi.number().min(1),
+  }); 
+  return schema.validate(data);
+}

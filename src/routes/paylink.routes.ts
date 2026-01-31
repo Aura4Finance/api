@@ -39,4 +39,12 @@ router.delete(
     paylinkController.deletePaymentLink(req, res)
   )
 );
+
+router.patch(
+  "/:id",
+  upload.array("images", 10),
+  asyncHandler((req: RequestAuth, res: Response) =>
+    paylinkController.editPaylink(req, res)
+  )
+);
 export default router;

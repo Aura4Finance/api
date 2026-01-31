@@ -59,4 +59,17 @@ export class PaylinkRepository {
       },
     });
   }
+
+  async editPaylink(profileId: string, data: Partial<CreatePaylinkDto>, paylinkId: string) {
+    const result = await db.paylink.updateMany({
+      where: {
+        id: paylinkId,
+        profileId
+      },
+      data: {
+        ...data
+      }
+    });
+    return result;
+  }
 }

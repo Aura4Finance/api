@@ -53,12 +53,22 @@ export class PaylinkService {
   async deletePaylink(userId: string, paylinkId: string) {
     const profileId = await this.userRepository.findUserById(userId)
       .then((data) => data?.businessProfile?.id);
-    await this.getPaylink(paylinkId);
 
     await this.paylinkRepository.deletepaylink(profileId as string, paylinkId);
     return {
       message: "Paylink deleted successfully",
       payload: null
     }
+  }
+
+  async editPaylink(userId: string, paylinkId: string, body: Partial<CreatePaylinkDto>) {
+    const profileId = await this.userRepository.findUserById(userId)
+      .then((data) => data?.businessProfile?.id);
+    const paylink = await this.paylinkRepository.editPaylink(profileId as string, body, paylinkId);
+
+    return {
+      message: "Paylink updated successfully",
+      payload: paylink,
+    };
   }
 }
