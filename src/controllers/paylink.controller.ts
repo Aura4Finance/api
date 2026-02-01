@@ -8,6 +8,7 @@ import { formatErrorValidation } from "@/utils/format-validation-error";
 import {
   createPaylinkValidation,
   editPaylinkValidation,
+  paymentLinkReferenceValidation,
 } from "@/validation/paylink.validation";
 import { Response } from "express";
 import { Service } from "typedi";
@@ -101,14 +102,17 @@ export class PaylinkController {
   }
 
   async getPaylinkDetails(req: RequestAuth, res: Response) {
-    const paylinkId = req.params.id;
+     const { error, value } = paymentLinkReferenceValidation(req.params as any);
 
-    if (!paylinkId) {
-      throw new APIError("Invalid request", STATUS.bad);
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error),
+      });
     }
 
     const { message, payload } =
-      await this.paylinkService.getPaylink(paylinkId);
+      await this.paylinkService.getPaylink(value.paylinkId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -132,14 +136,17 @@ export class PaylinkController {
 
   async deletePaymentLink(req: RequestAuth, res: Response) {
     const userId = req.user.id as string;
-    const paylinkId = req.params.id;
+    const { error, value } = paymentLinkReferenceValidation(req.params as any);
 
-    if (!paylinkId) {
-      throw new APIError("Invalid request", STATUS.bad);
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error),
+      });
     }
 
     const { message, payload } =
-      await this.paylinkService.deletePaylink(userId, paylinkId);
+      await this.paylinkService.deletePaylink(userId, value.paylinkId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -150,10 +157,13 @@ export class PaylinkController {
 
   async editPaylink(req: RequestAuth, res: Response) {
     const userId = req.user.id as string;
-    const paylinkId = req.params.id;
+    const { error: refError, value: refValue } = paymentLinkReferenceValidation(req.params as any);
 
-    if (!paylinkId) {
-      throw new APIError("Invalid request", STATUS.bad);
+    if (refError) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(refError),
+      });
     }
 
     const { value, error } = editPaylinkValidation(JSON.parse(req.body.payload));
@@ -169,14 +179,14 @@ export class PaylinkController {
     let body: Partial<CreatePaylinkDto> = value as CreatePaylinkDto;
 
     if(files.length > 0) {
-      const newImageBlobIds = await this.processImages(files, userId, paylinkId);
+      const newImageBlobIds = await this.processImages(files, userId, refValue.paylinkId);
       body.imageBlobIds = newImageBlobIds;
     }
 
     const { message, payload } =
       await this.paylinkService.editPaylink(
         userId,
-        paylinkId,
+        refValue.paylinkId,
         body
       );
 

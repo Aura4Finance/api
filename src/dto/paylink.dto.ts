@@ -4,3 +4,8 @@ export interface CreatePaylinkDto {
   amount: number;
   imageBlobIds: string[];
 }
+
+export interface PaylinkReferenceDto {
+  paylinkId: string;
+}
+

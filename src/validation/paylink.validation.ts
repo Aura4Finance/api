@@ -1,4 +1,4 @@
-import { CreatePaylinkDto } from "@/dto/paylink.dto";
+import { CreatePaylinkDto, PaylinkReferenceDto  } from "@/dto/paylink.dto";
 import Joi from "joi";
 
 export const createPaylinkValidation = (data: CreatePaylinkDto) => {
@@ -18,4 +18,11 @@ export const editPaylinkValidation = (data: Partial<CreatePaylinkDto>) => {
     amount: Joi.number().min(1),
   }); 
   return schema.validate(data);
+}
+
+export const paymentLinkReferenceValidation = (data: PaylinkReferenceDto) => {
+  const schema =  Joi.object({
+    paylinkId: Joi.string().required(),
+  });
+  return  schema.validate(data);
 }
