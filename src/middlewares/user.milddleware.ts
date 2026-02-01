@@ -141,7 +141,7 @@ export const verifyPaylink = async (
   _: Response,
   next: NextFunction
 ) => {
-  const paylinkId = req.headers["paylinkid"];
+  const paylinkId = req.headers["payment-link-id"];
   const paylinkRepository = Container.get(PaylinkRepository);
 
   if (!paylinkId) {

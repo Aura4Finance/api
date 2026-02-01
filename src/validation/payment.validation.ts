@@ -8,7 +8,7 @@ export const createPaymentValidation = (data: CreatePaymentDto) => {
       fullname: Joi.string().required(),
       email: Joi.string().email().required(),
     }),
-    txRef: Joi.string().required(),
+    txRef: Joi.string().optional(),
     redirectUrl: Joi.string().optional()
   });
 

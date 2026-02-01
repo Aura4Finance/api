@@ -61,7 +61,7 @@ export class PaylinkRepository {
   }
 
   async editPaylink(profileId: string, data: Partial<CreatePaylinkDto>, paylinkId: string) {
-    const result = await db.paylink.updateMany({
+    const result = await db.paylink.update({
       where: {
         id: paylinkId,
         profileId

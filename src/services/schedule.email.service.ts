@@ -34,7 +34,7 @@ export class EmailQueue {
                 currency
             },
             {
-                delay: 1000 * 30,
+                delay: 1000 * 10,
                 removeOnComplete: true,
                 removeOnFail: false
             }
@@ -62,7 +62,7 @@ export class EmailQueue {
                 merchantName
             },
             {
-                delay: 1000 * 30,
+                delay: 1000 * 10,
                 removeOnComplete: true,
                 removeOnFail: false
             }

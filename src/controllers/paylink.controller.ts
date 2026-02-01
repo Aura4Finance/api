@@ -17,7 +17,7 @@ export class PaylinkController {
   constructor(
     private readonly paylinkService: PaylinkService,
     private readonly walrusService: WalrusService
-  ) {}
+  ) { }
 
   private async processImages(
     files: Express.Multer.File[],
@@ -31,14 +31,14 @@ export class PaylinkController {
       existingImageCount = paylink.payload.imageBlobIds.length;
     }
 
-const totalImages = (files?.length || 0) + existingImageCount;
+    const totalImages = (files?.length || 0) + existingImageCount;
 
-if (totalImages === 0) {
-  throw new APIError(
-    "At least one image file is required",
-    STATUS.bad
-  );
-}
+    if (totalImages === 0) {
+      throw new APIError(
+        "At least one image file is required",
+        STATUS.bad
+      );
+    }
 
     if (files.length + existingImageCount > 4) {
       throw new APIError(
@@ -156,7 +156,7 @@ if (totalImages === 0) {
       throw new APIError("Invalid request", STATUS.bad);
     }
 
-    const { value, error } = editPaylinkValidation(req.body);
+    const { value, error } = editPaylinkValidation(JSON.parse(req.body.payload));
 
     if (error) {
       return res.status(STATUS.bad).json({
@@ -166,13 +166,12 @@ if (totalImages === 0) {
     }
 
     const files = req.files as Express.Multer.File[];
+    let body: Partial<CreatePaylinkDto> = value as CreatePaylinkDto;
 
-    const imageBlobIds = await this.processImages(files, userId, paylinkId);
-
-    const body: Partial<CreatePaylinkDto> = {
-      ...(value as CreatePaylinkDto),
-      imageBlobIds,
-    };
+    if(files.length > 0) {
+      const newImageBlobIds = await this.processImages(files, userId, paylinkId);
+      body.imageBlobIds = newImageBlobIds;
+    }
 
     const { message, payload } =
       await this.paylinkService.editPaylink(
