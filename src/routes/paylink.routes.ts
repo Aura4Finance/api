@@ -20,7 +20,7 @@ router.post(
 
 
 router.get(
-  "/:id",
+  "/:paylinkId",
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.getPaylinkDetails(req, res)
 )
@@ -34,14 +34,14 @@ router.get(
 );
 
 router.delete(
-  "/:id",
+  "/:paylinkId",
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.deletePaymentLink(req, res)
   )
 );
 
 router.patch(
-  "/:id",
+  "/:paylinkId",
   upload.array("images", 10),
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.editPaylink(req, res)
