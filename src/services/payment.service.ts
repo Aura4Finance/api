@@ -135,25 +135,25 @@ export class PaymentService {
     }
   }
 
-  private async sendEmailOnce(
+  private async sendEmailIfNotSent(
     paymentId: string,
     type: "success" | "failed",
     send: () => Promise<void>
   ) {
-    const key = `payment_email_sent:${paymentId}`;
+    const key = `payment:email:${type}:${paymentId}`;
 
-    // Atomic lock (no race condition)
-    const locked = await redisClient.call(
-      "SET",
-      key,
-      type,
-      "NX",
-      "EX",
-      600
-    );
-    if (locked !== "OK") return;
+    // atomic guarantee
+    const ok = await redisClient.set(key, "true", "NX");
+
+    if (!ok) {
+      console.log(`📭 ${type} email already sent for`, paymentId);
+      return;
+    }
+
     await send();
+    console.log(`📨 ${type} email queued for`, paymentId);
   }
+
 
   private async confirmPayment(
     paymentId: string,
@@ -167,7 +167,7 @@ export class PaymentService {
     await this.paymentRepository.confirmPaymentStatus(paymentId);
     await this.customerRepository.updateAmountSpent(customerId, amount);
 
-    await this.sendEmailOnce(paymentId, "success", async () => {
+    await this.sendEmailIfNotSent(paymentId, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
         customerEmail,
         customerName,
@@ -175,6 +175,20 @@ export class PaymentService {
         paymentId,
         businessName,
         businessEmail
+      );
+    });
+  }
+
+  private async markPaymentFailed(
+    tx: any,
+    customer: any
+  ) {
+    await this.sendEmailIfNotSent(tx.id, "failed", async () => {
+      await this.emailQueue.addPaymentFailedScheduler(
+        String(customer?.email),
+        String(customer?.firstname),
+        tx.amount,
+        tx.id
       );
     });
   }
@@ -199,66 +213,74 @@ export class PaymentService {
 
     let event: EventType;
 
-    if(tx.status !== "COMPLETED") {
-    try {
-      const walletObject = await this.client.getObject({
-        id: <string>tx.payment?.depositAddress,
-        options: { showContent: true }
-      });
+    // ✅ already completed → ensure success email was sent
+    if (tx.status === "COMPLETED") {
+      await this.confirmPayment(
+        tx.id,
+        String(tx.customerId),
+        tx.amount,
+        String(customer?.email),
+        String(customer?.firstname),
+        tx.profile.businessName,
+        String(merchantEmail)
+      );
 
-      if (!walletObject.data) {
-        await this.confirmPayment(
-          tx.id,
-          String(tx.customerId),
-          tx.amount,
-          String(customer?.email),
-          String(customer?.firstname),
-          tx.profile.businessName,
-          String(merchantEmail)
-        );
-        event = "payment.success";
-      } else {
-        event = "payment.failed";
-        await this.sendEmailOnce(tx.id, "failed", async () => {
-          await this.emailQueue.addPaymentFailedScheduler(
+      event = "payment.success";
+    }
+
+    // 🔄 still pending → check chain
+    else {
+      try {
+        const walletObject = await this.client.getObject({
+          id: String(tx.payment?.depositAddress),
+          options: { showContent: true },
+        });
+
+        // 💥 wallet consumed → success
+        if (!walletObject.data) {
+          await this.confirmPayment(
+            tx.id,
+            String(tx.customerId),
+            tx.amount,
             String(customer?.email),
             String(customer?.firstname),
-            tx.amount,
-            tx.id
+            tx.profile.businessName,
+            String(merchantEmail)
           );
-        });
-      }
-    } catch (error: any) {
-      if (
-        error.message?.includes("not find") ||
-        error.message?.includes("deleted")
-      ) {
-        await this.confirmPayment(
-          tx.id,
-          String(tx.customerId),
-          tx.amount,
-          String(customer?.email),
-          String(customer?.firstname),
-          tx.profile.businessName,
-          String(merchantEmail)
-        );
-        event = "payment.success";
-      } else {
-        event = "payment.failed";
-        await this.sendEmailOnce(tx.id, "failed", async () => {
-          await this.emailQueue.addPaymentFailedScheduler(
+
+          event = "payment.success";
+        }
+
+        // ❌ still exists → failed (for now)
+        else {
+          await this.markPaymentFailed(tx, customer);
+          event = "payment.failed";
+        }
+      } catch (error: any) {
+        // 💥 object not found → success
+        if (
+          error.message?.includes("not find") ||
+          error.message?.includes("deleted")
+        ) {
+          await this.confirmPayment(
+            tx.id,
+            String(tx.customerId),
+            tx.amount,
             String(customer?.email),
             String(customer?.firstname),
-            tx.amount,
-            tx.id
+            tx.profile.businessName,
+            String(merchantEmail)
           );
-        });
+
+          event = "payment.success";
+        } else {
+          await this.markPaymentFailed(tx, customer);
+          event = "payment.failed";
+        }
       }
     }
-  } else {
-    event = "payment.success";
-  }
 
+    // 🌐 webhook always fires
     await this.webhookQueue.addScheduler(tx.profileId, {
       event,
       data: {
@@ -266,18 +288,19 @@ export class PaymentService {
         amount: tx.amount,
         currency: "NGN",
         status: event === "payment.success" ? "success" : "failed",
-        occuredAt: new Date().toISOString()
-      }
+        occuredAt: new Date().toISOString(),
+      },
     });
 
     return {
       message: "Payment verification completed",
       payload: {
         status: event === "payment.success" ? "completed" : "failed",
-        paymentId
-      }
+        paymentId,
+      },
     };
   }
+
 
   async verifyTransfer(data: VerifyPaymentDto) {
     const { paymentId } = data;
