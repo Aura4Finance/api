@@ -146,12 +146,10 @@ export class PaymentService {
     const ok = await redisClient.set(key, "true", "NX");
 
     if (!ok) {
-      console.log(`📭 ${type} email already sent for`, paymentId);
       return;
     }
 
     await send();
-    console.log(`📨 ${type} email queued for`, paymentId);
   }
 
 
@@ -236,7 +234,6 @@ export class PaymentService {
           options: { showContent: true },
         });
 
-        // 💥 wallet consumed → success
         if (!walletObject.data) {
           await this.confirmPayment(
             tx.id,
@@ -250,14 +247,11 @@ export class PaymentService {
 
           event = "payment.success";
         }
-
-        // ❌ still exists → failed (for now)
         else {
           await this.markPaymentFailed(tx, customer);
           event = "payment.failed";
         }
       } catch (error: any) {
-        // 💥 object not found → success
         if (
           error.message?.includes("not find") ||
           error.message?.includes("deleted")
@@ -279,8 +273,7 @@ export class PaymentService {
         }
       }
     }
-
-    // 🌐 webhook always fires
+    
     await this.webhookQueue.addScheduler(tx.profileId, {
       event,
       data: {
