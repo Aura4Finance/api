@@ -8,7 +8,7 @@ import { APIError } from "@/utils/error-handler";
 import { redisConnection } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
 import { decrypt } from "@/utils/encryption-handler";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/dist/cjs/client";
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 
 export const startTransactionWorker = () => {
   const paymentService = Container.get(PaymentService);
