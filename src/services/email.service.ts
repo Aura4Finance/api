@@ -139,7 +139,6 @@ export class EmailService {
     );
   }
 
-
   async sendPaymentFailedEmail(
     to: string,
     name: string,
