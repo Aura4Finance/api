@@ -18,6 +18,34 @@ export class EmailService {
       .toString("base64");
   }
 
+  buildEmailPayload(
+  to: string | string[],
+  subject: string,
+  templateId: string,
+  variables: TemplateVars,
+  notification = true
+) {
+  return {
+    from: notification
+      ? "OraFi <notifications@orafi.app>"
+      : "Chidi from OraFi <chidi@orafi.app>",
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    template: {
+      id: templateId,
+      variables,
+    },
+    attachments: [
+      {
+        content: this.logoBase64,
+        filename: "logo.png",
+        contentId: "logo@orafi",
+      },
+    ],
+  };
+}
+
+
   /**
    * Core reusable email sender
    */
@@ -48,7 +76,6 @@ export class EmailService {
     });
   }
 
-  /* ---------------- OTP ---------------- */
 
   async sendOtp(to: string, otp: string) {
     const throttleKey = `email:otp:${to}`;
@@ -69,10 +96,9 @@ export class EmailService {
     );
 
     // throttle OTP for 60 seconds
-    await redis.set(throttleKey, "1", "EX", 60);
+    await redis.set(throttleKey, "1", "EX", 60 * 10);
   }
 
-  /* ---------------- GENERAL EMAILS ---------------- */
 
   async sendWelcomeEmail(to: string, name: string) {
     return this.sendEmail(
@@ -113,7 +139,6 @@ export class EmailService {
     );
   }
 
-  /* ---------------- PAYMENTS ---------------- */
 
   async sendPaymentFailedEmail(
     to: string,
@@ -122,10 +147,6 @@ export class EmailService {
     currency: string,
     reference: string
   ) {
-    const key = `email:payment:failed:${reference}`;
-
-    const alreadySent = await redis.get(key);
-    if (alreadySent) return;
 
     await this.sendEmail(
       to,
@@ -140,7 +161,6 @@ export class EmailService {
       }
     );
 
-    await redis.set(key, "1");
   }
 
   async sendPaymentSuccessEmail(
@@ -151,10 +171,6 @@ export class EmailService {
     reference: string,
     merchantName: string
   ) {
-    const key = `email:payment:success:${reference}`;
-
-    const alreadySent = await redis.get(key);
-    if (alreadySent) return;
 
     await this.sendEmail(
       to,
@@ -178,7 +194,6 @@ export class EmailService {
       }
     );
 
-    await redis.set(key, "1");
   }
 
   async sendMerchantPaymentReceivedEmail(
@@ -189,10 +204,6 @@ export class EmailService {
     currency: string,
     reference: string
   ) {
-    const key = `email:merchant:payment:${reference}`;
-
-    const alreadySent = await redis.get(key);
-    if (alreadySent) return;
 
     await this.sendEmail(
       to,
@@ -207,7 +218,5 @@ export class EmailService {
         date: new Date().toLocaleString(),
       }
     );
-
-    await redis.set(key, "1");
   }
 }
