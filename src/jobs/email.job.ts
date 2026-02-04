@@ -78,7 +78,20 @@ export const startEmailWorker = () => {
             break;
           case "payment_failed":
             try {
-              await emailService.sendPaymentFailedEmail(email, name, rest.amount, rest.currency, rest.reference);
+              batch.push(
+                emailService.buildEmailPayload(
+                  email,
+                  "Payment Failed – Please Try Again",
+                  "payment_failed",
+                  {
+                    name,
+                    amount: rest.amount,
+                    currency: rest.currency,
+                    reference: rest.reference,
+                    date: new Date().toLocaleString(),
+                  }
+                )
+              );
             } catch (err: any) {
               logger.error(`Error sending payment failed email: ${err.message}`)
             }
