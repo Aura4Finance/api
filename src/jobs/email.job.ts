@@ -26,7 +26,6 @@ const flushBatch = async () => {
     logger.info(`📨 Sent batch of ${payload.length} emails`);
   } catch (err) {
     logger.error("Batch send failed", err);
-    // optionally requeue or let BullMQ retry
   }
 };
 
