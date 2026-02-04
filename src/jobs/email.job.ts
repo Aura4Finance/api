@@ -49,27 +49,27 @@ export const startEmailWorker = () => {
             try {
               await emailService.sendProblemEmail(email, name);
               logger.info("Problems email sent")
-                  } catch (error: any) {
-                    logger.error(`Error sending email: ${error.message}`)
-                  }
+            } catch (error: any) {
+              logger.error(`Error sending email: ${error.message}`)
+            }
             break;
           case "payment_failed":
-            try{
+            try {
               await emailService.sendPaymentFailedEmail(email, name, rest.amount, rest.currency, rest.reference);
-            }catch(err: any){
+            } catch (err: any) {
               logger.error(`Error sending payment failed email: ${err.message}`)
             }
             break;
           case "payment_success":
-            try{
+            try {
               if (await checkIfUserSuscribedForEmailNotification(email)) {
                 await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
               }
-            if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
-              await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency, rest.reference);
-            }
-            await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
-            }catch(err: any){
+              if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
+                await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency, rest.reference);
+              }
+              await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
+            } catch (err: any) {
               logger.error(`Error sending payment success email: ${err.message}`)
             }
             break
@@ -106,7 +106,14 @@ export const startEmailWorker = () => {
         throw error;
       }
     },
-    { connection: redisConnection }
+    {
+      connection: redisConnection,
+      concurrency: 1,
+      limiter: {
+        max: 2,
+        duration: 1000,
+      },
+    }
   );
 
   logger.info("📧 Email Worker started");
