@@ -19,6 +19,10 @@ export class FiatController {
         private readonly fiatService: FiatService
     ){}
 
+    async getRates(req: RequestAuth, res: Response){
+        
+    }
+
     async getBanks(_: Request, res: Response){
         const banks = await this.fiatService.getBanks();
 

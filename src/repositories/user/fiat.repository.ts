@@ -75,21 +75,27 @@ export class FiatRepository {
     }
     async updateAccount(
         id: string,
+        profileId: string,
         isPrimary: boolean
     ) {
         return db.fiatAccount.update({
             where: { id },
             data: {
-                isPrimary
+                isPrimary,
+                profileId
             }
         })
     }
 
     async deleteAccount(
-        id: string
+        id: string,
+        profileId: string
     ) {
         return db.fiatAccount.delete({
-            where: { id }
+            where: { 
+                id,
+                profileId
+             }
         })
     }
 }
