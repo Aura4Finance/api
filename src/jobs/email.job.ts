@@ -91,6 +91,15 @@ export const startEmailWorker = () => {
                   }
                 )
               );
+              
+              if (batch.length >= BATCH_SIZE) {
+                await flushBatch();
+              } else if (!flushTimer) {
+                flushTimer = setTimeout(async () => {
+                  await flushBatch();
+                  flushTimer = null;
+                }, BATCH_FLUSH_MS);
+              }
             } catch (err: any) {
               logger.error(`Error sending payment failed email: ${err.message}`)
             }

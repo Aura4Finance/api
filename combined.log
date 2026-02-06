@@ -5182,3 +5182,25 @@
 {"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-02T14:46:12.281Z"}
 {"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-02T14:46:12.282Z"}
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-02T14:46:12.284Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-04T22:37:56.988Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-04T22:37:57.719Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-04T22:37:59.450Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-04T22:37:59.878Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-04T22:37:59.886Z"}
+{"code":"ECONNRESET","errno":-4077,"level":"error","message":"Redis error:  read ECONNRESET","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2026-02-04T23:22:53.958Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-04T23:22:56.438Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-06T08:02:23.539Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-06T08:02:24.667Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-06T08:02:27.655Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-06T08:02:28.110Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-06T08:02:28.113Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-06T08:13:04.528Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-06T08:13:05.361Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-06T08:13:07.347Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-06T08:13:07.351Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-06T08:13:07.355Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-06T08:55:55.502Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-06T08:55:56.801Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-06T08:55:58.085Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-06T08:55:58.090Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-06T08:55:58.092Z"}
