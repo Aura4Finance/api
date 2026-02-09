@@ -6,20 +6,25 @@ import { APIError } from "@/utils/error-handler";
 import { UserRepository } from "@/repositories/user/user.repository";
 
 @Service()
-export class FiatService { 
+export class FiatService {
     constructor(
         private readonly fiatRepository: FiatRepository,
         private readonly userRepository: UserRepository
     ) { }
 
     async getRates() {
-        const response = await payfricaClient.get("/rates", {
-            params: {
-                currency: "NGN"
-            }
-        });
+        let response: any;
+        try{
+            response = await payfricaClient.get("/rates", {
+                params: {
+                    currency: "NGN"
+                }
+            });
+        }catch(err: any){
+            throw new APIError(`Error fetching rates: ${err.message}`, STATUS.bad);
+        }
         return {
-            message: "Banks retrieved successfully",
+            message: "Rates retrieved successfully",
             payload: {
                 rate: response.data.rate,
                 timestamp: response.data.timestamp,
@@ -29,41 +34,21 @@ export class FiatService {
     }
 
     async getBanks() {
-        let nextCursor: string | null = null;
-        let allBanks: any[] = [];
-        let hasNext = true;
-
-        while (hasNext) {
-            const response: any = await payfricaClient.get('/banks', {
+        let response: any;
+        try{
+             response = await payfricaClient.get('/banks', {
                 params: {
                     currency: "NGN",
-                    use_cursor: true,
-                    perPage: 100,
-                    next: nextCursor || undefined, // move to next page if available
                 }
             });
-
-            const { status, data, meta } = response.data;
-            console.log("Bank API Response:", response.data);
-
-            if (!status) {
-                throw new APIError("Unable to fetch banks", STATUS.noContent);
-            }
-
-            allBanks.push(...data);
-
-            // check if there’s another page
-            if (meta && meta.next) {
-                nextCursor = meta.next;
-            } else {
-                hasNext = false;
-            }
+        }catch(err: any){
+            throw new APIError(`Error fetching banks: ${err.message}`, STATUS.bad);
         }
 
-        return allBanks.map((bank: any) => ({
-            name: bank.name,
-            code: bank.code
-        }))
+        return {
+            message: "Banks retrieved successfully",
+            payload: response.data
+        }
     }
 
     async addBankAccount(
@@ -120,8 +105,8 @@ export class FiatService {
     ) {
         const response: any = await payfricaClient.get("/verify-account", {
             params: {
-               accountNumber,
-               bankCode
+                accountNumber,
+                bankCode
             },
         });
 

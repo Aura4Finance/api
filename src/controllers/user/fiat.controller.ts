@@ -22,14 +22,12 @@ export class FiatController {
 
 
     async getBanks(_: Request, res: Response){
-        const banks = await this.fiatService.getBanks();
+        const { payload, message } = await this.fiatService.getBanks();
 
         res.status(STATUS.ok).json({
             success: true,
-            message: "Banks retrived sucessfully!",
-            data: {
-                banks
-            }
+            message,
+            data: payload
         })
     }
 

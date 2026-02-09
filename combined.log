@@ -5249,3 +5249,32 @@
 {"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-09T12:43:46.529Z"}
 {"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-09T12:43:46.653Z"}
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-09T12:43:46.658Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-09T12:55:07.590Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-09T12:55:08.514Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-09T12:55:09.827Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-09T12:55:10.100Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-09T12:55:10.103Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-09T12:55:57.517Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-09T12:55:57.882Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-09T12:55:59.948Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-09T12:55:59.950Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-09T12:55:59.952Z"}
+{"level":"warn","message":"API key missing from ::ffff:127.0.0.1","timestamp":"2026-02-09T12:57:31.080Z"}
+{"level":"error","message":"APIError: API key missing\n    at verifyApiKey (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:117:11)\n    at Layer.handleRequest (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:342:13)\n    at C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:297:9\n    at processParams (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:582:12)\n    at next (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:291:5)\n    at router.handle (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:186:3)\n    at router (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:60:12)\n    at Layer.handleRequest (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\node_modules\\router\\index.js:342:13)","timestamp":"2026-02-09T12:57:31.108Z"}
+{"level":"error","message":"APIError: Unable to fetch banks\n    at FiatService.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\fiat.service.ts:50:23)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at FiatController.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\user\\fiat.controller.ts:25:23)","timestamp":"2026-02-09T12:57:53.837Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-09T12:59:08.779Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-09T12:59:09.139Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-09T12:59:10.374Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-09T12:59:10.378Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-09T12:59:10.380Z"}
+{"level":"error","message":"APIError: Unable to fetch banks\n    at FiatService.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\fiat.service.ts:49:23)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at FiatController.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\user\\fiat.controller.ts:25:23)","timestamp":"2026-02-09T12:59:25.882Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-09T13:01:39.426Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-09T13:01:40.147Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-09T13:01:41.816Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-09T13:01:41.961Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-09T13:01:41.963Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-09T13:04:12.050Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-09T13:04:12.495Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-09T13:04:14.284Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-09T13:04:14.355Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-09T13:04:14.358Z"}
