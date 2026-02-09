@@ -60,8 +60,7 @@ export class FiatService {
     ) {
 
         const resolvedAccount = await this.resolveAccountName(accountNumber, bankCode);
-        console.log(resolvedAccount)
-        if (!resolvedAccount || !resolvedAccount.account_name) {
+        if (!resolvedAccount) {
             throw new APIError("Unable to resolve account name", STATUS.bad);
         }
 
@@ -71,6 +70,11 @@ export class FiatService {
 
         if (!profile?.businessName) {
             throw new APIError("Business profile incomplete", STATUS.bad);
+        }
+        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(accountNumber, bankCode);
+        
+        if(existingAccount){
+            throw new APIError("Bank account already exists", STATUS.conflict);
         }
 
         const [existingAccounts, primaryAccount] = await Promise.all([
@@ -100,7 +104,7 @@ export class FiatService {
     }
 
 
-    private async resolveAccountName(
+    async resolveAccountName(
         accountNumber: string,
         bankCode: string
     ) {

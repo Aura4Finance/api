@@ -32,6 +32,19 @@ export class FiatRepository {
         });
         return accounts;
     }
+    
+    async getAccountByBankCodeAndNumber(
+        accountNumber: string,
+        bankCode: string,
+    ) {
+        const account = await db.fiatAccount.findFirst({
+            where: {
+                accountNumber,
+                bankCode
+            }
+        });
+        return account;
+    }
 
     async getPrimaryAccount(profileId: string) {
         const primaryAccount = await db.fiatAccount.findUnique({
