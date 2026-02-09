@@ -15,6 +15,14 @@ export const addBankAccountSchemaValidation = (data: CreateAccountDto) => {
     return schema.validate(data);
 }
 
+export const resolveAccountSchemaValidation = (data: { accountNumber: string, bankCode: string }) => {
+    const schema = Joi.object({
+        accountNumber: Joi.string().min(10).max(10).required(),
+        bankCode: Joi.string().min(2).max(8).required()
+    });
+    return schema.validate(data);
+}
+
 export const updateAccountSchemaValidation = ( data: UpdateAccountDto) => {
     const schema = Joi.object({
         isPrimary: Joi.bool()

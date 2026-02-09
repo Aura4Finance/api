@@ -3,25 +3,26 @@ import { Response } from "express";
 import { STATUS } from "@/constants/status.constant";
 import { FiatService } from "@/services/user/fiat.service";
 import { Service } from "typedi";
-import { 
+import {
     addBankAccountSchemaValidation,
+    resolveAccountSchemaValidation,
     updateAccountSchemaValidation
- } from "@/validation/fiat.validation";
+} from "@/validation/fiat.validation";
 import { formatErrorValidation } from "@/utils/format-validation-error";
-import { 
+import {
     CreateAccountDto,
     UpdateAccountDto
- } from "@/dto/fiat.dto";
+} from "@/dto/fiat.dto";
 
 @Service()
 export class FiatController {
     constructor(
         private readonly fiatService: FiatService
-    ){}
+    ) { }
 
 
 
-    async getBanks(_: Request, res: Response){
+    async getBanks(_: Request, res: Response) {
         const { payload, message } = await this.fiatService.getBanks();
 
         res.status(STATUS.ok).json({
@@ -31,7 +32,7 @@ export class FiatController {
         })
     }
 
-    async getRates(_: Request, res: Response){
+    async getRates(_: Request, res: Response) {
         const { payload, message } = await this.fiatService.getRates();
         return res.status(STATUS.ok).json({
             success: true,
@@ -40,9 +41,27 @@ export class FiatController {
         })
     }
 
-    async addBankAccount(req: RequestAuth, res: Response){
+    async resloveBankAccount(req: Request, res: Response) {
+        const { error, value } = resolveAccountSchemaValidation(req.body as any);
+        if (error) {
+            return res.status(STATUS.bad).json({
+                success: false,
+                message: formatErrorValidation(error),
+                data: null
+            })
+        }
+        const { accountNumber, bankCode } = value;
+        const { payload, message } = await this.fiatService.resolveAccountName(accountNumber, bankCode);
+        return res.status(STATUS.ok).json({
+            success: true,
+            message,
+            data: payload
+        })
+    }
+
+    async addBankAccount(req: RequestAuth, res: Response) {
         const { error, value } = addBankAccountSchemaValidation(req.body);
-        if(error){
+        if (error) {
             return res.status(STATUS.bad).json({
                 success: false,
                 message: formatErrorValidation(error),
@@ -51,9 +70,9 @@ export class FiatController {
         }
         const body: CreateAccountDto = value;
         const revolvedAccount = await this.fiatService.addBankAccount(
-            body.accountNumber, 
-            body.bankCode, 
-            body.bankName, 
+            body.accountNumber,
+            body.bankCode,
+            body.bankName,
             body.isPrimary,
             req.user.id
         );
@@ -66,7 +85,7 @@ export class FiatController {
         })
     }
 
-    async getAllAccounts(req: RequestAuth, res: Response){
+    async getAllAccounts(req: RequestAuth, res: Response) {
         const profileId = req.user?.id as string;
         console.log(profileId)
         const accounts = await this.fiatService.getAllAccounts(profileId);
@@ -79,7 +98,7 @@ export class FiatController {
         })
     }
 
-    async deleteAccount(req: RequestAuth, res: Response){
+    async deleteAccount(req: RequestAuth, res: Response) {
         const { id } = req.params;
         await this.fiatService.deleteAccount(id as string, req.user.id);
         return res.status(STATUS.ok).json({
@@ -89,11 +108,11 @@ export class FiatController {
         })
     }
 
-    async updateAccount(req: RequestAuth, res: Response){
+    async updateAccount(req: RequestAuth, res: Response) {
         const { id } = req.params;
         const { error, value } = updateAccountSchemaValidation(req.body);
 
-        if(error){
+        if (error) {
             return res.status(STATUS.bad).json({
                 success: false,
                 message: formatErrorValidation(error)

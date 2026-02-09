@@ -17,7 +17,9 @@ export class FiatService {
         try{
             response = await payfricaClient.get("/rates", {
                 params: {
-                    currency: "NGN"
+                    currency: "NGN",
+                    type: "offramp",
+                    crypto: "USDC"
                 }
             });
         }catch(err: any){
@@ -60,7 +62,7 @@ export class FiatService {
     ) {
 
         const resolvedAccount = await this.resolveAccountName(accountNumber, bankCode);
-        if (!resolvedAccount) {
+        if (!resolvedAccount.payload) {
             throw new APIError("Unable to resolve account name", STATUS.bad);
         }
 
@@ -120,7 +122,10 @@ export class FiatService {
         }catch(err: any){
             throw new APIError(err.response?.data?.message || "Unable to resolve merchant fiat account", STATUS.conflict);
         }
-        return response.data.data;
+        return {
+            message: "Account resolved successfully",
+            payload: response.data.data
+        }
     }
 
     async getAllAccounts(
