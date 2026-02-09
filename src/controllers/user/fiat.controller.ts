@@ -19,9 +19,7 @@ export class FiatController {
         private readonly fiatService: FiatService
     ){}
 
-    async getRates(req: RequestAuth, res: Response){
-        
-    }
+
 
     async getBanks(_: Request, res: Response){
         const banks = await this.fiatService.getBanks();
@@ -31,6 +29,17 @@ export class FiatController {
             message: "Banks retrived sucessfully!",
             data: {
                 banks
+            }
+        })
+    }
+
+    async getRates(_: Request, res: Response){
+        const rates = await this.fiatService.getRates();
+        return res.status(STATUS.ok).json({
+            success: true,
+            message: "Rates retrieved successfully!",
+            data: {
+                rates
             }
         })
     }

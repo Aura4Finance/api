@@ -40,6 +40,7 @@ export class FiatService {
             });
 
             const { status, data, meta } = response.data;
+            console.log("Bank API Response:", response.data);
 
             if (!status) {
                 throw new APIError("Unable to fetch banks", STATUS.noContent);

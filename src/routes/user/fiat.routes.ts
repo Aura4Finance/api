@@ -7,7 +7,7 @@ import Container from "typedi";
 const router = express.Router();
 const fiatController = Container.get(FiatController);
 
-router.get("/bank-list", 
+router.get("/banks", 
     asyncHandler((req: Request, res: Response) => 
     fiatController.getBanks(req, res))
 );
@@ -17,7 +17,7 @@ router.get("/",
     fiatController.getAllAccounts(req, res)
 ))
 
-router.post("/add",
+router.post("/",
     asyncHandler((req: RequestAuth, res: Response) => 
     fiatController.addBankAccount(req, res)
 ))
