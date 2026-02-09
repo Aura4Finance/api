@@ -136,7 +136,7 @@ export class FiatService {
             .findUserById(userId)
             .then((user) => user?.businessProfile?.id);
 
-        const accounts = await this.fiatRepository.getAccounts(profileId as string);
+        const accounts = await this.fiatRepository.getAccounts(String(profileId));
         return {
             message: "Fiat accounts retrieved successfully",
             payload: accounts
@@ -161,22 +161,43 @@ export class FiatService {
         await this.fiatRepository.deleteAccount(id, profileId as string);
     }
 
-    async updateAccount(
-        id: string,
-        userId: string,
-        isPrimary: boolean
-    ) {
-        const profileId = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile?.id);
+async updateAccount(
+  id: string,
+  userId: string,
+  isPrimary: boolean
+) {
+  const profileId = await this.userRepository
+    .findUserById(userId)
+    .then((user) => user?.businessProfile?.id);
 
-        const account = await this.fiatRepository.findAccountById(id);
-        if (!account) {
-            throw new APIError("Fiat account not found!", STATUS.notFound);
-        }
-        if (account.isPrimary == isPrimary) {
-            throw new APIError(`Account is already set to primary, ${isPrimary}`, STATUS.conflict);
-        }
-        await this.fiatRepository.updateAccount(id, profileId as string, isPrimary);
-    }
+  if (!profileId) {
+    throw new APIError("Business profile not found", STATUS.notFound);
+  }
+
+  const account = await this.fiatRepository.findAccountById(id);
+  if (!account) {
+    throw new APIError("Fiat account not found!", STATUS.notFound);
+  }
+
+  if (account.isPrimary === isPrimary) {
+    throw new APIError(
+      `Account is already set to isPrimary = ${isPrimary}`,
+      STATUS.conflict
+    );
+  }
+
+  const accounts = await this.fiatRepository.getAccounts(profileId);
+  if (
+    accounts.length === 1 &&
+    account.isPrimary === true &&
+    isPrimary === false
+  ) {
+    throw new APIError(
+      "You cannot unset the primary account when only one account exists",
+      STATUS.bad
+    );
+  }
+
+  await this.fiatRepository.updateAccount(id, profileId, isPrimary);
+}
 }

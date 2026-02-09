@@ -87,8 +87,8 @@ export class FiatController {
     }
 
     async getAllAccounts(req: RequestAuth, res: Response) {
-        const profileId = req.user?.id as string;
-        const { payload, message } = await this.fiatService.getAllAccounts(profileId);
+        const userId = req.user?.id as string;
+        const { payload, message } = await this.fiatService.getAllAccounts(userId);
         return res.status(STATUS.ok).json({
             status: true,
             message,
