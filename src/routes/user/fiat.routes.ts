@@ -12,6 +12,11 @@ router.get("/banks",
     fiatController.getBanks(req, res))
 );
 
+routeer.get("/rates",
+    asyncHandler((req: Request, res: Response) => 
+    fiatController.getRates(req, res))
+);
+
 router.get("/",
     asyncHandler((req: RequestAuth, res: Response) => 
     fiatController.getAllAccounts(req, res)
