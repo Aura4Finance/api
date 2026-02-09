@@ -12,7 +12,7 @@ router.get("/banks",
     fiatController.getBanks(req, res))
 );
 
-routeer.get("/rates",
+router.get("/rates",
     asyncHandler((req: Request, res: Response) => 
     fiatController.getRates(req, res))
 );
