@@ -5,6 +5,7 @@ import { FiatService } from "@/services/user/fiat.service";
 import { Service } from "typedi";
 import {
     addBankAccountSchemaValidation,
+    deleteAccountSchemaValidation,
     resolveAccountSchemaValidation,
     updateAccountSchemaValidation
 } from "@/validation/fiat.validation";
@@ -41,7 +42,7 @@ export class FiatController {
         })
     }
 
-    async resloveBankAccount(req: Request, res: Response) {
+    async resolveAccount(req: Request, res: Response) {
         const { error, value } = resolveAccountSchemaValidation(req.body as any);
         if (error) {
             return res.status(STATUS.bad).json({
@@ -87,20 +88,25 @@ export class FiatController {
 
     async getAllAccounts(req: RequestAuth, res: Response) {
         const profileId = req.user?.id as string;
-        console.log(profileId)
-        const accounts = await this.fiatService.getAllAccounts(profileId);
+        const { payload, message } = await this.fiatService.getAllAccounts(profileId);
         return res.status(STATUS.ok).json({
             status: true,
-            message: "Fiat accounts retrieved successfully!",
-            data: {
-                accounts
-            }
+            message,
+            data: payload
         })
     }
 
     async deleteAccount(req: RequestAuth, res: Response) {
-        const { id } = req.params;
-        await this.fiatService.deleteAccount(id as string, req.user.id);
+       const { error, value } = deleteAccountSchemaValidation(req.params as any);
+        if (error) {
+            return res.status(STATUS.bad).json({
+                success: false,
+                message: formatErrorValidation(error),
+                data: null
+            })
+        }
+        const { id } = value;
+        await this.fiatService.deleteAccount(id, req.user.id);
         return res.status(STATUS.ok).json({
             status: true,
             message: "Fiat account deleted successfully!",

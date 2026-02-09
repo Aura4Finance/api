@@ -12,9 +12,9 @@ router.get("/banks",
     fiatController.getBanks(req, res))
 );
 
-router.post("/resolve-account",
+router.get("/resolve-account",
     asyncHandler((req: Request, res: Response) => 
-    fiatController.resloveBankAccount(req, res))
+    fiatController.resolveAccount(req, res))
 );
 
 router.get("/rates",

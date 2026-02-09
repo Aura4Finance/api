@@ -23,6 +23,13 @@ export const resolveAccountSchemaValidation = (data: { accountNumber: string, ba
     return schema.validate(data);
 }
 
+export const deleteAccountSchemaValidation = (data: { id: string }) => {
+    const schema = Joi.object({
+        id: Joi.string().required()
+    })
+    return schema.validate(data);
+}
+
 export const updateAccountSchemaValidation = ( data: UpdateAccountDto) => {
     const schema = Joi.object({
         isPrimary: Joi.bool()

@@ -11,6 +11,8 @@ export class FiatRepository {
             select: {
                 bankName: true,
                 accountNumber: true,
+                bankCode: true,
+                accountName: true,
                 profileId: true,
                 isPrimary: true
             }
@@ -27,12 +29,14 @@ export class FiatRepository {
                 id: true,
                 bankName: true,
                 accountNumber: true,
+                bankCode: true,
+                accountName: true,
                 isPrimary: true
             }
         });
         return accounts;
     }
-    
+
     async getAccountByBankCodeAndNumber(
         accountNumber: string,
         bankCode: string,
@@ -61,6 +65,7 @@ export class FiatRepository {
     async createAccount(
         bankName: string,
         accountNumber: string,
+        accountName: string,
         bankCode: string,
         isPrimary: boolean,
         profileId: string,
@@ -70,6 +75,7 @@ export class FiatRepository {
                 bankName,
                 accountNumber,
                 bankCode,
+                accountName,
                 profile: {
                     connect: {
                         id: profileId
@@ -80,7 +86,10 @@ export class FiatRepository {
             select: {
                 id: true,
                 accountNumber: true,
-                bankName: true
+                bankName: true,
+                bankCode: true,
+                accountName: true,
+                isPrimary: true
             }
         })
         return account;
@@ -105,10 +114,10 @@ export class FiatRepository {
         profileId: string
     ) {
         return db.fiatAccount.delete({
-            where: { 
+            where: {
                 id,
                 profileId
-             }
+            }
         })
     }
 }

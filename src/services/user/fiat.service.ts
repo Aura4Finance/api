@@ -73,7 +73,7 @@ export class FiatService {
         if (!profile?.businessName) {
             throw new APIError("Business profile incomplete", STATUS.bad);
         }
-        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(accountNumber, bankCode);
+        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(String(accountNumber), bankCode);
         
         if(existingAccount){
             throw new APIError("Bank account already exists", STATUS.conflict);
@@ -97,6 +97,7 @@ export class FiatService {
         const createdAccount = await this.fiatRepository.createAccount(
             bankName,
             accountNumber,
+            resolvedAccount.payload.accountName,
             bankCode,
             isPrimary,
             profile.id
@@ -136,7 +137,10 @@ export class FiatService {
             .then((user) => user?.businessProfile?.id);
 
         const accounts = await this.fiatRepository.getAccounts(profileId as string);
-        return accounts;
+        return {
+            message: "Fiat accounts retrieved successfully",
+            payload: accounts
+        }
     }
 
     async deleteAccount(

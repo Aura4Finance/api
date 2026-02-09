@@ -237,6 +237,7 @@ model FiatAccount {
   id            String          @id @default(uuid()) @map("_id")
   bankName      String
   bankCode      String
+  accountName   String
   accountNumber String
   isPrimary     Boolean
   profileId     String
