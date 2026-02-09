@@ -20,7 +20,11 @@ export class FiatService {
         });
         return {
             message: "Banks retrieved successfully",
-            payload: response.data
+            payload: {
+                rate: response.data.rate,
+                timestamp: response.data.timestamp,
+                rateDescription: response.data.rateDescription
+            }
         }
     }
 

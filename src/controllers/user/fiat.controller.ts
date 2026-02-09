@@ -34,13 +34,11 @@ export class FiatController {
     }
 
     async getRates(_: Request, res: Response){
-        const rates = await this.fiatService.getRates();
+        const { payload, message } = await this.fiatService.getRates();
         return res.status(STATUS.ok).json({
             success: true,
-            message: "Rates retrieved successfully!",
-            data: {
-                rates
-            }
+            message,
+            data: payload
         })
     }
 
