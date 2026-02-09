@@ -47,7 +47,7 @@ export class FiatService {
 
         return {
             message: "Banks retrieved successfully",
-            payload: response.data
+            payload: response.data.data
         }
     }
 
@@ -60,6 +60,7 @@ export class FiatService {
     ) {
 
         const resolvedAccount = await this.resolveAccountName(accountNumber, bankCode);
+        console.log(resolvedAccount)
         if (!resolvedAccount || !resolvedAccount.account_name) {
             throw new APIError("Unable to resolve account name", STATUS.bad);
         }
@@ -103,15 +104,17 @@ export class FiatService {
         accountNumber: string,
         bankCode: string
     ) {
-        const response: any = await payfricaClient.get("/verify-account", {
-            params: {
-                accountNumber,
-                bankCode
-            },
-        });
-
-        if (!response.data.status) {
-            throw new APIError(response.data.message || "Unable to resolve merchant fiat account", STATUS.conflict);
+        let  response: any;
+        
+        try{
+            response = await payfricaClient.get("/verify-account", {
+               params: {
+                   accountNumber,
+                   bankCode
+               },
+           });
+        }catch(err: any){
+            throw new APIError(err.response?.data?.message || "Unable to resolve merchant fiat account", STATUS.conflict);
         }
         return response.data.data;
     }
