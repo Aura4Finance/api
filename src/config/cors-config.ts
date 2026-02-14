@@ -3,6 +3,7 @@ import { CorsOptions } from "cors";
 const allowedOrigins = [
   "https://paylink.orafi.app",
   "https://checkout.orafi.app",
+  "https://auth.orafi.app",
   "http://localhost:5173",
 ];
 

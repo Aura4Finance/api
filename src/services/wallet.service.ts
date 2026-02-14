@@ -10,6 +10,8 @@ type ConversionDirection = 'NGN_TO_USDT' | 'USDT_TO_NGN';
 @Service()
 export class WalletService {
   private smart_contract_address: any;
+  //private USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC"; 
+  //private PAYFRICA_ID = "0xe945ec6c4e688d654025d375e321d709f67ed6935ccbd21e94abb66af63ea7b1";
   admin_secret_key: string;
   constructor() {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
@@ -257,6 +259,46 @@ async convertBetweenNGNAndUSDT(
   return amount * usdtPriceInNGN;
 }
 
+  
+  // async offRampSmartContractCall( 
+  //   amount: bigint, 
+  //   cryptoAsset: string, 
+  //   coinType: string = this.USDC_COIN_TYPE 
+  // ){
+  //    const CRYPTO_DECIMALS: Record<string, number> = { SUI: 1e9, USDC: 1e6, }; 
+  //    const upperCrypto = cryptoAsset.toUpperCase(); 
+  //    const decimals = CRYPTO_DECIMALS[upperCrypto] || 1e6; 
+  //    const tx = new Transaction(); // Use BigInt for all fee calculations to avoid precision issues 
+  //    const fee = (amount * BigInt(5)) / BigInt(1000); 
+
+  //    if (upperCrypto === "SUI") { // Set explicit gas budget of 0.01 SUI (10,000,000 MIST)
+  //     tx.setGasBudget(10_000_000);
+  //    } 
+     
+  //   let coin; // Safety check for userBalance to avoid NaN 
+  //   const safeUserBalance = Number(userBalance) || 0; 
+  //   if ( BigInt(Math.floor(Number(amount))) == BigInt(Math.floor(safeUserBalance * decimals)) ) { 
+  //     coin = await handleMergeSplit( client, tx, amount - fee, fee, coinType, address ); 
+  //   } else { 
+  //     coin = await handleMergeSplit(client, tx, amount, fee, coinType, address); 
+  //   } if (coin.feeSplit) { 
+  //     tx.transferObjects( [coin.feeSplit], 
+  //     tx.pure.address( "0xdcfd7fd641a0d74b8fb83ae9949c560eb6c183a3d8c3b975e697527eada62b45" ) ); 
+  //   } tx.moveCall({ 
+  //     target: `${PAYFRICA_ID}::payfrica::off_ramp`, 
+  //     arguments: [ 
+  //       coin.split, tx.pure.string(sessionState?.to || "NGN"), 
+  //       tx.object.clock(), 
+  //     ], 
+  //     typeArguments: [coinType] }); 
+  //     try { 
+  //       const result = await signAndExecuteTransaction({ transaction: tx, }); // Return transaction digest (hash) return 
+  //       result.digest; 
+  //     } 
+  //       catch (error) { 
+  //         throw error; 
+  //       } 
+  //     };
 
 
 }
