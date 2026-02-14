@@ -1,14 +1,17 @@
 import { ConnectionOptions } from "bullmq";
-import { RedisOptions } from "ioredis";
 
-const baseRedisOptions = {
-  host: <string>process.env.REDIS_HOST,
+const baseRedisOptions: ConnectionOptions = {
+  host: process.env.REDIS_HOST as string,
   port: Number(process.env.REDIS_PORT),
-  username: <string>process.env.REDIS_USERNAME,
-  password: <string>process.env.REDIS_PASSWORD,
+  ...(process.env.REDIS_USERNAME && {
+    username: process.env.REDIS_USERNAME,
+  }),
+  ...(process.env.REDIS_PASSWORD && {
+    password: process.env.REDIS_PASSWORD,
+  }),
 };
 
-export const redisConnection: ConnectionOptions | RedisOptions =
+export const redisConnection: ConnectionOptions =
   process.env.REDIS_TLS === "true"
     ? { ...baseRedisOptions, tls: {} }
     : baseRedisOptions;
