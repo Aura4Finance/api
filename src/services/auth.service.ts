@@ -379,9 +379,16 @@ export class AuthService {
     await this.userRepository.changePassword(user.id, hashedPassword);
     await this.userRepository.verifyEmail(user.id);
 
+    const jwtPayload = {
+      id: user?.id,
+      email: user?.email,
+      jti: uuid()
+    };
+    const accessToken = jwt.sign(jwtPayload, this.jwtSecret, { expiresIn: '7d' });
+
     return {
       message: "Password reset successfully",
-      payload: null,
+      payload: accessToken,
     };
   }
 }

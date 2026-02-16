@@ -21,12 +21,14 @@ import { getACustomerQueryValidation, getCustomerQueryValidation } from "@/valid
 import { GetACustomerQueryDto, GetCustomersQueryDto } from "@/dto/customer.dto";
 import { CustomerService } from "@/services/customer.service";
 import { Metrics } from "@/services/metrics.service";
+import { UserService } from "@/services/user/user.service";
 
 @Service()
 export class AdminController {
   constructor(
     private readonly authController: AuthController,
     private readonly authService: AuthService,
+    private readonly userService: UserService,
     private readonly merchantManagementService: MerchantManagementService,
     private readonly transactionService: TransactionService,
     private readonly customerService: CustomerService,
@@ -94,6 +96,10 @@ export class AdminController {
     });
   }
 
+  async signout(req: RequestAuth, res: Response){
+    await this.authController.signOut(req, res);
+  }
+
   async resendOtp(req: Request, res: Response) {
     await this.authController.resendOtp(req, res);
   }
@@ -103,6 +109,23 @@ export class AdminController {
 
   async resetPassword(req: Request, res: Response) {
     await this.authController.resetPassword(req, res);
+  }
+
+  async getProfile(req: RequestAuth, res: Response) {
+    const userId = req?.user?.id;
+    const profile = await this.userService.getUserById(<string>userId);
+
+    if (!profile) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: "Profile not found"
+      })
+    }
+    return res.status(STATUS.ok).json({
+      success: true,
+      message: "Profile retrieved successfully",
+      data: profile,
+    });
   }
 
   async getMerchants(req: Request, res: Response) {

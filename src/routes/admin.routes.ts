@@ -4,7 +4,7 @@ import { AdminController } from "../controllers/admin.controller";
 import { asyncHandler } from "../utils/error-handler";
 import "reflect-metadata";
 import { verifyRequestBody } from "../middlewares/verify-request-body";
-import { checkIfUserIsDisabled, checkUserRole, verifyAccessToken } from "@/middlewares/user.milddleware";
+import { checkUserRole, verifyAccessToken } from "@/middlewares/user.milddleware";
 import { RequestAuth } from "@/@types/request";
 
 const router = express.Router();
@@ -25,6 +25,7 @@ router.post(
     adminController.signin(req, res)
   )
 );
+
 
 router.post(
   "/auth/resend-otp",
@@ -51,10 +52,23 @@ router.post(
 );
 
 router.use(
-    verifyAccessToken, 
-    checkUserRole("ADMIN"),
-    checkIfUserIsDisabled
+  verifyAccessToken, 
+    checkUserRole("ADMIN")
 );
+
+router.post(
+  "auth/logout",
+  asyncHandler((req: RequestAuth, res: Response) => 
+  adminController.signout(req, res)
+)
+)
+
+router.get(
+  "/profile",
+  asyncHandler((req: RequestAuth, res: Response) => 
+  adminController.getProfile(req, res)
+)
+)
 
 router.get(
   "/merchants",
