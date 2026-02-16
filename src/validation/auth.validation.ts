@@ -34,7 +34,7 @@ export const adminAuthSchemaValidation = (data: AdminAuthDto) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
     firstname: Joi.string().min(5),
-    lastname: Joi.string().min(8)
+    lastname: Joi.string().min(5)
   });
 
   return schema.validate(data);
