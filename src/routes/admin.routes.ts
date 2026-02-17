@@ -53,7 +53,7 @@ router.post(
 
 router.use(
   verifyAccessToken, 
-    checkUserRole("ADMIN")
+  checkUserRole("ADMIN")
 );
 
 router.post(

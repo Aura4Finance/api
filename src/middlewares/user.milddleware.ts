@@ -68,7 +68,6 @@ export const checkUserRole =
       if (!request.user) {
         throw new APIError("User not found", STATUS.notFound);
       }
-
       if (request.user.role !== role) {
         throw new APIError("Forbidden: Access Denied", STATUS.forbidden);
       }
