@@ -55,7 +55,6 @@ export const transactionQuerySchemaValidation = (raw: any) => {
     return schema.validate(data);
 };
 
-
 export const transactionIdSchemaValidation = (data: GetATransactionDto) => {
     const schema = Joi.object({
         txId: Joi.string().required(),
