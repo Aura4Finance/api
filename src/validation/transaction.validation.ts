@@ -10,7 +10,7 @@ export const transactionQuerySchemaValidation = (raw: any) => {
         try {
             data.date = JSON.parse(data.date);
         } catch (e) {
-            throw new APIError("Invalid JSON format for 'date' parameter", STATUS.bad );
+            throw new APIError("Invalid JSON format for 'date' parameter", STATUS.bad);
         }
     }
 
@@ -25,8 +25,8 @@ export const transactionQuerySchemaValidation = (raw: any) => {
             interval: Joi.when('type', {
                 is: 'preset',
                 then: Joi.string().valid(
-                    'today','yesterday','last7days','last30days',
-                    'thisMonth','lastMonth','thisYear'
+                    'today', 'yesterday', 'last7days', 'last30days',
+                    'thisMonth', 'lastMonth', 'thisYear'
                 ).required(),
                 otherwise: Joi.forbidden()
             }),
@@ -67,6 +67,13 @@ export const transactionModeSchemaValidation = (data: GetTransactionMetrics) => 
     const schema = Joi.object({
         mode: Joi.string().valid("test", "live").required(),
         status: Joi.valid("COMPLETED", "FAILED", "PENDING")
+    })
+    return schema.validate(data);
+}
+
+export const queryDashboardSchemaValidation = (data: any) => {
+    const schema = Joi.object({
+        mode: Joi.string().valid("test", "live").required(),
     })
     return schema.validate(data);
 }

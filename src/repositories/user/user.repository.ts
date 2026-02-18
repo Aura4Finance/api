@@ -3,7 +3,7 @@ import db from "../../config/db-config";
 import { encrypt } from "@/utils/encryption-handler";
 import { OnboardUserDto } from "@/dto/user.dto";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";
-import { Provider } from "../../../generated/prisma";
+import { Mode, Provider } from "../../../generated/prisma";
 
 @Service()
 export class UserRepository {

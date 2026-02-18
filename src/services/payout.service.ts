@@ -77,7 +77,7 @@ export class PayoutService {
             .then((user) => user?.businessProfile);
 
         if (!profile) {
-            throw new Error("Merchant or busi ness profile not found");
+            throw new Error("Merchant or business profile not found");
         }
 
         const walletAddress = profile.wallet[0]?.pubKey;

@@ -308,59 +308,62 @@ export class CustomerRepository {
   async updateAmountSpent(
     customerId: string,
     amount: number,
-    type: "add" | "remove"="add"
-  ){
+    type: "add" | "remove" = "add"
+  ) {
     return await db.customer.update({
       where: { id: customerId },
       data: {
         totalSpent: type == "add" ? { increment: amount } : { decrement: amount }
       }
-  })
-
-}
-
-async countCustomers() {
-  const now = new Date();
-
-  // Current month
-  const currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
-  // Last month
-  const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-
-  const [currentCount, lastCount] = await Promise.all([
-    db.customer.count({
-      where: {
-        createdAt: {
-          gte: currentStart,
-          lte: currentEnd
-        }
-      }
-    }),
-    db.customer.count({
-      where: {
-        createdAt: {
-          gte: lastStart,
-          lte: lastEnd
-        }
-      }
     })
-  ]);
 
-  let percentageChange = 0;
-
-  if (lastCount > 0) {
-    percentageChange =
-      ((currentCount - lastCount) / lastCount) * 100;
   }
 
-  return {
-    total: currentCount,
-    percentageChange: Number(percentageChange.toFixed(1)),
-    trend: currentCount >= lastCount ? "up" : "down"
-  };
-}
+  async countCustomers(mode: Mode = Mode.live) {
+    const now = new Date();
+
+    // Current month
+    const currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    // Last month
+    const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    const [currentCount, lastCount] = await Promise.all([
+      db.customer.count({
+        where: {
+          createdAt: {
+            gte: currentStart,
+            lte: currentEnd
+          },
+          mode: {
+            has: mode
+          }
+        }
+      }),
+      db.customer.count({
+        where: {
+          createdAt: {
+            gte: lastStart,
+            lte: lastEnd
+          }
+        }
+      })
+    ]);
+
+    let percentageChange = 0;
+
+    if (lastCount > 0) {
+      percentageChange =
+        ((currentCount - lastCount) / lastCount) * 100;
+    }
+
+    return {
+      total: currentCount,
+      percentageChange: Number(percentageChange.toFixed(1)),
+      trend: currentCount >= lastCount ? "up" : "down"
+    };
+  }
 
 }

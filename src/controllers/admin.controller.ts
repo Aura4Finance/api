@@ -14,7 +14,7 @@ import { RequestAuth } from "@/@types/request";
 import { getAllMerchantSchemaValidation } from "@/validation/merchant.validation";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";
 import { MerchantManagementService } from "@/services/merchant-management.service";
-import { transactionIdSchemaValidation, transactionModeSchemaValidation, transactionQuerySchemaValidation } from "@/validation/transaction.validation";
+import { queryDashboardSchemaValidation, transactionIdSchemaValidation, transactionModeSchemaValidation, transactionQuerySchemaValidation } from "@/validation/transaction.validation";
 import { TransactionService } from "@/services/transaction.service";
 import { GetAllTransactionsDto, GetATransactionDto, GetTransactionMetrics } from "@/dto/transaction.dto";
 import { getACustomerQueryValidation, getCustomerQueryValidation } from "@/validation/customer.validation";
@@ -96,7 +96,7 @@ export class AdminController {
     });
   }
 
-  async signout(req: RequestAuth, res: Response){
+  async signout(req: RequestAuth, res: Response) {
     await this.authController.signOut(req, res);
   }
 
@@ -302,6 +302,15 @@ export class AdminController {
   }
 
   async getDashboardMetrics(_req: Request, res: Response) {
+    const { error, value } = queryDashboardSchemaValidation(req.query);
+
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error)
+      })
+    }
+
     const { message, payload } = await this.metrics.getDashboardMetrics();
 
     return res.status(STATUS.ok).json({

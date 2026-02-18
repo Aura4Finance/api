@@ -224,13 +224,11 @@ export class Metrics {
     };
   }
 
-  async getDashboardMetrics() {
-    const transactionCount =
-      await this.transactionRepository.countTransaction();
+  async getDashboardMetrics(mode: Mode= Mode.live) {
+    const transactionCount = await this.transactionRepository.countTransaction(mode);
     const merchantCount = await this.userRepository.countMerchants();
-    const customerCount = await this.customerRepository.countCustomers();
-    const revenueCount =
-      await this.transactionRepository.calculateRevenueGenerated();
+    const customerCount = await this.customerRepository.countCustomers(mode);
+    const revenueCount = await this.transactionRepository.calculateRevenueGenerated(mode);
 
     return {
       message: "Dashboard metrics retrieved successfully",
