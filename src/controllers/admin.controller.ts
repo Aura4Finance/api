@@ -301,7 +301,7 @@ export class AdminController {
     });
   }
 
-  async getDashboardMetrics(_req: Request, res: Response) {
+  async getDashboardMetrics(req: Request, res: Response) {
     const { error, value } = queryDashboardSchemaValidation(req.query);
 
     if (error) {
@@ -311,7 +311,7 @@ export class AdminController {
       })
     }
 
-    const { message, payload } = await this.metrics.getDashboardMetrics();
+    const { message, payload } = await this.metrics.getDashboardMetrics(value.mode);
 
     return res.status(STATUS.ok).json({
       success: true,
