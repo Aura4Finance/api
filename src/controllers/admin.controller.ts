@@ -232,6 +232,7 @@ export class AdminController {
       message,
       data: payload
     })
+
   }
 
   async getCustomerById(req: Request, res: Response) {
@@ -265,6 +266,26 @@ export class AdminController {
     }
     const query = value as GetTransactionMetrics;
     const { message, payload } = await this.metrics.getTransactionMetrics(query.mode);
+
+    return res.status(STATUS.ok).json({
+      success: true,
+      message,
+      data: payload
+    })
+  }
+
+  async getTransactionOverview(req: Request, res: Response) {
+    const { error, value } = transactionModeSchemaValidation(req.query as any);
+
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error)
+      })
+    }
+
+    const query = value as GetTransactionMetrics;
+    const { message, payload } = await this.metrics.getTransactionCountByStatus(query.mode);
 
     return res.status(STATUS.ok).json({
       success: true,

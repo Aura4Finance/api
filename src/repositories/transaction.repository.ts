@@ -517,4 +517,22 @@ export class TransactionRepository {
       trend: currentCount >= lastCount ? "up" : "down",
     };
   }
+
+  async getTransactionCountByStatus(mode: Mode=Mode.live){
+    const raw = await db.transaction.groupBy({
+      by: ["status"],
+      where: {
+        mode,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+    return {
+      total: raw.reduce((sum, item) => sum + item._count._all, 0),
+      successful: raw.find(item => item.status === "COMPLETED")?._count._all || 0,
+      pending: raw.find(item => item.status === "PENDING")?._count._all || 0,
+      failed: raw.find(item => item.status === "FAILED")?._count._all || 0,
+    }
+  }
 }

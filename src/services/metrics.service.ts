@@ -24,6 +24,16 @@ export class Metrics {
     };
   }
 
+  async getTransactionCountByStatus(mode: Mode = Mode.live) {
+    const countByStatus =
+      await this.transactionRepository.getTransactionCountByStatus(mode);
+
+      return {
+        message: "Transaction count by status retrieved successfully",
+        payload: countByStatus,
+      }
+  }
+
   async getMerchantMetrics(limit: number = 10) {
     const { total, live, onboarded } =
       await this.userRepository.merchantStats();
