@@ -106,18 +106,18 @@ router.get(
 )
 )
 router.get(
+  "/transactions/overview",
+  asyncHandler((req: Request, res: Response) => 
+    adminController.getTransactionOverview(req, res)
+)
+)
+router.get(
   "/transactions/:txId",
   asyncHandler((req: Request, res: Response) => 
     adminController.getTransactionById(req, res)
 )
 )
 
-router.get(
-  "/transactions/overview",
-  asyncHandler((req: Request, res: Response) => 
-    adminController.getTransactionOverview(req, res)
-)
-)
 
 router.get(
   "/customers",
