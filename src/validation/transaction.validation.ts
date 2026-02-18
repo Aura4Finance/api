@@ -65,7 +65,7 @@ export const transactionIdSchemaValidation = (data: GetATransactionDto) => {
 
 export const transactionModeSchemaValidation = (data: GetTransactionMetrics) => {
     const schema = Joi.object({
-        mode: Joi.string().valid("test", "live").required(),
+        mode: Joi.string().valid("test", "live").optional(),
         status: Joi.valid("COMPLETED", "FAILED", "PENDING")
     })
     return schema.validate(data);
