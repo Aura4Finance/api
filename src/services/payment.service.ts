@@ -216,7 +216,7 @@ export class PaymentService {
       await this.confirmPayment(
         tx.id,
         String(tx.customerId),
-        tx.amount,
+        tx.amountInUSDC,
         String(customer?.email),
         String(customer?.firstname),
         tx.profile.businessName,
