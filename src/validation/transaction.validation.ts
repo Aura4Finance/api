@@ -73,7 +73,7 @@ export const transactionModeSchemaValidation = (data: GetTransactionMetrics) => 
 
 export const queryDashboardSchemaValidation = (data: any) => {
     const schema = Joi.object({
-        mode: Joi.string().valid("test", "live").required(),
+        mode: Joi.string().valid("test", "live").optional(),
     })
     return schema.validate(data);
 }
