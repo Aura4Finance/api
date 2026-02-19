@@ -119,7 +119,15 @@ export class TransactionRepository {
             },
           },
         },
-        payment: true,
+        payment: {
+          include: {
+            wallet: {
+              select: {
+                pubKey: true,
+              },
+            }
+          }
+        },
         payout: true,
         refund: true,
       },
