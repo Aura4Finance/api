@@ -3,7 +3,7 @@ import { UserRepository } from "@/repositories/user/user.repository";
 import { Service } from "typedi";
 import db from "@/config/db-config";
 import os from "os";
-import { Mode } from "../../generated/prisma";
+import { Mode, TransactionStatus } from "../../generated/prisma";
 import { CustomerRepository } from "@/repositories/customer.repository";
 
 @Service()
@@ -14,9 +14,9 @@ export class Metrics {
     private readonly customerRepository: CustomerRepository
   ) {}
 
-  async getTransactionMetrics(mode: Mode = Mode.live) {
+  async getTransactionMetrics(mode: Mode = Mode.live, status: TransactionStatus = TransactionStatus["COMPLETED"]) {
     const transactionMetrics =
-      await this.transactionRepository.getTransactionMetrics({ mode });
+      await this.transactionRepository.getTransactionMetrics({ mode, status });
 
     return {
       message: "Transaction metrics retrieved successfully",

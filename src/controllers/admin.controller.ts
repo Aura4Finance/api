@@ -265,7 +265,7 @@ export class AdminController {
       })
     }
     const query = value as GetTransactionMetrics;
-    const { message, payload } = await this.metrics.getTransactionMetrics(query.mode);
+    const { message, payload } = await this.metrics.getTransactionMetrics(query.mode, query.status);
 
     return res.status(STATUS.ok).json({
       success: true,
