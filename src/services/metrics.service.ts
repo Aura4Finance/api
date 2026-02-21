@@ -38,12 +38,14 @@ export class Metrics {
     const { total, live, onboarded } =
       await this.userRepository.merchantStats();
     const leaderboard = await this.userRepository.getTopMerchants(limit);
+    const stats = await this.userRepository.getMerchantsOnboardedLast10Days();
     return {
       message: "Merchant metrics retrieved successfully",
       payload: {
         total,
         live,
         onboarded,
+        stats,
         leaderboard,
       },
     };

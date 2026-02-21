@@ -488,4 +488,66 @@ export class UserRepository {
       profile: profiles.find((p: { id: string }) => p.id === m.profileId),
     }));
   }
+
+  async getMerchantsOnboardedLast10Days() {
+    const days = 10;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - (days - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    const raw = await db.user.groupBy({
+      by: ["createdAt"],
+      where: {
+        role: "MERCHANT",
+        businessProfile: {
+          onboarded: true,
+        },
+        createdAt: {
+          gte: startDate,
+          lte: today,
+        },
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Normalize by day
+    const dailyMap = new Map<string, number>();
+
+    for (const row of raw) {
+      const dayKey = row.createdAt.toISOString().split("T")[0];
+      const existing = dailyMap.get(dayKey || "") ?? 0;
+      dailyMap.set(dayKey || "", existing + row._count._all);
+    }
+
+    // Fill missing days
+    const result: Array<{
+      date: string;
+      label: string;
+      count: number;
+    }> = [];
+
+    for (let i = 0; i < days; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+
+      const key = d.toISOString().split("T")[0];
+
+      result.unshift({
+        date: key || "",
+        label:
+          i === 0
+            ? "Today"
+            : d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        count: dailyMap.get(key || "") ?? 0,
+      });
+    }
+
+    return result;
+  }
 }
