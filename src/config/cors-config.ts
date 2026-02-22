@@ -19,7 +19,7 @@ const CORS_OPTIONS: CorsOptions = {
     callback(null, false);
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "x-api-key", "payment-link-id"],
 };
 
