@@ -259,9 +259,8 @@ export class UserRepository {
     if (countryList)
       where.businessProfile.country = { in: countryList.split(",") };
 
-    // nested filter for disabled (inside user)
     if (disabled !== undefined) {
-      where.user = { disabled: disabled === true };
+      where.disabled = disabled === true;
     }
 
     if (search) {
