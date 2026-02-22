@@ -47,6 +47,7 @@ export class MerchantManagementService {
         if (!merchant || merchant.role !== "MERCHANT") {
             throw new APIError("Merchant not found", STATUS.notFound);
         }
+        await this.userRepository.updateUserStatus(merchant.id, true);
         return { 
             message: "Merchant disabled successfully" 
         };
