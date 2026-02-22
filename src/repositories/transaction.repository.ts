@@ -543,4 +543,57 @@ export class TransactionRepository {
       failed: raw.find(item => item.status === "FAILED")?._count._all || 0,
     }
   }
+
+  async getAverageRevenuePerMerchant(mode: Mode = Mode.live) {
+    // Total completed transaction volume grouped by merchant
+    const merchantRevenues = await db.transaction.groupBy({
+      by: ["profileId"],
+      where: {
+        status: TransactionStatus.COMPLETED,
+        mode,
+      },
+      _sum: {
+        amount: true,
+        amountInUSDC: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const merchantCount = merchantRevenues.length;
+
+    if (merchantCount === 0) {
+      return {
+        averageRevenue: 0,
+        averageRevenueInUSDC: 0,
+        averageTransactionCount: 0,
+        totalMerchants: 0,
+      };
+    }
+
+    const totalRevenue = merchantRevenues.reduce(
+      (sum, m) => sum + (m._sum.amount ?? 0),
+      0
+    );
+    const totalRevenueInUSDC = merchantRevenues.reduce(
+      (sum, m) => sum + (m._sum.amountInUSDC ?? 0),
+      0
+    );
+    const totalTransactions = merchantRevenues.reduce(
+      (sum, m) => sum + m._count._all,
+      0
+    );
+
+    return {
+      averageRevenue: Number((totalRevenue / merchantCount).toFixed(2)),
+      averageRevenueInUSDC: Number(
+        (totalRevenueInUSDC / merchantCount).toFixed(2)
+      ),
+      averageTransactionCount: Number(
+        (totalTransactions / merchantCount).toFixed(1)
+      ),
+      totalMerchants: merchantCount,
+    };
+  }
 }

@@ -39,6 +39,7 @@ export class Metrics {
       await this.userRepository.merchantStats();
     const leaderboard = await this.userRepository.getTopMerchants(limit);
     const stats = await this.userRepository.getMerchantsOnboardedLast10Days();
+    const revenueByMerchant = await this.transactionRepository.getAverageRevenuePerMerchant();
     return {
       message: "Merchant metrics retrieved successfully",
       payload: {
@@ -47,6 +48,7 @@ export class Metrics {
         onboarded,
         stats,
         leaderboard,
+        revenueByMerchant,
       },
     };
   }
