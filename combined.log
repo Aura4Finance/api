@@ -5726,3 +5726,6 @@
 {"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-22T21:31:43.158Z"}
 {"level":"info","message":"🚀 Starting server...","timestamp":"2026-02-22T21:32:16.737Z"}
 {"level":"info","message":"Connected to Redis successfully","timestamp":"2026-02-22T21:32:17.166Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-22T21:32:18.781Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-22T21:32:19.008Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-22T21:32:19.087Z"}
