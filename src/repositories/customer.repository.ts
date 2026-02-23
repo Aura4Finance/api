@@ -7,13 +7,19 @@ import { GetCustomersQueryDto } from "@/dto/customer.dto";
 
 @Service()
 export class CustomerRepository {
-  async findCustomerbyEmailorWalletAddress(email: string, userId: string) {
+  async findCustomerbyEmailorId(emailOrId: string, userId: string) {
     const result = await db.userCustomer.findFirst({
       where: {
         profileId: userId,
         customer: {
-          email,
+          OR: [
+            { email: emailOrId },
+            { id: emailOrId },
+          ],
         },
+      },
+      include: {
+        customer: true,
       },
     });
 

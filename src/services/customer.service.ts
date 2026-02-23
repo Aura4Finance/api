@@ -16,7 +16,7 @@ export class CustomerService {
 
     const profileId = (await this.userRepository.findUserById(userId))?.businessProfile?.id;
     const existingCustomer =
-      await this.customerRepository.findCustomerbyEmailorWalletAddress(
+      await this.customerRepository.findCustomerbyEmailorId(
         email,
         profileId as string
       );
