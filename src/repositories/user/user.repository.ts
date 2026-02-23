@@ -302,6 +302,11 @@ export class UserRepository {
             businessName: true,
             businessSector: true,
             country: true,
+            wallet: {
+              select: {
+                pubKey: true,
+              }
+            }
           },
         },
       },
