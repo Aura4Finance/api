@@ -21,7 +21,7 @@ export class MerchantManagementService {
     }
 
     async getMerchantById(userId: string) {
-        const merchant = await this.userRepository.findUserById(userId);
+        const merchant = await this.userRepository.findMerchantByEmailIdOrPubKey(userId);
         if (!merchant || merchant.role !== "MERCHANT") {
             throw new APIError("Merchant not found", STATUS.notFound);
         }
@@ -33,11 +33,6 @@ export class MerchantManagementService {
         if (!merchant || merchant.role !== "MERCHANT") {
             throw new APIError("Merchant not found", STATUS.notFound);
         }
-        return merchant;
-    }
-
-    async getMerchantByPublicKey(walletAddress: string){
-        const merchant = await this.userRepository.findUserByPublicKey(walletAddress);
         return merchant;
     }
 

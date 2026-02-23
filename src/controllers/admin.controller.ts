@@ -147,12 +147,7 @@ export class AdminController {
 
   async getMerchant(req: Request, res: Response) {
     const { id } = req.params;
-    let merchant: any;
-    try {
-      merchant = await this.merchantManagementService.getMerchantById(id as string)
-    } catch (_) {
-      merchant = await this.merchantManagementService.getMerchantByPublicKey(id as string)
-    }
+    const merchant = await this.merchantManagementService.getMerchantById(id as string)
     return res.status(STATUS.ok).json({
       success: true,
       message: "Merchant retrieved successfully",

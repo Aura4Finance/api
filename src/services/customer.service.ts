@@ -66,7 +66,7 @@ export class CustomerService {
       if(!profile){
         throw new APIError("Invalid user ID!", STATUS.bad);
       }
-       customer = await this.customerRepository.findCustomerById(customerId, profile.businessProfile?.id);
+       customer = await this.customerRepository.findCustomerbyEmailorId(customerId, profile.businessProfile?.id);
     }else {
       customer = await this.customerRepository.findCustomerbyEmailorId(customerId);
     }
