@@ -549,4 +549,36 @@ export class UserRepository {
 
     return result;
   }
+
+  async findMerchantByEmailIdOrPubKey(emailIdOrPubKey: string) {
+    const user = await db.user.findFirst({
+      where: {
+        role: "MERCHANT",
+        OR: [
+          { id: emailIdOrPubKey },
+          { email: emailIdOrPubKey },
+          {
+            businessProfile: {
+              wallet: {
+                some: { pubKey: emailIdOrPubKey },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        businessProfile: {
+          include: {
+            wallet: {
+              select: {
+                pubKey: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return user;
+  }
 }

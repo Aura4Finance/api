@@ -68,7 +68,7 @@ export class CustomerService {
       }
        customer = await this.customerRepository.findCustomerById(customerId, profile.businessProfile?.id);
     }else {
-      customer = await this.customerRepository.findCustomerById(customerId);
+      customer = await this.customerRepository.findCustomerbyEmailorId(customerId);
     }
 
     if (!customer) {
