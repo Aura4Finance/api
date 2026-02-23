@@ -4,6 +4,7 @@ const allowedOrigins = [
   "https://paylink.orafi.app",
   "https://checkout.orafi.app",
   "https://auth.orafi.app",
+  "https://admin.orafi.app",
   "http://localhost:5173",
 ];
 

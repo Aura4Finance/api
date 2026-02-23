@@ -56,7 +56,6 @@ export const verifyAccessToken = async (
     (req as any).exp = (decoded as any).exp;
     next();
   } catch (err) {
-    console.log(err)
     throw new APIError("Invalid access token", STATUS.unauthorized);
   }
 };
