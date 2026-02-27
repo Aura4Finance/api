@@ -6,7 +6,7 @@ import { PayoutController } from "@/controllers/payout.controller";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";
 
 const payOutController = Container.get(PayoutController);
-const router = express.Router();
+const router = express.Router(); 
 
 router.get(
     "/balances",

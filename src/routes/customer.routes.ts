@@ -9,7 +9,7 @@ const router = express.Router();
 const customerController = Container.get(CustomerController);
 
 router.post(
-  "/create",
+  "/",
   verifyRequestBody,
   asyncHandler((req: RequestAuth, res: Response) =>
     customerController.createCustomer(req, res)

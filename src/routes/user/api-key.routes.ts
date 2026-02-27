@@ -9,7 +9,7 @@ const router = express.Router();
 const apiKeyController = Container.get(ApiKeyController);
 
 router.post(
-  "/create",
+  "/",
   asyncHandler((req: RequestAuth, res: Response) =>
     apiKeyController.generateApiKeys(req, res)
   )
