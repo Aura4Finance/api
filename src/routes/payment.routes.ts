@@ -10,7 +10,7 @@ const router = express.Router();
 const paymentController = Container.get(PaymentController);
 
 router.get(
-  "/retrieve",
+  "/",
   asyncHandler((req: RequestAuth, res: Response) => 
     paymentController.retrievePaymentInformation(req, res)
 )
@@ -18,7 +18,7 @@ router.get(
 
 router.use(verifyRequestBody);
 router.post(
-  "/create",
+  "/",
   verifyApiKey,
   asyncHandler((req: RequestAuth, res: Response) =>
     paymentController.createPayment(req, res)

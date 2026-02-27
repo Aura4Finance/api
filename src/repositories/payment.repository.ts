@@ -1,7 +1,7 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
 import {encrypt} from "@/utils/encryption-handler";
-import { Customer, Mode, PaymentMethod, Token, TransactionStatus, TransactionType } from "../../generated/prisma";
+import { Customer, Mode, Network, PaymentMethod, Token, TransactionStatus, TransactionType } from "../../generated/prisma";
 
 type TransferAddress = {
   publicKey: string;
@@ -23,6 +23,8 @@ export class PaymentRepository {
   async createPayment(
     amount: number,
     amountInUSDC: number,
+    currency: string,
+    network: Network,
     customer: Customer,
     txRef: string,
     depositAddress: string,
@@ -70,6 +72,8 @@ export class PaymentRepository {
       type: TransactionType.PAYMENT,
       status: TransactionStatus.PENDING,
       amount,
+      currency,
+      network,
       amountInUSDC,
       mode,
       token: Token.USDC,

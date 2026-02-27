@@ -6,8 +6,8 @@ export const addSettlementAccountSchemaValidation = (
 ) => {
   const schema = Joi.object({
     walletAddress: Joi.string().required(),
-    bytes: Joi.string().required(),
-    signature: Joi.string().required()
+    network: Joi.valid("SUI"),
+    alias: Joi.string().required()
   });
 
   return schema.validate(data);

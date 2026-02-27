@@ -1,11 +1,14 @@
-import { Paylink, PaymentMethod } from "../../generated/prisma";
+import { Network, Paylink, PaymentMethod } from "../../generated/prisma";
 
 export interface CreatePaymentDto {
   amount: number;
-  customer: {
+  customer?: {
     fullname: string;
     email: string;
   };
+  customerId?: string,
+  currency: string,
+  network: Network,
   txRef: string;
   type: PaymentMethod,
   redirectUrl?: string,

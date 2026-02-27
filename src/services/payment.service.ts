@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Mode } from "../../generated/prisma";
+import { Customer, Mode } from "../../generated/prisma";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
@@ -30,8 +30,7 @@ export class PaymentService {
   ) { }
 
   private async setActiveNetwork(mode: Mode) {
-    if (mode === "live") this.client = new SuiClient({ url: getFullnodeUrl("mainnet") });
-    if (mode === "test") this.client = new SuiClient({ url: getFullnodeUrl("testnet") });
+    this.client = new SuiClient({ url: getFullnodeUrl(`${mode === "live"? "mainnet": "testnet"}`) });
   }
 
   async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
@@ -40,35 +39,56 @@ export class PaymentService {
     try {
       const {
         amount,
-        customer: { email: customerEmail, fullname: customerFullname },
+        customer: customerDetails,
+        currency,
+        network,
+        customerId,
         txRef,
         type,
         redirectUrl,
         payLink
       } = data;
 
-      // Parse and validate customer name
-      const [customerFirstname, customerLastname] = customerFullname.split(" ");
-      if (!customerFirstname || !customerLastname) {
-        throw new APIError("Invalid customer name format", STATUS.bad);
+      let customer: Customer;
+
+      if (customerId) {
+        const existingCustomer = await this.customerRepository.findCustomerById(customerId);
+        if (!existingCustomer) {
+          throw new APIError("Customer not found!", STATUS.notFound);
+        }
+        customer = existingCustomer;
+      } else if (customerDetails) {
+        const { fullname, email } = customerDetails;
+        const [customerFirstname, customerLastname] = fullname.trim().split(" ");
+
+        if (!customerFirstname || !customerLastname) {
+          throw new APIError("Invalid customer name format!", STATUS.bad);
+        }
+
+        const existingCustomer = await this.customerRepository.findCustomer(email);
+        if (!existingCustomer) {
+          customer = await this.customerRepository.createCustomer(
+            customerFirstname,
+            customerLastname,
+            email,
+            user?.businessProfile?.id as string,
+            mode
+          );
+        } else {
+          customer = existingCustomer;
+        }
+      } else {
+        throw new APIError("Customer ID or detail format not found!", STATUS.bad);
       }
 
-      // Check for existing customer
-      const existingCustomer = await this.customerRepository.findCustomer(
-        customerEmail
-      );
-      let customer = existingCustomer;
-      if (!customer) {
-        customer = await this.customerRepository.createCustomer(
-          customerFirstname,
-          customerLastname,
-          customerEmail,
-          user?.businessProfile?.id as string,
-          mode
-        );
-      }
       await this.customerRepository.addModeToCustomer(customer.id, mode);
-      const amountToPay = await this.walletService.convertBetweenNGNAndUSDT(((payLink && type == "PAYMENT_LINK") ? payLink.amount : amount), "NGN_TO_USDT");
+      const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
+        ((payLink && type == "PAYMENT_LINK")
+          ? payLink.amount
+          : amount
+        ),
+        currency,
+        "to_USDT");
       const depositAddress = await this.walletService.generatePaymentWallet(
         user?.businessProfile?.wallet[0]?.pubKey as string,
         amountToPay,
@@ -81,6 +101,8 @@ export class PaymentService {
         transaction = await this.paymentRepository.createPayment(
           amount,
           amountToPay,
+          currency,
+          network,
           customer,
           txRef,
           depositAddress,
@@ -96,6 +118,8 @@ export class PaymentService {
         transaction = await this.paymentRepository.createPayment(
           <number>payLink?.amount,
           amountToPay,
+          currency,
+          network,
           customer,
           txRef,
           depositAddress,
@@ -273,7 +297,7 @@ export class PaymentService {
         }
       }
     }
-    
+
     await this.webhookQueue.addScheduler(tx.profileId, {
       event,
       data: {

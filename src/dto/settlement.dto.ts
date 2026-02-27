@@ -1,5 +1,7 @@
+import { Network } from "../../generated/prisma";
+
 export interface AddSettlementAccountDto {
   walletAddress: string;
-  bytes: string;
-  signature: string;
+  alias: string;
+  network: Network;
 }

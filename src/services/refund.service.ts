@@ -153,6 +153,8 @@ export class RefundServices {
         const refundTx = await this.refundRepository.createRefund(
             paymentTx.amount,
             paymentTx.amountInUSDC,
+            paymentTx.network,
+            paymentTx.currency,
             reason,
             paymentTx.id,
             to,

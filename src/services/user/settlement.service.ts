@@ -1,11 +1,10 @@
 import { STATUS } from "@/constants/status.constant";
 import { AddSettlementAccountDto } from "@/dto/settlement.dto";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
-import { verifyPersonalMessageSignature } from '@mysten/sui/verify';
 import { UserRepository } from "@/repositories/user/user.repository";
 import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
-import { fromBase64, isValidSuiAddress } from "@mysten/sui/utils";
+import { isValidSuiAddress } from "@mysten/sui/utils";
 
 @Service()
 export class SettlementService {
@@ -20,20 +19,9 @@ export class SettlementService {
       throw new APIError("Invalid SUI wallet address", STATUS.bad);
     }
     const user = await this.userRepository.findUserById(userId);
-    let publicKey;
-    try{
-      publicKey = await verifyPersonalMessageSignature(fromBase64(body.bytes), body.signature);
-    } catch(err: any){
-      console.log(err)
-      throw new APIError(`Error: ${err.message}`, STATUS.bad);
-    }
-
-    if(!publicKey.verifyAddress(body.walletAddress)){
-      throw new APIError("Invalid message signature", STATUS.bad);
-    }
-
     const existingAccount = await this.settlementRepository.findSettlemtAccountByAddress(
         body.walletAddress,
+        body.network,
         <string>user?.businessProfile?.id
       );
 
@@ -43,6 +31,8 @@ export class SettlementService {
 
     await this.settlementRepository.addSettlementAccount(
       body.walletAddress,
+      body.network,
+      body.alias,
       <string>user?.businessProfile?.id
     );
 

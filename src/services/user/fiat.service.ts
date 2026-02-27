@@ -12,12 +12,12 @@ export class FiatService {
         private readonly userRepository: UserRepository
     ) { }
 
-    async getRates() {
+    async getRates(currency: string) {
         let response: any;
         try {
             response = await payfricaClient.get("/rates", {
                 params: {
-                    currency: "NGN",
+                    currency,
                     type: "offramp",
                     crypto: "USDC"
                 }
@@ -33,7 +33,7 @@ export class FiatService {
                 rateDescription: response.data.rateDescription
             }
         }
-    }
+    } 
 
     async getBanks() {
         let response: any;

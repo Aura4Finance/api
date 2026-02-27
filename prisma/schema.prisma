@@ -139,6 +139,9 @@ enum PayOutMethod {
   CRYPTO
   FIAT
 }
+enum Network {
+  SUI
+}
 
 enum Token {
   USDC
@@ -160,6 +163,8 @@ model Transaction {
   id                String            @id @default(cuid()) @map("_id")
   type              TransactionType
   status            TransactionStatus @default(PENDING)
+  currency          String
+  network           Network
   amount            Float
   amountInUSDC      Float
   mode              Mode
@@ -250,6 +255,8 @@ model FiatAccount {
 model CryptoAccount {
   id            String           @id @default(uuid()) @map("_id")
   walletAddress String
+  network       Network
+  alias         String           @unique()
   payouts       Payout[]
   profileId     String
   profile       BusinessProfile? @relation(fields: [profileId], references: [id])

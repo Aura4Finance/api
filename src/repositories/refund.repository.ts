@@ -1,7 +1,7 @@
 import db from "config/db-config";
 import { Service } from "typedi";
 import { RefundQueryDto } from "@/dto/refund.dto";
-import { Mode } from "../../generated/prisma";
+import { Mode, Network } from "../../generated/prisma";
 
 
 
@@ -10,6 +10,8 @@ export class RefundRepository {
     async createRefund(
         amount: number,
         amountInUSDC: number,
+        network: Network,
+        currency: string,
         reason: string,
         originalTxId: string,
         walletAddress: string,
@@ -23,6 +25,8 @@ export class RefundRepository {
                 status: "PENDING",
                 amount,
                 amountInUSDC,
+                network,
+                currency,
                 mode,
                 token: "USDC",
                 profile: {

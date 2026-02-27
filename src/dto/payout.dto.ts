@@ -1,7 +1,9 @@
+import { Network } from "../../generated/prisma";
+
 export interface CryptoPayOutDto {
     walletAddress?: string;
-    bytes?: string,
-    signature?: string,
+    alias?: string,
+    network: Network
     cryptoSettlementAccountId?: string,
     save?: boolean;
     amount: number

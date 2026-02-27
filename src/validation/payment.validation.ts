@@ -5,9 +5,12 @@ export const createPaymentValidation = (data: CreatePaymentDto) => {
   const schema = Joi.object({
     amount: Joi.number().min(1).required(),
     customer: Joi.object({
-      fullname: Joi.string().required(),
-      email: Joi.string().email().required(),
+      fullname: Joi.string().optional(),
+      email: Joi.string().email().optional(),
     }),
+    customerId: Joi.string().optional(),
+    currency: Joi.string().required(),
+    network: Joi.valid("SUI"),
     txRef: Joi.string().optional(),
     redirectUrl: Joi.string().optional()
   });

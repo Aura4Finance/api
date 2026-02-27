@@ -13,6 +13,7 @@ import paylinkRoutes from "./paylink.routes";
 import customersRoutes from "./customer.routes";
 import paymentRoutes from "./payment.routes";
 import notificationRoutes from "./user/notification.routes"
+import extraRoutes from "./extras/routes";
 
 import { checkUserRole, verifyAccessToken, verifyApiKey } from "@/middlewares/user.milddleware";
 
@@ -36,6 +37,7 @@ dashboardRouter.use("/notification", notificationRoutes);
 const apiRouter = express.Router();
 apiRouter.use("/user", dashboardRouter);
 apiRouter.use("/transactions/payment", paymentRoutes);
+apiRouter.use("/", extraRoutes);
 apiRouter.use(verifyApiKey);
 apiRouter.use("/paylink", paylinkRoutes);
 apiRouter.use("/webhook", webhookRoutes);
@@ -46,6 +48,7 @@ apiRouter.use("/settlement/crypto", settlementRoutes);
 apiRouter.use("/settlement/fiat", fiatRoutes);
 apiRouter.use("/customers", customersRoutes);
 apiRouter.use("/notification", notificationRoutes);
+
 
 export default apiRouter;
 

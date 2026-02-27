@@ -1,5 +1,5 @@
 import { RequestAuth } from "@/@types/request";
-import { Response } from "express";
+import { Request, Response } from "express";
 import { STATUS } from "@/constants/status.constant";
 import { FiatService } from "@/services/user/fiat.service";
 import { Service } from "typedi";
@@ -21,8 +21,6 @@ export class FiatController {
         private readonly fiatService: FiatService
     ) { }
 
-
-
     async getBanks(_: Request, res: Response) {
         const { payload, message } = await this.fiatService.getBanks();
 
@@ -33,8 +31,15 @@ export class FiatController {
         })
     }
 
-    async getRates(_: Request, res: Response) {
-        const { payload, message } = await this.fiatService.getRates();
+    async getRates(req: Request, res: Response) {
+        if (!(typeof req.query.currency === "string")) {
+            return res.status(STATUS.bad).json({
+                success: false,
+                message: "Invalid currency parameter",
+                data: null
+            })
+        }
+        const { payload, message } = await this.fiatService.getRates(req.query.currency || "NGN");
         return res.status(STATUS.ok).json({
             success: true,
             message,
@@ -97,7 +102,7 @@ export class FiatController {
     }
 
     async deleteAccount(req: RequestAuth, res: Response) {
-       const { error, value } = deleteAccountSchemaValidation(req.params as any);
+        const { error, value } = deleteAccountSchemaValidation(req.params as any);
         if (error) {
             return res.status(STATUS.bad).json({
                 success: false,

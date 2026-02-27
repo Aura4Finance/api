@@ -9,8 +9,6 @@ import { decrypt } from "@/utils/encryption-handler";
 import { PayoutRepository } from "@/repositories/payout.repository";
 import { TransactionStatus, TransactionType } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
-import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
-import { fromBase64 } from "@mysten/sui/utils";
 
 @Service()
 export class PayoutService {
@@ -236,27 +234,16 @@ export class PayoutService {
             to = settlementAccount.walletAddress;
         }else 
             if(body.walletAddress) {
-              if(!body.bytes || !body.signature) {
-                throw new APIError("Payouts without a saved settlement account requires a signed message bytes and signature", STATUS.bad);
-            }
-            let publicKey;
-                try{
-                  publicKey = await verifyPersonalMessageSignature(fromBase64(body.bytes), body.signature);
-                } catch(err: any){
-                  throw new APIError(`Error: ${err.message}`, STATUS.bad);
-                }
-            if(!publicKey.verifyAddress(body.walletAddress)){
-                throw new APIError("Invalid signature/byte", STATUS.bad);
-            }
             to = body.walletAddress;
             if(body.save){
-                await this.settlementRepository.addSettlementAccount(body.walletAddress, userId);
+                if(!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
+                await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id);
             } 
         }else {
             throw new APIError("Settlemtment account or wallet address is required", STATUS.bad);
         }
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
-        const amountInNGN = await this.walletService.convertBetweenNGNAndUSDT(body.amount, "USDT_TO_NGN");
+        const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "", "from_USDT");
         const payout = await this.payoutRepository.createCryptoPayout(
             amountInNGN,
             body.amount,

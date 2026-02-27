@@ -5,8 +5,9 @@ import axios from "axios";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { SuiClient } from "@mysten/sui/client";
+import coinMarketClient from "@/config/coinMarketClient-config";
 
-type ConversionDirection = 'NGN_TO_USDT' | 'USDT_TO_NGN';
+type ConversionDirection = 'to_USDT' | 'from_USDT';
 @Service()
 export class WalletService {
   private smart_contract_address: any;
@@ -219,44 +220,41 @@ async splitSendToMerchantsAndAdmin(
 }
 
 
-async convertBetweenNGNAndUSDT(
+async convertBetweenCurrencyAndUSDT(
   amount: number,
+  currency: string,
   direction: ConversionDirection
 ) {
-  const res = await axios.get(
-    'https://pro-api.coinmarketcap.com/v1/tools/price-conversion',
-    {
-      params: {
-        amount: 1,
-        symbol: 'USDT',
-        convert: 'NGN',
-      },
-      headers: {
-        Accept: 'application/json',
-        'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY!,
-      },
-    }
-  );
+  if (!amount || amount <= 0) {
+    throw new APIError('Invalid amount', STATUS.bad);
+  }
+
+  // Determine base and convert symbols dynamically
+  const isToUSDT = direction === 'to_USDT';
+
+  const symbol = isToUSDT ? currency : 'USDT';
+  const convert = isToUSDT ? 'USDT' : currency;
+
+  const res = await coinMarketClient.get("/tools/price-conversion", {
+    params: {
+      amount,
+      symbol,
+      convert,
+    },
+  });
 
   if (
     res.status !== 200 ||
     res.data?.status?.error_code !== 0 ||
-    !res.data?.data?.quote?.NGN?.price
+    !res.data?.data?.quote?.[convert]?.price
   ) {
     throw new APIError(
-      'Unable to resolve USDT price',
+      'Unable to resolve conversion rate',
       STATUS.serverError
     );
   }
 
-  const usdtPriceInNGN = res.data.data.quote.NGN.price;
-
-  if (direction === 'NGN_TO_USDT') {
-    return amount / usdtPriceInNGN;
-  }
-
-  // USDT_TO_NGN
-  return amount * usdtPriceInNGN;
+  return res.data.data.quote[convert].price;
 }
 
   

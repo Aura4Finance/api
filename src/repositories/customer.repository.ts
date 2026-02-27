@@ -207,13 +207,13 @@ export class CustomerRepository {
   }
 
 
-  async findCustomerById(customerId: string, userId?: string) {
+  async findCustomerById(customerId: string, profileId?: string) {
     let where: any = {}
 
-    if (userId) {
+    if (profileId) {
       where.userCustomers = {
         some: {
-          profileId: userId,
+          profileId,
           customerId,
         },
       }

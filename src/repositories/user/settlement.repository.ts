@@ -1,15 +1,17 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
+import { Network } from "../../../generated/prisma";
 
 @Service()
 export class SettlementRepository {
   async findSettlemtAccountByAddress(
     walletAddress: string,
+    network: Network,
     businessProfileId: string
   ) {
     return await db.cryptoAccount.findFirst({
       where: {
-        AND: [{ walletAddress }, { profileId: businessProfileId }],
+        AND: [{ walletAddress }, { profileId: businessProfileId }, { network }],
       },
     });
   }
@@ -26,10 +28,16 @@ export class SettlementRepository {
     });
   }
 
-  async addSettlementAccount(walletAddress: string, businessProfileId: string) {
+  async addSettlementAccount(
+    walletAddress: string, 
+    network: Network, 
+    alias: string,
+    businessProfileId: string) {
     await db.cryptoAccount.create({
       data: {
         walletAddress,
+        alias,
+        network,
         profile: {
           connect: {
             id: businessProfileId,
