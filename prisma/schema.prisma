@@ -24,6 +24,8 @@ model User {
   emailVerified   Boolean          @default(false)
   disabled        Boolean          @default(false)
   createdAt       DateTime         @default(now())
+  twoFactorEnabled  Boolean        @default(false)
+  twoFactorSecret String           @default("")
 }
 
 enum Provider {

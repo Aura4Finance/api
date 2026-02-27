@@ -17,6 +17,7 @@ import {
   otpSchemaValidation,
   resendOtpSchemaValidation,
   resetPasswordSchemaValidation,
+  verify2FASchemaValidation,
 } from "../validation/auth.validation";
 import { formatErrorValidation } from "../utils/format-validation-error";
 import { RequestAuth } from "@/@types/request";
@@ -106,10 +107,30 @@ export class AuthController {
       success: true,
       message,
       data: {
-        code: payload.otp,
+        code: payload,
       },
     });
   }
+
+  async continueWith2FA(req: Request, res: Response) {
+    const { error, value } = verify2FASchemaValidation(req.body);
+
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error),
+      });
+    }
+    const { userId, token } = value;
+
+    const { payload, message } = await this.authService.verify2FAAndGenerateToAccessToken(userId, token);
+    return res.status(STATUS.ok).json({
+      success: true,
+      message,
+      data: payload
+    });
+  }
+
 
   async signOut(req: RequestAuth, res: Response) {
     const { jti, exp } = req;

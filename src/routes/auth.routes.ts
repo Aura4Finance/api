@@ -36,6 +36,13 @@ router.post(
   asyncHandler((req: Request, res: Response) => 
     authController.signIn(req, res))
 );
+
+router.post(
+  "/login/2fa",
+  asyncHandler((req: Request, res: Response) => 
+    authController.continueWith2FA(req, res))
+);
+
 router.post(
   "/logout",
   verifyAccessToken,

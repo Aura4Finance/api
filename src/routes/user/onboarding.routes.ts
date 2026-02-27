@@ -16,4 +16,19 @@ router.post(
   )
 );
 
+router.post(
+  "/2fa/setup",
+  asyncHandler((req: RequestAuth, res: Response) =>
+    userController.setup2FA(req, res)
+  )
+);
+
+router.post(
+  "/2fa/verify",
+  asyncHandler((req: RequestAuth, res: Response) =>
+    userController.verify2FA(req, res)
+  )
+);
+
 export default router;
+``

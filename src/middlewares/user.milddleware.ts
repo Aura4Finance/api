@@ -6,8 +6,7 @@ import Container from "typedi";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { RequestAuth } from "@/@types/request";
 import { ApiKeyService } from "@/services/user/api-key.service";
-
-const userRepository = Container.get(UserRepository);
+import speakeasy from "speakeasy";
 import logger from "@/utils/logger";
 import { PaymentMethod, Role } from "../../generated/prisma";
 import { PaylinkRepository } from "@/repositories/paylink.repository";
@@ -15,6 +14,7 @@ import { redisClient } from "./rate-limit.middleware";
 
 
 
+const userRepository = Container.get(UserRepository);
 export const verifyAccessToken = async (
   req: Request,
   _: Response,
@@ -94,7 +94,7 @@ export const verifyApiKey = async (
   _: Response,
   next: NextFunction
 ) => {
-   const publicRoutes = [
+  const publicRoutes = [
     { method: "GET", path: /^\/paylink\/[^/]+$/ }, // GET /paylink/:id
   ];
 
@@ -157,10 +157,43 @@ export const verifyPaylink = async (
   }
 
   const profile = await userRepository.findUserById(paylink.profile.userId);
-  if(!profile) return;
+  if (!profile) return;
   (req as any).user = profile;
   (req as any).mode = paylink.mode;
   (req as any).payLink = paylink;
   (req as any).type = PaymentMethod.PAYMENT_LINK;
+  next();
+}
+
+export const verifyActionUsing2FA = async (
+  req: Request,
+  _: Response,
+  next: NextFunction
+) => {
+  // Only enforce 2FA for high-risk POST actions:
+  // 1. API key creation/regeneration (POST /api-keys, /api-keys/regenerate)
+  // 2. Initiating a payout (POST /transactions/payout/crypto, /transactions/payout/crypto/retry)
+  // 3. Initiating a refund (POST /transactions/refund, /transactions/refund/retry)
+  if (req.method !== "POST") {
+    return next();
+  }
+
+  const token = Array.isArray(req.headers["2-fa-key"])
+    ? req.headers["2-fa-key"][0]
+    : req.headers["2-fa-key"];
+  if(!token){
+    throw new APIError("2FA token not found!", STATUS.bad);
+  }
+  const userId = req.user?.id;
+  const user = await userRepository.findUserById(<string>userId);
+  const verified = speakeasy.totp.verify({
+    secret: <string>user?.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 1
+  });
+  if (!verified) {
+    throw new APIError("Invalid 2FA token", STATUS.bad);
+  }
   next();
 }

@@ -85,3 +85,11 @@ export const exchangeCodeForAccessTokenValidation = (data: AuthCodeDto) => {
 
   return schema.validate(data);
 }
+
+export const verify2FASchemaValidation = (data: { userId: string, token: string }) => {
+  const schema = Joi.object({
+    userId: Joi.string().required(),
+    token: Joi.string().min(6).max(6).required(),
+  });
+  return schema.validate(data);
+}

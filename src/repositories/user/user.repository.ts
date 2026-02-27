@@ -49,6 +49,16 @@ export class UserRepository {
     return privateKey;
   }
 
+  async findUserByIdAndUpdate2FA(userId: string, secret: string) {
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorSecret: secret,
+        twoFactorEnabled: true,
+      },
+    });
+  }
+
   async findUserByEmail(email: string) {
     const user = await db.user.findUnique({
       where: { email },

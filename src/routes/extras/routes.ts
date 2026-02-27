@@ -63,7 +63,7 @@ router.get(
   asyncHandler(async (_: Request, res: Response) => {
     const networks = [
       {
-        id: "sui",
+        code: "00001",
         name: "Sui",
         symbol: "SUI",
         chainId: "mainnet|testnet",

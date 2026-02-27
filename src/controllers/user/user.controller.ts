@@ -32,4 +32,27 @@ export class UserController {
       data: payload,
     });
   }
+
+  async setup2FA(req: RequestAuth, res: Response) {
+      const userId = req.user.id;
+      const { payload, message } = await this.userService.setup2FA(userId);
+
+      return res.status(STATUS.ok).json({
+        success: true,
+        message,
+        data: payload,
+      });
+  }
+
+  async verify2FA(req: RequestAuth, res: Response) {
+    const userId = req.user.id;
+    const { token } = req.body;
+    const { payload, message } = await this.userService.verify2FA(userId, token);
+
+    return res.status(STATUS.ok).json({
+      success: true,
+      message,
+      data: payload,
+    });
+  }
 }

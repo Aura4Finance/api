@@ -15,18 +15,18 @@ import paymentRoutes from "./payment.routes";
 import notificationRoutes from "./user/notification.routes"
 import extraRoutes from "./extras/routes";
 
-import { checkUserRole, verifyAccessToken, verifyApiKey } from "@/middlewares/user.milddleware";
+import { checkUserRole, verifyAccessToken, verifyActionUsing2FA, verifyApiKey } from "@/middlewares/user.milddleware";
 
 const dashboardRouter = express.Router();
 
 dashboardRouter.use(verifyAccessToken);
 dashboardRouter.use(checkUserRole("MERCHANT"));
 dashboardRouter.use("/onboarding", onboardingRoutes);
-dashboardRouter.use("/transactions", transactionRoutes);
+dashboardRouter.use("/transactions", verifyActionUsing2FA, transactionRoutes);
 dashboardRouter.use("/profile", profileRoutes);
 dashboardRouter.use("/settlement/crypto", settlementRoutes);
 dashboardRouter.use("/settlement/fiat", fiatRoutes);
-dashboardRouter.use("/api-keys", apiKeyRoutes);
+dashboardRouter.use("/api-keys", verifyActionUsing2FA, apiKeyRoutes);
 dashboardRouter.use("/business/mode", modeRoutes);
 dashboardRouter.use("/webhook", webhookRoutes);
 dashboardRouter.use("/security", securityRoutes);

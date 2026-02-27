@@ -7,6 +7,8 @@ import crypto from "crypto";
 import { AuthRepository } from "@/repositories/auth.repository";
 import { EmailService } from "../email.service";
 import { resend } from "@/config/resend-config";
+import { redisClient } from "@/middlewares/rate-limit.middleware";
+import speakeasy from "speakeasy";
 
 @Service()    
 export class UserService {
@@ -88,4 +90,44 @@ export class UserService {
       payload: null,
     };
   }
+
+    async setup2FA(userId: string) {
+      const secret = speakeasy.generateSecret({
+        length: 20,
+        name: `ORAFI (${userId})`
+      });
+  
+      await redisClient.set(userId, secret.base32, "EX", 300); // Store secret in Redis with 5 minutes expiration
+  
+      return {
+        message: "2FA secret generated successfully",
+        payload: {
+          otpauth_url: secret.otpauth_url,
+          manualCode: secret.base32
+        }
+      };
+    }
+  
+    async verify2FA(userId: string, token: string) {
+      const secret = await redisClient.get(userId);
+      if (!secret) {
+        throw new APIError("2FA setup expired. Please try again.", STATUS.bad);
+      }
+      const verified = speakeasy.totp.verify({
+        secret,
+        encoding: "base32",
+        token,
+        window: 1
+      });
+      if (!verified) {
+        throw new APIError("Invalid 2FA token", STATUS.bad);
+      }
+      await this.userRepository.findUserByIdAndUpdate2FA(userId, secret);
+  
+      await redisClient.del(userId);
+      return {
+        message: "2FA verified successfully",
+        payload: null,
+      }
+    }
 }

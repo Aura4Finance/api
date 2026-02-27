@@ -6,7 +6,9 @@ import { STATUS } from "@/constants/status.constant";
 
 @Service()
 export class SecurityService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository
+  ) {}
 
   async verifyPassword(userId: string, password: string) {
     const user = await this.userRepository.findUserById(userId);
@@ -33,4 +35,6 @@ export class SecurityService {
       payload: null,
     };
   }
+
+
 }

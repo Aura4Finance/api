@@ -22,6 +22,7 @@ import { OAuth2Client } from "google-auth-library";
 import { EmailQueue } from "./schedule.email.service";
 import { v4 as uuid } from "uuid";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
+import speakeasy from "speakeasy";
 
 @Service()
 export class AuthService {
@@ -218,6 +219,31 @@ export class AuthService {
       throw new APIError("Invalid password", STATUS.unauthorized);
     }
 
+    return {
+      message: "User signed in successfully. Verify 2FA to continue",
+      payload: {
+        userId: user.id,
+      },
+    }
+  }
+
+  async verify2FAAndGenerateToAccessToken(userId: string, token: string) {
+    const user = await this.userRepository.findUserById(userId);
+
+    if (!user) {
+      throw new APIError("User not found", STATUS.notFound);
+    }
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: "base32",
+      token,
+      window: 1
+    });
+
+    if (!verified) {
+      throw new APIError("Invalid 2FA token", STATUS.bad);
+    }
+
     const otpSecret = `orafi_${crypto.randomBytes(32).toString("hex")}`;
     const hashedCode = crypto
       .createHash("sha256")
@@ -225,7 +251,6 @@ export class AuthService {
       .digest("hex");
 
     await this.authRepository.registerOtp(user.id, hashedCode);
-
 
     return {
       message: "User login successful",
@@ -391,4 +416,5 @@ export class AuthService {
       payload: accessToken,
     };
   }
+
 }
