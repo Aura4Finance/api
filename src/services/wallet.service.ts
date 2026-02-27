@@ -1,7 +1,6 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Service } from "typedi";
 import { Transaction } from "@mysten/sui/transactions";
-import axios from "axios";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { SuiClient } from "@mysten/sui/client";
