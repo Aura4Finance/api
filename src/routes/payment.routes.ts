@@ -27,7 +27,7 @@ router.post(
 
 
 router.post(
-  "/paylink/create",
+  "/paylink",
   verifyPaylink,
   asyncHandler((req: RequestAuth, res: Response) => 
     paymentController.createPayment(req, res)
