@@ -16,6 +16,7 @@
     "axios": "^1.12.2",
     "body-parser": "^2.2.0",
     "bullmq": "^5.66.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -36,6 +37,7 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",

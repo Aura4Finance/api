@@ -20,11 +20,7 @@ export const verifyAccessToken = async (
   _: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    throw new APIError("Authorization header missing", STATUS.unauthorized);
-  }
-  const token = authHeader.split(" ")[1];
+  const token = req.cookies?.access_token;
   if (!token) {
     throw new APIError("Access token missing", STATUS.unauthorized);
   }

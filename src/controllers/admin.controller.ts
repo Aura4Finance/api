@@ -89,10 +89,17 @@ export class AdminController {
     const body: LoginDto = value as LoginDto;
     const { payload, message } = await this.authService.adminSignin(body);
 
+    res.cookie("access_token", payload.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 1 * 24 * 60 * 60 * 1000, // 30 days (matches JWT expiry)
+    });
+
     return res.status(STATUS.ok).json({
       success: true,
       message,
-      data: payload,
+      data: { user: payload.user },
     });
   }
 

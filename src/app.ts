@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import logger from "./utils/logger";
@@ -17,6 +18,7 @@ const app = express();
 app.set("query parser", "extended");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 const router = express.Router();
 app.use(limiter);

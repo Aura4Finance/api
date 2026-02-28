@@ -227,7 +227,7 @@ export class AuthService {
     }
   }
 
-  async verify2FAAndGenerateToAccessToken(userId: string, token: string) {
+  async verify2FAAndGenerateSecret(userId: string, token: string) {
     const user = await this.userRepository.findUserById(userId);
 
     if (!user) {
@@ -254,10 +254,7 @@ export class AuthService {
 
     return {
       message: "User login successful",
-      payload: {
-        otp: otpSecret,
-        user,
-      },
+      payload: otpSecret,
     };
   }
 

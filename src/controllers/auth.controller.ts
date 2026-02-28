@@ -109,7 +109,7 @@ export class AuthController {
       data: {
         code: payload,
       },
-    });
+    });6
   }
 
   async continueWith2FA(req: Request, res: Response) {
@@ -123,14 +123,16 @@ export class AuthController {
     }
     const { userId, token } = value;
 
-    const { payload, message } = await this.authService.verify2FAAndGenerateToAccessToken(userId, token);
+    const { payload, message } = await this.authService.verify2FAAndGenerateSecret(userId, token);
     return res.status(STATUS.ok).json({
       success: true,
       message,
-      data: payload
+      data: {
+        secret: payload,
+      }
     });
   }
-
+    
 
   async signOut(req: RequestAuth, res: Response) {
     const { jti, exp } = req;
@@ -139,7 +141,7 @@ export class AuthController {
     return res.status(STATUS.ok).json({
       success: true,
       message,
-      data: payload
+      data: payload 
     });
   }
 
@@ -154,10 +156,17 @@ export class AuthController {
     }
     const body: AuthCodeDto = value;
     const { payload, message } = await this.authService.exchangeCodeForAccessToken(body);
+
+    res.cookie("access_token", payload.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+
     return res.status(STATUS.ok).json({
       success: true,
       message,
-      data: payload.accessToken
     });
   }
 
