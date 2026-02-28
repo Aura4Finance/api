@@ -80,12 +80,12 @@ export class EmailService {
 
 
   async sendOtp(to: string, otp: string) {
-    const throttleKey = `email:otp:${to}`;
+    // const throttleKey = `email:otp:${to}`;
 
-    const alreadySent = await redis.get(throttleKey);
-    if (alreadySent) {
-      throw new APIError("OTP already sent. Please wait before requesting again.", STATUS.tooManyRequests);
-    }
+    // const alreadySent = await redis.get(throttleKey);
+    // if (alreadySent) {
+    //   throw new APIError("OTP already sent. Please wait before requesting again.", STATUS.tooManyRequests);
+    // }
 
     await this.sendEmail(
       to,
@@ -98,7 +98,7 @@ export class EmailService {
     );
 
     // throttle OTP for 60 seconds
-    await redis.set(throttleKey, "1", "EX", 60 * 10);
+   // await redis.set(throttleKey, "1", "EX", 60 * 10);
   }
 
 
