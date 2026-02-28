@@ -2,9 +2,9 @@ import { Service } from "typedi";
 import path from "path";
 import fs from "fs";
 import { resend } from "@/config/resend-config";
-import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
-import { APIError } from "@/utils/error-handler";
-import { STATUS } from "@/constants/status.constant";
+// import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
+// import { APIError } from "@/utils/error-handler";
+// import { STATUS } from "@/constants/status.constant";
 
 type TemplateVars = Record<string, string | number>;
 
