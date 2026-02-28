@@ -15,6 +15,7 @@ import { limiter } from "./middlewares/rate-limit.middleware";
 dotenv.config();
 const app = express();
 
+app.set("trust proxy", 1);
 app.set("query parser", "extended");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
