@@ -186,7 +186,8 @@ export class PaymentService {
     customerEmail: string,
     customerName: string,
     businessName: string,
-    businessEmail: string
+    businessEmail: string,
+    currency: string
   ) {
     await this.paymentRepository.confirmPaymentStatus(paymentId);
     await this.customerRepository.updateAmountSpent(customerId, amount);
@@ -198,7 +199,8 @@ export class PaymentService {
         amount,
         paymentId,
         businessName,
-        businessEmail
+        businessEmail,
+        currency
       );
     });
   }
@@ -246,7 +248,8 @@ export class PaymentService {
         String(customer?.email),
         String(customer?.firstname),
         tx.profile.businessName,
-        String(merchantEmail)
+        String(merchantEmail),
+        tx.currency
       );
 
       event = "payment.success";
@@ -268,7 +271,8 @@ export class PaymentService {
             String(customer?.email),
             String(customer?.firstname),
             tx.profile.businessName,
-            String(merchantEmail)
+            String(merchantEmail),
+            tx.currency
           );
 
           event = "payment.success";
@@ -289,7 +293,8 @@ export class PaymentService {
             String(customer?.email),
             String(customer?.firstname),
             tx.profile.businessName,
-            String(merchantEmail)
+            String(merchantEmail),
+            tx.currency
           );
 
           event = "payment.success";
@@ -359,7 +364,8 @@ export class PaymentService {
       <string>tx.customer?.email,
       <string>tx.customer?.firstname,
       tx.profile.businessName,
-      <string>tx.profile.user?.email
+      <string>tx.profile.user?.email,
+      tx.currency
     )
 
     return {

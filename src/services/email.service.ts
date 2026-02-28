@@ -2,9 +2,10 @@ import { Service } from "typedi";
 import path from "path";
 import fs from "fs";
 import { resend } from "@/config/resend-config";
-// import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
-// import { APIError } from "@/utils/error-handler";
-// import { STATUS } from "@/constants/status.constant";
+import { generateReceiptPDF, generateReceiptNumber } from "@/utils/pdf-generator";
+import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
+import { APIError } from "@/utils/error-handler";
+import { STATUS } from "@/constants/status.constant";
 
 type TemplateVars = Record<string, string | number>;
 
@@ -20,13 +21,43 @@ export class EmailService {
       .toString("base64");
   }
 
-  buildEmailPayload(
+  async buildEmailPayload(
   to: string | string[],
   subject: string,
   templateId: string,
   variables: TemplateVars,
-  notification = true
+  notification = true,
+  receipt = false
 ) {
+  let attachments = [
+     {
+        content: this.logoBase64,
+        filename: "logo.png",
+        contentId: "logo@orafi",
+      },
+  ]
+
+  if (receipt) {
+    const receiptNumber = generateReceiptNumber(2);
+    const pdfBuffer = await generateReceiptPDF({
+      receiptNumber,
+      date: new Date().toUTCString(),
+      name: variables.name,
+      merchantName: variables.merchantName,
+      reference: variables.reference,
+      network: "SUI",
+      currency: variables.currency,
+      amount: variables.amount,
+      subtotal: variables.amount,
+      networkFee: 0
+    });
+    attachments.push({
+      content: pdfBuffer.toString(),
+      filename: `OraFi-Receipt-${receiptNumber}.pdf`,
+      contentId: "receipt@orafi",
+    });
+  }
+
   return {
     from: notification
       ? "OraFi <notifications@orafi.app>"
@@ -37,13 +68,7 @@ export class EmailService {
       id: templateId,
       variables,
     },
-    attachments: [
-      {
-        content: this.logoBase64,
-        filename: "logo.png",
-        contentId: "logo@orafi",
-      },
-    ],
+    attachments
   };
 }
 
@@ -80,12 +105,12 @@ export class EmailService {
 
 
   async sendOtp(to: string, otp: string) {
-    // const throttleKey = `email:otp:${to}`;
+    const throttleKey = `email:otp:${to}`;
 
-    // const alreadySent = await redis.get(throttleKey);
-    // if (alreadySent) {
-    //   throw new APIError("OTP already sent. Please wait before requesting again.", STATUS.tooManyRequests);
-    // }
+    const alreadySent = await redis.get(throttleKey);
+    if (alreadySent) {
+      throw new APIError("OTP already sent. Please wait before requesting again.", STATUS.tooManyRequests);
+    }
 
     await this.sendEmail(
       to,
@@ -97,8 +122,8 @@ export class EmailService {
       }
     );
 
-    // throttle OTP for 60 seconds
-   // await redis.set(throttleKey, "1", "EX", 60 * 10);
+    //throttle OTP for 60 seconds
+   await redis.set(throttleKey, "1", "EX", 60 * 10);
   }
 
 

@@ -78,7 +78,7 @@ export const startEmailWorker = () => {
           case "payment_failed":
             try {
               batch.push(
-                emailService.buildEmailPayload(
+                await emailService.buildEmailPayload(
                   email,
                   "Payment Failed – Please Try Again",
                   "payment_failed",
@@ -88,10 +88,12 @@ export const startEmailWorker = () => {
                     currency: rest.currency,
                     reference: rest.reference,
                     date: new Date().toLocaleString(),
-                  }
+                  },
+                  true,
+                  true
                 )
               );
-              
+
               if (batch.length >= BATCH_SIZE) {
                 await flushBatch();
               } else if (!flushTimer) {
@@ -107,7 +109,7 @@ export const startEmailWorker = () => {
           case "payment_success": {
             if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
               batch.push(
-                emailService.buildEmailPayload(
+                await emailService.buildEmailPayload(
                   rest.merchantEmail,
                   "You’ve Received a Payment 💰",
                   "merchant_payment_received",
@@ -118,13 +120,14 @@ export const startEmailWorker = () => {
                     currency: rest.currency,
                     reference: rest.reference,
                     date: new Date().toLocaleString(),
-                  }
+                  },
+                  true
                 )
               );
             }
 
             batch.push(
-              emailService.buildEmailPayload(
+              await emailService.buildEmailPayload(
                 email,
                 "Payment Successful 🎉",
                 "payment_success",
@@ -135,7 +138,9 @@ export const startEmailWorker = () => {
                   reference: rest.reference,
                   merchantName: rest.merchantName,
                   date: new Date().toLocaleString(),
-                }
+                },
+                true,
+                true
               )
             );
 

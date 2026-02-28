@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>OraFi Payment Receipt</title>
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      position: relative;
+      color: #111827;
+    }
+
+    /* Watermark Background */
+    body::before {
+      content: "ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI ORAFI";
+      position: fixed;
+      top: 30%;
+      left: -10%;
+      font-size: 80px;
+      color: rgba(15, 23, 42, 0.03);
+      transform: rotate(-30deg);
+      white-space: nowrap;
+      pointer-events: none;
+      width: 200%;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 50px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 20px;
+    }
+
+    .logo img {
+      height: 45px;
+    }
+
+    .receipt-info {
+      text-align: right;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .title {
+      margin-top: 40px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .meta {
+      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .meta strong {
+      color: #111827;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 40px;
+    }
+
+    th {
+      text-align: left;
+      font-size: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    td {
+      padding: 12px 0;
+      font-size: 14px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .total-row td {
+      font-weight: bold;
+      font-size: 16px;
+      border-top: 2px solid #111827;
+      border-bottom: none;
+      padding-top: 16px;
+    }
+
+    .amount-highlight {
+      color: #4f46e5;
+    }
+
+    .footer {
+      margin-top: 70px;
+      font-size: 12px;
+      color: #6b7280;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <!-- Replace with actual hosted logo URL -->
+        <img src="cid:logo@orafi" alt="OraFi Logo" />
+      </div>
+
+      <div class="receipt-info">
+        <div><strong>Receipt No:</strong> {{receiptNumber}}</div>
+        <div><strong>Date:</strong> {{date}}</div>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="title">
+      Payment Receipt
+    </div>
+
+    <!-- Meta Info -->
+    <div class="meta">
+      <p><strong>Payer:</strong> {{name}}</p>
+      <p><strong>Merchant:</strong> {{merchantName}}</p>
+      <p><strong>Reference:</strong> {{reference}}</p>
+      <p><strong>Network:</strong> {{network}}</p>
+    </div>
+
+    <!-- Payment Breakdown -->
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align:right;">Amount ({{currency}})</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Payment to {{merchantName}}</td>
+          <td style="text-align:right;">{{subtotal}}</td>
+        </tr>
+
+        <tr>
+          <td>Network Fee</td>
+          <td style="text-align:right;">{{networkFee}}</td>
+        </tr>
+
+        <tr class="total-row">
+          <td>Total Paid</td>
+          <td style="text-align:right;" class="amount-highlight">
+            {{amount}} {{currency}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+      This receipt serves as official proof of payment processed via OraFi.
+      <br /><br />
+      © 2026 OraFi. All rights reserved.
+    </div>
+
+  </div>
+
+</body>
+</html>
