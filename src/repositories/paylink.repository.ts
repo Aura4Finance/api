@@ -12,6 +12,7 @@ export class PaylinkRepository {
         description: data.description,
         amount: data.amount,
         imageBlobIds: data.imageBlobIds,
+        currency: data.currency,
         mode,
         profile: {
           connect: {
