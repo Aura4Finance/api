@@ -3,6 +3,8 @@ import path from "path";
 import fs from "fs";
 import { resend } from "@/config/resend-config";
 import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
+import { APIError } from "@/utils/error-handler";
+import { STATUS } from "@/constants/status.constant";
 
 type TemplateVars = Record<string, string | number>;
 
@@ -82,7 +84,7 @@ export class EmailService {
 
     const alreadySent = await redis.get(throttleKey);
     if (alreadySent) {
-      throw new Error("OTP already sent. Please wait before requesting again.");
+      throw new APIError("OTP already sent. Please wait before requesting again.", STATUS.tooManyRequests);
     }
 
     await this.sendEmail(
