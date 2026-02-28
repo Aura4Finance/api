@@ -34,6 +34,7 @@ export class UserService {
       unsubscribed: false,
     });
 
+    
     return {
       message: "User onboarded successfully",
       payload: null,
