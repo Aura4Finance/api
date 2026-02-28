@@ -141,7 +141,9 @@ export class PaymentService {
           depositAddress: transaction.payment?.depositAddress,
           transferAddress: transferAddress.publicKey,
           redirectUrl: transaction.payment?.redirectUrl,
-          mode: transaction.mode
+          mode: transaction.mode,
+          currency: transaction.currency,
+          network: transaction.network
         }
       ), "EX", 6000);
       return {

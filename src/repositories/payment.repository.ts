@@ -91,6 +91,8 @@ export class PaymentRepository {
       id: true,
       amount: true,
       amountInUSDC: true,
+      currency: true,
+      network: true,
       mode: true,
       profile: {
         select: {
