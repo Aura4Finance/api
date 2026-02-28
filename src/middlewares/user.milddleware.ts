@@ -182,8 +182,12 @@ export const verifyActionUsing2FA = async (
   }
   const userId = req.user?.id;
   const user = await userRepository.findUserById(<string>userId);
+
+  if(!user?.twoFactorSecret && !user?.twoFactorEnabled){
+    throw new APIError("2FA not enabled for this user!", STATUS.bad);
+   }
   const verified = speakeasy.totp.verify({
-    secret: <string>user?.twoFactorSecret,
+    secret: user?.twoFactorSecret,
     encoding: "base32",
     token,
     window: 1

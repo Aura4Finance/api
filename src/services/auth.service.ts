@@ -23,6 +23,7 @@ import { EmailQueue } from "./schedule.email.service";
 import { v4 as uuid } from "uuid";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 import speakeasy from "speakeasy";
+import { UserService } from "./user/user.service";
 
 @Service()
 export class AuthService {
@@ -30,6 +31,7 @@ export class AuthService {
 
   constructor(
     private readonly userRepository: UserRepository,
+    private readonly userService: UserService,
     private readonly walletService: WalletService,
     private readonly authRepository: AuthRepository,
     private readonly emailService: EmailService,
@@ -128,10 +130,12 @@ export class AuthService {
       firstName: user.firstname
     });
     await this.authRepository.deleteOtp(existingOtp.id);
+    
+    const { payload } = await this.userService.setup2FA(user.id);
 
     return {
       message: "Email Verified Successfully",
-      payload: null,
+      payload,
     };
   }
 
