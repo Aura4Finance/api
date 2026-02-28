@@ -190,6 +190,7 @@ model Paylink {
   description  String
   mode         Mode
   amount       Int
+  currency     String
   imageBlobIds String[]
   payments     Payment[]       @relation("PaylinkPayments")
   profile      BusinessProfile @relation("ProfilePaylinks", fields: [profileId], references: [id], onDelete: Cascade)

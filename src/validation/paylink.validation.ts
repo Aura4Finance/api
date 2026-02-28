@@ -6,6 +6,7 @@ export const createPaylinkValidation = (data: CreatePaylinkDto) => {
     title: Joi.string().min(3).required(),
     description: Joi.string().required(),
     amount: Joi.number().min(1).required(),
+    currency: Joi.string()
   });
 
   return schema.validate(data);
