@@ -37,25 +37,29 @@ export class EmailService {
       },
   ]
 
-  if (receipt) {
-    const receiptNumber = generateReceiptNumber(2);
-    const pdfBuffer = await generateReceiptPDF({
-      receiptNumber,
-      date: new Date().toUTCString(),
-      name: variables.name,
-      merchantName: variables.merchantName,
-      reference: variables.reference,
-      network: "SUI",
-      currency: variables.currency,
-      amount: variables.amount,
-      subtotal: variables.amount,
-      networkFee: 0
-    });
-    attachments.push({
-      content: pdfBuffer.toString(),
-      filename: `OraFi-Receipt-${receiptNumber}.pdf`,
-      contentId: "receipt@orafi",
-    });
+  try{
+    if (receipt) {
+      const receiptNumber = generateReceiptNumber(2);
+      const pdfBuffer = await generateReceiptPDF({
+        receiptNumber, 
+        date: new Date().toUTCString(),
+        name: variables.name,
+        merchantName: variables.merchantName || null,
+        reference: variables.reference,
+        network: "SUI",
+        currency: variables.currency,
+        amount: variables.amount,
+        subtotal: variables.amount,
+        networkFee: 0
+      });
+      attachments.push({
+        content: pdfBuffer.toString(),
+        filename: `OraFi-Receipt-${receiptNumber}.pdf`,
+        contentId: "receipt@orafi",
+      });
+    }
+  }catch(error: any){
+    throw new APIError(`Error sending email: ${error}`, STATUS.serverUnavailable);
   }
 
   return {

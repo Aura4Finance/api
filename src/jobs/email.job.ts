@@ -120,8 +120,7 @@ export const startEmailWorker = () => {
                     currency: rest.currency,
                     reference: rest.reference,
                     date: new Date().toLocaleString(),
-                  },
-                  true
+                  }
                 )
               );
             }
