@@ -17,6 +17,7 @@ export const editPaylinkValidation = (data: Partial<CreatePaylinkDto>) => {
     title: Joi.string().min(3),
     description: Joi.string(),
     amount: Joi.number().min(1),
+    currency: Joi.string()
   }); 
   return schema.validate(data);
 }

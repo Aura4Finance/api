@@ -26,7 +26,7 @@ export class PaylinkRepository {
   }
 
   async getPaylink(paylinkId: string) {
-    const result = await db.paylink.findFirst({
+    const result = await db.paylink.findUnique({
       where: {
         id: paylinkId,
       },
