@@ -15,7 +15,7 @@ RUN npx tsc-alias
 # Copy HTML files into dist
 RUN cp -r src/html dist/html
 
-FROM node:24-alpine
+FROM node:24-slim
 
 # Install Chromium + dependencies
 RUN apt-get update && apt-get install -y \
