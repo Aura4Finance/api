@@ -5,7 +5,7 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "ts-node-dev -r tsconfig-paths/register src/server.ts",
-    "build": "tsc",
+    "build": "tsc && npx puppeteer browsers install chrome",
     "start": "node dist/server.js"
   },
   "dependencies": {
