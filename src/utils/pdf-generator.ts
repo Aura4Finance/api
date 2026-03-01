@@ -1,29 +1,26 @@
 import fs from "fs"
 import path from "path"
-import chromium from "@sparticuz/chromium"
-import puppeteer from "puppeteer-core"
+import puppeteer from "puppeteer"
 
 export async function generateReceiptPDF(data: any) {
   const templatePath = path.join(__dirname, "../html/receipt.html")
   let html = fs.readFileSync(templatePath, "utf8")
 
-  // Replace placeholders
   Object.keys(data).forEach((key) => {
     html = html.replace(new RegExp(`{{${key}}}`, "g"), data[key])
   })
 
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: true,
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   })
-  const page = await browser.newPage()
 
+  const page = await browser.newPage()
   await page.setContent(html, { waitUntil: "networkidle0" })
 
   const pdfBuffer = await page.pdf({
     format: "A4",
-    printBackground: true
+    printBackground: true,
   })
 
   await browser.close()
