@@ -37,7 +37,6 @@ export class EmailService {
       },
   ]
 
-  try{
     if (receipt) {
       const receiptNumber = generateReceiptNumber(2);
       const pdfBuffer = await generateReceiptPDF({
@@ -58,10 +57,6 @@ export class EmailService {
         contentId: "receipt@orafi",
       });
     }
-  }catch(error: any){
-    throw new APIError(`Error sending email: ${error}`, STATUS.serverUnavailable);
-  }
-
   return {
     from: notification
       ? "OraFi <notifications@orafi.app>"

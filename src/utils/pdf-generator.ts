@@ -1,6 +1,7 @@
 import fs from "fs"
 import path from "path"
-import puppeteer from "puppeteer"
+import chromium from "@sparticuz/chromium"
+import puppeteer from "puppeteer-core"
 
 export async function generateReceiptPDF(data: any) {
   const templatePath = path.join(__dirname, "../html/receipt.html")
@@ -11,7 +12,11 @@ export async function generateReceiptPDF(data: any) {
     html = html.replace(new RegExp(`{{${key}}}`, "g"), data[key])
   })
 
-  const browser = await puppeteer.launch()
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
+  })
   const page = await browser.newPage()
 
   await page.setContent(html, { waitUntil: "networkidle0" })
