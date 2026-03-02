@@ -65,7 +65,7 @@ export const startEmailWorker = () => {
             break;
           case "payment_success": {
             if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
-              await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency. rest.reference );
+              await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency, rest.reference);
             }
             await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
             break;

@@ -34,7 +34,7 @@ export class EmailService {
   try {
     await resend.batch.send(payload);
   } catch (err) {
-    logger.error("Batch send failed:", err);
+    throw new APIError("Error sending batch email", STATUS.bad);
   }
 }
 
