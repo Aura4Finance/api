@@ -32,11 +32,9 @@ export class EmailService {
   this.batch = [];
 
   try {
-    await resend.batch.send({
-      emails: payload,
-    });
+    await resend.batch.send(payload);
   } catch (err) {
-    console.error("Batch send failed:", err);
+    logger.error("Batch send failed:", err);
   }
 }
 
@@ -276,7 +274,7 @@ async sendPaymentSuccessEmail(
         date: new Date().toLocaleString(),
       }
     );
+    await this.queueEmail(payload);
   }
 
-  await this.queueEmail(payload);
 }
