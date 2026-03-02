@@ -71,7 +71,7 @@ router.get(
         supportsTokens: true,
         supportsSmartContracts: true,
         explorerUrl: "https://suiexplorer.com",
-        logoUrl: "https://yourcdn.com/networks/sui.png",
+        logoUrl: "https://res.cloudinary.com/dlhnwgcbe/image/upload/v1772482383/sui_jigntr.jpg",
       },
     ];
 
