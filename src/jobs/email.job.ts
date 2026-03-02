@@ -9,6 +9,7 @@ import db from "@/config/db-config";
 import { redisConnection } from "@/config/redis-config";
 import { resend } from "@/config/resend-config";
 
+const emailService = Container.get(EmailService);
 const BATCH_SIZE = 10;
 const BATCH_FLUSH_MS = 1000;
 
@@ -41,7 +42,6 @@ const checkIfUserSuscribedForEmailNotification = async (email: string) => {
 
 
 export const startEmailWorker = () => {
-  const emailService = Container.get(EmailService);
 
   new Worker(
     "email-queue",
