@@ -22,7 +22,7 @@ const flushBatch = async () => {
   batch = [];
 
   try {
-    await resend.batch.send(payload);
+    await emailService.sendBatchEmail(payload);
     logger.info(`📨 Sent batch of ${payload.length} emails`);
   } catch (err) {
     logger.error("Batch send failed", err);

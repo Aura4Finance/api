@@ -75,6 +75,11 @@ export class EmailService {
   /**
    * Core reusable email sender
    */
+
+  async sendBatchEmail(payload){
+    await resend.batch.send(payload)
+  }
+
   private async sendEmail(
     to: string | string[],
     subject: string,
