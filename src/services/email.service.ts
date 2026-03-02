@@ -13,6 +13,10 @@ type TemplateVars = Record<string, string | number>;
 export class EmailService {
   private templatePath: string;
   private logoBase64: string;
+  private batch: any[] = [];
+  private flushTimer: NodeJS.Timeout | null = null; 
+  private readonly BATCH_SIZE = 10;
+  private readonly BATCH_FLUSH_MS = 1000;
 
   constructor() {
     this.templatePath = path.join(__dirname, "..", "html");
@@ -20,6 +24,34 @@ export class EmailService {
       .readFileSync(path.join(this.templatePath, "attachments", "logo.png"))
       .toString("base64");
   }
+
+  private async flushBatch() {
+  if (this.batch.length === 0) return;
+
+  const payload = [...this.batch];
+  this.batch = [];
+
+  try {
+    await resend.batch.send({
+      emails: payload,
+    });
+  } catch (err) {
+    console.error("Batch send failed:", err);
+  }
+}
+
+private async queueEmail(emailPayload: any) {
+  this.batch.push(emailPayload);
+
+  if (this.batch.length >= this.BATCH_SIZE) {
+    await this.flushBatch();
+  } else if (!this.flushTimer) {
+    this.flushTimer = setTimeout(async () => {
+      await this.flushBatch();
+      this.flushTimer = null;
+    }, this.BATCH_FLUSH_MS);
+  }
+}
 
   async buildEmailPayload(
   to: string | string[],
@@ -170,61 +202,57 @@ export class EmailService {
     );
   }
 
-  async sendPaymentFailedEmail(
-    to: string,
-    name: string,
-    amount: number,
-    currency: string,
-    reference: string
-  ) {
+async sendPaymentFailedEmail(
+  to: string,
+  name: string,
+  amount: number,
+  currency: string,
+  reference: string
+) {
+  const payload = await this.buildEmailPayload(
+    to,
+    "Payment Failed – Please Try Again",
+    "payment_failed",
+    {
+      name,
+      amount,
+      currency,
+      reference,
+      date: new Date().toLocaleString(),
+    },
+    true,
+    true
+  );
 
-    await this.sendEmail(
-      to,
-      "Payment Failed – Please Try Again",
-      "payment_failed",
-      {
-        name,
-        amount,
-        currency,
-        reference,
-        date: new Date().toLocaleString(),
-      }
-    );
+  await this.queueEmail(payload);
+}
 
-  }
+async sendPaymentSuccessEmail(
+  to: string,
+  name: string,
+  amount: number,
+  currency: string,
+  reference: string,
+  merchantName: string
+) {
+  const payload = await this.buildEmailPayload(
+    to,
+    "Payment Successful 🎉",
+    "payment_success",
+    {
+      name,
+      amount,
+      currency,
+      reference,
+      merchantName,
+      date: new Date().toLocaleString(),
+    },
+    true,
+    true
+  );
 
-  async sendPaymentSuccessEmail(
-    to: string,
-    name: string,
-    amount: number,
-    currency: string,
-    reference: string,
-    merchantName: string
-  ) {
-
-    await this.sendEmail(
-      to,
-      "Payment Successful 🎉",
-      "payment_success",
-      {
-        name,
-        amount,
-        currency,
-        reference,
-        merchantName,
-        date: new Date().toLocaleString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          timeZoneName: "short",
-        }),
-      }
-    );
-
-  }
+  await this.queueEmail(payload);
+}
 
   async sendMerchantPaymentReceivedEmail(
     to: string,
@@ -235,7 +263,7 @@ export class EmailService {
     reference: string
   ) {
 
-    await this.sendEmail(
+    const payload = await this.buildEmailPayload(
       to,
       "You’ve Received a Payment 💰",
       "merchant_payment_received",
@@ -249,4 +277,6 @@ export class EmailService {
       }
     );
   }
+
+  await this.queueEmail(payload);
 }
