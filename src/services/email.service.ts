@@ -80,7 +80,12 @@ private async queueEmail(emailPayload: any) {
   ]
 
     if (receipt) {
-      const receiptNumber = generateReceiptNumber(2);
+      const pdfBytes = await generateReceiptPDF(data);
+
+      const base64String = Buffer
+        .from(pdfBytes)   // convert Uint8Array → Buffer
+        .toString("base64");
+        
       const pdfBuffer = await generateReceiptPDF({
         receiptNumber, 
         date: new Date().toUTCString(),
@@ -94,7 +99,7 @@ private async queueEmail(emailPayload: any) {
         networkFee: 0
       });
       attachments.push({
-        content: pdfBuffer.toString("base64"),
+        content: base64String,
         filename: `OraFi-Receipt-${receiptNumber}.pdf`,
         contentId: "receipt@orafi",
       });
