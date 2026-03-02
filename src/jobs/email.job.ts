@@ -53,21 +53,27 @@ export const startEmailWorker = () => {
               await emailService.sendProblemEmail(email, name);
               logger.info("Problems email sent")
             } catch (error: any) {
-              logger.error(`Error sending email: ${error.message}`)
+              logger.error(`Error sending email: ${error.message}`);
             }
             break;
           case "payment_failed":
             try {
               await emailService.sendPaymentFailedEmail(email, name, rest.amount, rest.currency, rest.reference);
             } catch (err: any) {
-              logger.error(`Error sending payment failed email: ${err.message}`)
+              logger.error(`Error sending payment failed email: ${err.message}`);
             }
             break;
           case "payment_success": {
-            if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
-              await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency, rest.reference);
+            try {
+              if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
+                await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency, rest.reference);
+                logger.info("payment succeess email sent for merchant")
+              }
+              await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
+              logger.info("payment success email sent for customer")
+            } catch (error: any) {
+              logger.info(`Error sending email: ${error.message}`)
             }
-            await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
             break;
           }
 

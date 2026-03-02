@@ -25,6 +25,12 @@ export class EmailService {
       .toString("base64");
   }
 
+  private readonly RATE_LIMIT = 2; // max calls per second
+
+  private delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   private async flushBatch() {
   if (this.batch.length === 0) return;
 
@@ -32,7 +38,13 @@ export class EmailService {
   this.batch = [];
 
   try {
-    await resend.batch.send(payload);
+    for (let i = 0; i < payload.length; i += this.RATE_LIMIT) {
+      const chunk = payload.slice(i, i + this.RATE_LIMIT);
+      await Promise.all(chunk.map(email => resend.emails.send(email)));
+      if (i + this.RATE_LIMIT < payload.length) {
+        await this.delay(1000);
+      }
+    }
   } catch (err) {
     throw new APIError("Error sending batch email", STATUS.bad);
   }
@@ -82,7 +94,7 @@ private async queueEmail(emailPayload: any) {
         networkFee: 0
       });
       attachments.push({
-        content: pdfBuffer.toString(),
+        content: pdfBuffer.toString('base64'),
         filename: `OraFi-Receipt-${receiptNumber}.pdf`,
         contentId: "receipt@orafi",
       });
