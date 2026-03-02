@@ -94,7 +94,7 @@ private async queueEmail(emailPayload: any) {
         networkFee: 0
       });
       attachments.push({
-        content: pdfBuffer.toString(),
+        content: pdfBuffer.toString("base64"),
         filename: `OraFi-Receipt-${receiptNumber}.pdf`,
         contentId: "receipt@orafi",
       });
