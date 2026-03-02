@@ -94,7 +94,7 @@ private async queueEmail(emailPayload: any) {
         networkFee: 0
       });
       const base64String = Buffer
-        .from(pdfBytes)   // convert Uint8Array → Buffer
+        .from(pdfBuffer)   // convert Uint8Array → Buffer
         .toString("base64");
       attachments.push({
         content: base64String,

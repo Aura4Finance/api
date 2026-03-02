@@ -2,7 +2,7 @@ import fs from "fs"
 import path from "path"
 import puppeteer from "puppeteer"
 
-export async function generateReceiptPDF(data: any): Promise<Unit8Array> {
+export async function generateReceiptPDF(data: any): Promise<Uint8Array> {
   const templatePath = path.join(__dirname, "../html/receipt.html")
   let html = fs.readFileSync(templatePath, "utf8")
 
