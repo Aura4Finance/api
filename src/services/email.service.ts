@@ -82,6 +82,7 @@ private async queueEmail(emailPayload: any) {
     if (receipt) {
       const receiptNumber = generateReceiptNumber(2);
       const pdfBuffer = await generateReceiptPDF({
+        logo: `data:image/png;base64,${this.logoBase64}`, 
         receiptNumber, 
         date: new Date().toUTCString(),
         name: variables.name,
