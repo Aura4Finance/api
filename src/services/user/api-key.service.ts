@@ -26,7 +26,7 @@ export class ApiKeyService {
     };
   }
 
-  async regenerateApikeys(businessProfileId: string) {
+  async regenerateApikeys(businessProfileId: string, keyId: string) {
     const apiKeys = await this.apiKeyRepository.findApiKeyByBusinessProfileId(
       businessProfileId
     );
@@ -35,7 +35,7 @@ export class ApiKeyService {
       return await this.generateApiKeys(businessProfileId);
     }
 
-    await this.apiKeyRepository.deleteApiKeys(apiKeys.id);
+    await this.apiKeyRepository.deleteApiKeys(keyId);
 
     return await this.generateApiKeys(businessProfileId);
   }

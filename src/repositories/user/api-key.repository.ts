@@ -22,7 +22,7 @@ export class ApiKeyRepository {
   }
 
   async findApiKeyByBusinessProfileId(businessProfileId: string) {
-    return await db.apiKey.findFirst({
+    return await db.apiKey.findMany({
       where: {
         profileId: businessProfileId,
       },

@@ -1,4 +1,3 @@
-export interface UpdateApiKeyDto {
+export interface RotateApiKeyDto {
     keyId: string;
-    active: boolean;
 }
