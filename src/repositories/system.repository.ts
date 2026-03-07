@@ -1,5 +1,7 @@
 import db from "@/config/db-config";
+import Service from "typedi";
 
+@Service()
 export class SystemRepository {
     async findConfig(key: string) {
         return db.systemConfig.findUnique({
