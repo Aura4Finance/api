@@ -1,6 +1,5 @@
 import { Service } from "typedi";
 import db from "../../config/db-config";
-import { encrypt } from "@/utils/encryption-handler";
 import { OnboardUserDto } from "@/dto/user.dto";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";
 import { Provider } from "../../../generated/prisma";
@@ -17,7 +16,8 @@ export class UserRepository {
           include: {
             wallet: {
               select: {
-                pubKey: true,
+                address: true,
+                derivationIndex: true,
               },
             },
           },
@@ -26,27 +26,6 @@ export class UserRepository {
     });
 
     return user;
-  }
-
-  async getUserPrivateKey(id: string) {
-    const privateKey = await db.user.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        businessProfile: {
-          include: {
-            wallet: {
-              select: {
-                privateKey: true,
-                pubKey: true,
-              },
-            },
-          },
-        },
-      },
-    });
-    return privateKey;
   }
 
   async findUserByIdAndUpdate2FA(userId: string, secret: string) {
@@ -69,7 +48,7 @@ export class UserRepository {
             isLive: true,
             wallet: {
               select: {
-                pubKey: true,
+                address: true,
               },
             },
           },
@@ -80,13 +59,13 @@ export class UserRepository {
     return user;
   }
 
-  async findUserByPublicKey(pubKey: string) {
+  async findUserByAddress(address: string) {
     const user = await db.user.findFirst({
       where: {
         businessProfile: {
           wallet: {
             some: {
-              pubKey,
+              address,
             },
           },
         },
@@ -96,7 +75,7 @@ export class UserRepository {
           include: {
             wallet: {
               select: {
-                pubKey: true,
+                address: true,
               },
             },
           },
@@ -168,13 +147,11 @@ export class UserRepository {
     lastname: string,
     email: string,
     hashedPassword: string,
-    privateKey: string,
-    publicKey: string,
+    address: string,
+    derivationIndex: number,
     provider: Provider,
     googleId?: string
   ) {
-    const { encryptedData, iv, tag, key } = encrypt(privateKey);
-
     const user = await db.user.create({
       data: {
         firstname,
@@ -192,15 +169,8 @@ export class UserRepository {
             websiteLink: "",
             wallet: {
               create: {
-                pubKey: publicKey,
-                privateKey: {
-                  create: {
-                    encryptedData,
-                    iv,
-                    tag,
-                    key,
-                  },
-                },
+                address,
+                derivationIndex,
               },
             },
           },
@@ -314,7 +284,7 @@ export class UserRepository {
             country: true,
             wallet: {
               select: {
-                pubKey: true,
+                address: true,
               }
             }
           },
@@ -575,7 +545,7 @@ export class UserRepository {
           {
             businessProfile: {
               wallet: {
-                some: { pubKey: emailIdOrPubKey },
+                some: { address: emailIdOrPubKey },
               },
             },
           },
@@ -586,7 +556,7 @@ export class UserRepository {
           include: {
             wallet: {
               select: {
-                pubKey: true,
+                address: true,
               },
             },
           },

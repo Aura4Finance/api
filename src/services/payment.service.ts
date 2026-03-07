@@ -14,6 +14,7 @@ import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "./schedule.email.service";
 import { PayoutService } from "./payout.service";
 import { transactionQueue } from "@/queues/transaction.queue";
+import { deriveWallet } from "@/utils/wallet/derive-wallet";
 
 @Service()
 export class PaymentService {
@@ -90,7 +91,7 @@ export class PaymentService {
         currency,
         "to_USDT");
       const depositAddress = await this.walletService.generatePaymentWallet(
-        user?.businessProfile?.wallet[0]?.pubKey as string,
+        user?.businessProfile?.wallet[0]?.address as string,
         amountToPay,
         this.client
       );
@@ -106,7 +107,8 @@ export class PaymentService {
           customer,
           txRef,
           depositAddress,
-          transferAddress,
+          transferAddress.address,
+          transferAddress.derivationIndex,
           <string>user?.businessProfile?.id,
           mode,
           {
@@ -123,7 +125,8 @@ export class PaymentService {
           customer,
           txRef,
           depositAddress,
-          transferAddress,
+          transferAddress.address,
+          transferAddress.derivationIndex,
           <string>user?.businessProfile?.id,
           mode,
           {
@@ -139,7 +142,7 @@ export class PaymentService {
           amountInUSDC: transaction.amountInUSDC,
           businessName: transaction.profile.businessName,
           depositAddress: transaction.payment?.depositAddress,
-          transferAddress: transferAddress.publicKey,
+          transferAddress: transferAddress.address,
           redirectUrl: transaction.payment?.redirectUrl,
           mode: transaction.mode,
           currency: transaction.currency,
@@ -336,7 +339,7 @@ export class PaymentService {
     await this.setActiveNetwork(tx.mode);
 
     const USDT = await this.client.getCoins({
-      owner: <string>tx.payment?.wallet.pubKey,
+      owner: <string>tx.payment?.wallet?.address,
       coinType: this.payoutService.cointype
     });
     const { amountInUSDC, payment } = tx;
@@ -349,11 +352,13 @@ export class PaymentService {
       throw new APIError("No matching coin found for the transfer", STATUS.notFound);
     }
 
+    const walletDerivedKey = await deriveWallet(<number>payment?.wallet?.derivationIndex);
+
     await transactionQueue.add("transfer-usdt", {
-      walletPrivateKey: payment?.wallet.privateKey,
+      walletPrivateKey: Buffer.from(walletDerivedKey).toString("hex"),
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
-      toAddress: <string>tx?.profile.wallet[0]?.pubKey,
+      toAddress: <string>tx?.profile.wallet[0]?.address,
       mode: tx.mode
     })
 

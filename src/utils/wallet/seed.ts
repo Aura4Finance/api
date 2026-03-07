@@ -1,12 +1,10 @@
 import bip39 from "bip39";
-import db from "@/config/db-config";
+import { systemRepository } from "@/repositories/system.repository";
 import { encryptSeed } from "@/utils/wallet/crypto";
 import logger from "../logger";
 
 export const initializeSeed = async () => {
-  const existing = await db.systemConfig.findUnique({
-    where: { key: "master_seed" }
-  });
+  const existing = await systemRepository.findConfig("master_seed");
 
   if (existing) {
     logger.info("Master seed already exists");
@@ -20,16 +18,14 @@ export const initializeSeed = async () => {
     <string>process.env.KEY_PASSWORD
   );
 
-  await db.systemConfig.create({
-    data: {
-      key: "master_seed",
-      encryptedSeedPhrase: encrypted.encrypted,
-      iv: encrypted.iv,
-      authTag: encrypted.tag
-    }
+  await systemRepository.createConfig({
+    key: "master_seed",
+    encryptedSeedPhrase: encrypted.encrypted,
+    iv: encrypted.iv,
+    authTag: encrypted.tag
   });
 
- logger.info("Master seed generated");
+  logger.info("Master seed generated");
 }
 
 

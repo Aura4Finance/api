@@ -123,7 +123,7 @@ export class TransactionRepository {
           include: {
             wallet: {
               select: {
-                pubKey: true,
+                address: true,
               },
             }
           }

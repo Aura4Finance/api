@@ -5,7 +5,7 @@ import { WalletService } from "./wallet.service";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
-import { decrypt } from "@/utils/encryption-handler";
+import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
 import { TransactionStatus, TransactionType } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
@@ -78,7 +78,7 @@ export class PayoutService {
             throw new Error("Merchant or business profile not found");
         }
 
-        const walletAddress = profile.wallet[0]?.pubKey;
+        const walletAddress = profile.wallet[0]?.address;
         if (!walletAddress) {
             throw new Error("Wallet address not found");
         }
@@ -101,23 +101,19 @@ export class PayoutService {
         client: any = this.client
     ) {
         this.client = client;
-        const cache: any = await this.fetchCoins(keys.pubKey);
+        const cache: any = await this.fetchCoins(keys.address);
 
         if (cache?.coinObjects.length == 0) {
             throw new APIError("No balance to withdrawl", STATUS.bad);
         }
         const primaryCoin = cache?.coinObjects[0];
         const mergeTargets = cache?.coinObjects.slice(1);
-        const privateKey = keys.privateKey;
 
         if (mergeTargets.length != 0) {
+            const derivedKey = await deriveWallet(keys.derivationIndex);
+            const secretKey = Buffer.from(derivedKey).toString("hex");
             const result = await this.walletService.mergeCoinObjects(
-                decrypt(
-                    privateKey?.encryptedData as string,
-                    privateKey?.key as string,
-                    privateKey?.iv as string,
-                    privateKey?.tag as string
-                ),
+                secretKey,
                 primaryCoin,
                 mergeTargets,
                 this.client
@@ -136,15 +132,12 @@ export class PayoutService {
         to: string,
         payoutId: string
     ) {
-        const privateKey = await this.userRepository.getUserPrivateKey(userId)
-            .then(data => data?.businessProfile?.wallet[0]?.privateKey)
+        const user = await this.userRepository.findUserById(userId);
+        const wallet = user?.businessProfile?.wallet[0];
+        const derivedKey = await deriveWallet(<number>wallet?.derivationIndex);
+        const secretKey = Buffer.from(derivedKey).toString("hex");
         const result = await this.walletService.withdrawlToMerchant(
-            decrypt(
-                privateKey?.encryptedData as string,
-                privateKey?.key as string,
-                privateKey?.iv as string,
-                privateKey?.tag as string
-            ),
+            secretKey,
             this.primaryCoin,
             amount,
             to,
@@ -201,7 +194,7 @@ export class PayoutService {
         ) {
             throw new APIError("Invalid payout transaction ID", STATUS.bad);
         }
-        const keys = await this.userRepository.getUserPrivateKey(userId)
+        const keys = await this.userRepository.findUserById(userId);
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
         
         return await this.finalizeCryptoPayout(
@@ -220,7 +213,7 @@ export class PayoutService {
         userId: string
     ) {
         await this.setActiveNetwork(userId);
-        const keys = await this.userRepository.getUserPrivateKey(userId);
+        const keys = await this.userRepository.findUserById(userId);
         const profile = keys?.businessProfile;
         if (!profile) {
             throw new Error("Merchant or business profile not found");
@@ -248,7 +241,7 @@ export class PayoutService {
             amountInNGN,
             body.amount,
             "CRYPTO",
-            <string>keys?.businessProfile?.wallet[0]?.pubKey,
+            <string>keys?.businessProfile?.wallet[0]?.address,
             <string>keys?.businessProfile?.id,
             keys?.businessProfile?.isLive ? "live" : "test"
         );

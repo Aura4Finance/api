@@ -54,15 +54,15 @@ export class AuthService {
 
     const hashedPassword = await argon.hash(password);
 
-    const { privateKey, publicKey } = await this.walletService.createWallet();
+    const { address, derivationIndex } = await this.walletService.createWallet();
 
     const newUser = await this.userRepository.createMerchant(
       firstname,
       lastname,
       email,
       hashedPassword,
-      privateKey,
-      publicKey,
+      address,
+      derivationIndex,
       'LOCAL'
     );
 
@@ -297,15 +297,15 @@ export class AuthService {
       const payload = ticket.getPayload();
       user = await this.userRepository.findUserByEmail(payload?.email as string);
       if (!user) {
-        const { privateKey, publicKey } = await this.walletService.createWallet();
+        const { address, derivationIndex } = await this.walletService.createWallet();
 
         const newUser = await this.userRepository.createMerchant(
           payload?.given_name as string,
           payload?.family_name as string,
           payload?.email as string,
           "",
-          privateKey,
-          publicKey,
+          address,
+          derivationIndex,
           'GOOGLE',
           payload?.sub as string
         );

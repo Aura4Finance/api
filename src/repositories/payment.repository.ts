@@ -1,12 +1,7 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
-import {encrypt} from "@/utils/encryption-handler";
 import { Customer, Mode, Network, PaymentMethod, Token, TransactionStatus, TransactionType } from "../../generated/prisma";
 
-type TransferAddress = {
-  publicKey: string;
-  privateKey: string;
-};
 
 type PaymentOptions =
   | {
@@ -28,12 +23,12 @@ export class PaymentRepository {
     customer: Customer,
     txRef: string,
     depositAddress: string,
-    transferAddress: TransferAddress,
+    transferAddress: string,
+    transferDerivationIndex: number,
     userId: string,
     mode: Mode,
     options: PaymentOptions
   ) {
-    const { encryptedData, iv, tag, key } = encrypt(transferAddress.privateKey);
 
     let redirectUrl: string;
     let paylinkConnect: any = undefined;
@@ -55,10 +50,8 @@ export class PaymentRepository {
       redirectUrl,
       wallet: {
         create: {
-          pubKey: transferAddress.publicKey,
-          privateKey: {
-            create: { encryptedData, iv, tag, key },
-          },
+          address: transferAddress,
+          derivationIndex: transferDerivationIndex,
         },
       },
     };
@@ -109,7 +102,7 @@ export class PaymentRepository {
           depositAddress: true,
           wallet: {
             select: {
-              pubKey: true,
+              address: true,
             },
           },
           redirectUrl: true,
@@ -132,11 +125,7 @@ export class PaymentRepository {
       include: {
         payment: {
           include: {
-            wallet: {
-              include: {
-                privateKey: true,
-              }
-            }
+            wallet: true,
           },
         },
         refund: true,

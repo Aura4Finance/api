@@ -6,7 +6,7 @@ import { UserRepository } from "@/repositories/user/user.repository";
 import { WalletService } from "@/services/wallet.service";
 import { PayoutService } from "@/services/payout.service";
 import { APIError } from "@/utils/error-handler";
-import { decrypt } from "@/utils/encryption-handler";
+import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { TransactionStatus, TransactionType } from "../../generated/prisma";
@@ -37,17 +37,14 @@ export class RefundServices {
         refundTxId: string,
         paymentTxId: string
     ) {
-        const keys = (await this.userRepository.getUserPrivateKey(this.profile.userId))?.businessProfile?.wallet[0];
+        const wallet = (await this.userRepository.findUserById(this.profile.userId))?.businessProfile?.wallet[0];
+        const derivedKey = await deriveWallet(<number>wallet?.derivationIndex);
+        const secretKey = Buffer.from(derivedKey).toString("hex");
         let result;
         try {
-            const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(keys, this.client);
+            const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(wallet, this.client);
             result = await this.walletService.splitAndSend(
-                decrypt(
-                    <string>keys?.privateKey?.encryptedData,
-                    <string>keys?.privateKey?.key,
-                    <string>keys?.privateKey?.iv,
-                    <string>keys?.privateKey?.tag
-                ),
+                secretKey,
                 primaryCoinObjectId,
                 amountInUSDC,
                 reciever,

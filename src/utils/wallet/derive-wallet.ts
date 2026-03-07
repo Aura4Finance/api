@@ -1,29 +1,24 @@
 import { mnemonicToSeedSync } from "bip39";
 import { derivePath } from "ed25519-hd-key";
-import db from "@/config/db-config";
+import { systemRepository } from "@/repositories/system.repository";
 import { decryptSeed } from "./crypto";
+import { wipeSensitive } from "./wipe";
 
-export const deriveWallet = async () => {
-    const seedData = await db.systemConfig.findUnique({
-        where: { key: "master_seed" }
-    });
+export const deriveWallet = async (index: number) => {
+    const seedData = await systemRepository.findConfig("master_seed");
     const mnemonic = decryptSeed(
         seedData,
         <string>process.env.KEY_PASSWORD);
-    const index = await getNextWalletIndex();
-
     const seed = mnemonicToSeedSync(mnemonic);
     const path = `m/44'/784'/0'/0'/${index}'`;
     const derived = derivePath(path, seed.toString("hex")).key;
-    return { derived, index };
-}
 
-export const getNextWalletIndex = async () => {
-    const counter = await db.walletCounter.upsert({
-        where: { id: 1 },
-        update: { currentIndex: { increment: 1 } },
-        create: { id: 1, currentIndex: 1 }
-    });
+    // Copy the derived key before wiping source buffers
+    const result = Buffer.alloc(derived.length);
+    derived.copy(result);
 
-    return counter.currentIndex;
+    // Wipe all sensitive intermediates
+    wipeSensitive(mnemonic, seed, derived);
+
+    return result;
 }

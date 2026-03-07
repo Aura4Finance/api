@@ -6,6 +6,7 @@ import { STATUS } from "@/constants/status.constant";
 import { SuiClient } from "@mysten/sui/client";
 import coinMarketClient from "@/config/coinMarketClient-config";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
+import { SystemRepository } from "@/repositories/system.repository";
 
 type ConversionDirection = 'to_USDT' | 'from_USDT';
 @Service()
@@ -14,13 +15,16 @@ export class WalletService {
   //private USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC"; 
   //private PAYFRICA_ID = "0xe945ec6c4e688d654025d375e321d709f67ed6935ccbd21e94abb66af63ea7b1";
   admin_secret_key: string;
-  constructor() {
+  constructor(
+    private readonly systemRepository: SystemRepository
+  ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
     this.smart_contract_address = process.env.ORAFI_SMART_CONTRACT_ADDRESS as string;
   }
 
   async createWallet() {
-    const { derived, index } = await deriveWallet();
+    const index = await this.systemRepository.getNextWalletIndex();
+    const derived = await deriveWallet(index);
     const keypair = Ed25519Keypair.fromSecretKey(derived);
     const address = keypair.getPublicKey().toSuiAddress();
     return {

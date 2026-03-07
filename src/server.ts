@@ -18,10 +18,11 @@ if(process.env.PROCESS_TYPE === "worker") {
   import("./jobs/webhook.job").then(({ startWebhookWorker }) => {
     startWebhookWorker();
   });
+
+  initTransactionAndEmailOnboardJobs();
 } else {
   logger.info("🚀 Starting server...");
   app.listen(PORT, async () => {
-    await initTransactionAndEmailOnboardJobs();
     logger.info(`Server is running on Port: ${PORT}`);
   });
 }
