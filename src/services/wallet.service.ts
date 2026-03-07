@@ -5,6 +5,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { SuiClient } from "@mysten/sui/client";
 import coinMarketClient from "@/config/coinMarketClient-config";
+import { deriveWallet } from "@/utils/wallet/derive-wallet";
 
 type ConversionDirection = 'to_USDT' | 'from_USDT';
 @Service()
@@ -19,11 +20,13 @@ export class WalletService {
   }
 
   async createWallet() {
-    const keypair = new Ed25519Keypair();
-    const privateKey = keypair.getSecretKey();
-    const publicKey = keypair.getPublicKey().toSuiAddress();
-
-    return { privateKey, publicKey };
+    const { derived, index } = await deriveWallet();
+    const keypair = Ed25519Keypair.fromSecretKey(derived);
+    const address = keypair.getPublicKey().toSuiAddress();
+    return {
+      address,
+      derivationIndex: index
+    }
   }
 
   async generatePaymentWallet(merchantAddress: string, amount: number, client: any) {

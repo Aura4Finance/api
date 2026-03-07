@@ -10,6 +10,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model SystemConfig {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  key       String @unique
+  encryptedSeedPhrase   String
+  iv        String
+  authTag   String
+  createdAt DateTime @default(now())
+}
+
 model User {
   id              String           @id @default(uuid()) @map("_id")
   firstname       String
@@ -79,24 +88,21 @@ model OTP {
 }
 
 model Wallet {
-  id         String           @id @default(cuid()) @map("_id")
-  pubKey     String
-  privateKey EncryptedKey?
-  profile    BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
-  profileId  String?
-  paymentId  String?
-  payment    Payment? @relation("PaymentWallets")
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  address           String
+  derivationIndex   Int
+  profile           BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
+  profileId         String?
+  paymentId         String?
+  payment           Payment? @relation("PaymentWallets")
+  createdAt         DateTime @default(now())
 }
 
-model EncryptedKey {
-  id                  String                @id @default(cuid()) @map("_id")
-  encryptedData       String
-  iv                  String
-  tag                 String
-  key                 String
-  wallet              Wallet               @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  walletId            String               @unique
+model WalletCounter {
+  id              Int @id @default(1) @map("_id")
+  currentIndex    Int
 }
+
 
 model ApiKey {
   id         String          @id @default(cuid()) @map("_id")
