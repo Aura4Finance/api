@@ -1,5 +1,5 @@
 import db from "@/config/db-config";
-import Service from "typedi";
+import { Service } from "typedi";
 
 @Service()
 export class SystemRepository {
