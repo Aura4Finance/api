@@ -4,6 +4,7 @@ import {
     TransactionType, 
     PaymentMethod,
     Mode,
+    Network
 } from "../../generated/prisma";
 
 type IntervalPreset = 
@@ -34,6 +35,8 @@ export interface GetAllTransactionsDto {
     customerId: string,
     paymentLinkId: string,
     paymentMethod: PaymentMethod,
+    currency: String,
+    network: Network,
     userId?: string,
     mode?: Mode,
     limit?: number,

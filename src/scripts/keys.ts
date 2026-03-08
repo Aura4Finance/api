@@ -5,3 +5,4 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
     const keyPair = Ed25519Keypair.fromSecretKey(wallet);
     console.log("Derived key pair:", keyPair.getSecretKey());
 })()
+

@@ -48,6 +48,8 @@ export class TransactionRepository {
       paymentLinkId,
       paymentMethod,
       status,
+      currency,
+      network,
       token,
       date,
       customerId,
@@ -59,6 +61,10 @@ export class TransactionRepository {
 
     // Filter: type
     if (type) where.type = type;
+
+    if(currency) where.currency = currency;
+
+    if(network) where.network = network;
 
     // Filter: status
     if (status) where.status = status;

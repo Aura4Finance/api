@@ -48,6 +48,8 @@ export const transactionQuerySchemaValidation = (raw: any) => {
         paymentMethod: Joi.string().valid('PAYMENT_LINK', 'HOSTED_CHECKOUT'),
         customerId: Joi.string(),
         userId: Joi.string().optional(),
+        currency: Joi.string(),
+        network: Joi.valid("SUI"),
         limit: Joi.number().integer().positive().default(20),
         cursor: Joi.string(),
     });
