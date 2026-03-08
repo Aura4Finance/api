@@ -352,10 +352,10 @@ export class PaymentService {
       throw new APIError("No matching coin found for the transfer", STATUS.notFound);
     }
 
-    const walletDerivedKey = await deriveWallet(<number>payment?.wallet?.derivationIndex);
-
+     const derivedWalletBuffer = await deriveWallet(<number>payment?.wallet?.derivationIndex);
+     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
     await transactionQueue.add("transfer-usdt", {
-      walletPrivateKey: Buffer.from(walletDerivedKey).toString("hex"),
+      walletPrivateKey: secretKey,
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
       toAddress: <string>tx?.profile.wallet[0]?.address,

@@ -38,8 +38,8 @@ export class RefundServices {
         paymentTxId: string
     ) {
         const wallet = (await this.userRepository.findUserById(this.profile.userId))?.businessProfile?.wallet[0];
-        const derivedKey = await deriveWallet(<number>wallet?.derivationIndex);
-        const secretKey = Buffer.from(derivedKey).toString("hex");
+        const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
+        const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         let result;
         try {
             const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(wallet, this.client);

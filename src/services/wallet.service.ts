@@ -34,6 +34,11 @@ export class WalletService {
     }
   }
 
+  async serializeDerivedKeyToSuiSecretKey(derived: Buffer<ArrayBuffer>){
+    const keypair = Ed25519Keypair.fromSecretKey(derived);
+    return keypair.getSecretKey();
+  }
+
   async generatePaymentWallet(merchantAddress: string, amount: number, client: any) {
     const admin_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
 

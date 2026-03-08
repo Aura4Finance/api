@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { SystemConfig } from "../../../generated/prisma";
 
 const ALGO = "aes-256-gcm";
 
@@ -24,7 +25,7 @@ export const encryptSeed = (seed: string, password: string) => {
   };
 }
 
-export const decryptSeed = (data: any, password: string) => {
+export const decryptSeed = (data: SystemConfig, password: string) => {
   const key = deriveKey(password);
 
   const decipher = crypto.createDecipheriv(
@@ -35,7 +36,7 @@ export const decryptSeed = (data: any, password: string) => {
 
   decipher.setAuthTag(Buffer.from(data.authTag, "hex"));
 
-  let decrypted = decipher.update(data.encryptedSeed, "hex", "utf8");
+  let decrypted = decipher.update(data.encryptedSeedPhrase, "hex", "utf8");
   decrypted += decipher.final("utf8");
 
   return decrypted;

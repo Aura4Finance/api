@@ -110,8 +110,8 @@ export class PayoutService {
         const mergeTargets = cache?.coinObjects.slice(1);
 
         if (mergeTargets.length != 0) {
-            const derivedKey = await deriveWallet(keys.derivationIndex);
-            const secretKey = Buffer.from(derivedKey).toString("hex");
+            const derivedWalletBuffer = await deriveWallet(keys.derivationIndex);
+            const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
             const result = await this.walletService.mergeCoinObjects(
                 secretKey,
                 primaryCoin,
@@ -134,8 +134,8 @@ export class PayoutService {
     ) {
         const user = await this.userRepository.findUserById(userId);
         const wallet = user?.businessProfile?.wallet[0];
-        const derivedKey = await deriveWallet(<number>wallet?.derivationIndex);
-        const secretKey = Buffer.from(derivedKey).toString("hex");
+        const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
+        const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         const result = await this.walletService.withdrawlToMerchant(
             secretKey,
             this.primaryCoin,
@@ -196,15 +196,15 @@ export class PayoutService {
         }
         const keys = await this.userRepository.findUserById(userId);
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
-        
+
         return await this.finalizeCryptoPayout(
-            userId, 
-            payoutTransaction.amount, 
-            <string>payoutTransaction.payout?.walletAddress, 
+            userId,
+            payoutTransaction.amount,
+            <string>payoutTransaction.payout?.walletAddress,
             payoutTransaction.id
         );
     }
-    
+
     /**
      * Merges all user-owned coins into one (preparing for payout).
      */
@@ -219,22 +219,22 @@ export class PayoutService {
             throw new Error("Merchant or business profile not found");
         }
         let to: string;
-        if(body.cryptoSettlementAccountId){
+        if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
-            if(!settlementAccount){
+            if (!settlementAccount) {
                 throw new APIError("Invalid settlement account ID", STATUS.bad);
             }
             to = settlementAccount.walletAddress;
-        }else 
-            if(body.walletAddress) {
-            to = body.walletAddress;
-            if(body.save){
-                if(!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
-                await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id);
-            } 
-        }else {
-            throw new APIError("Settlemtment account or wallet address is required", STATUS.bad);
-        }
+        } else
+            if (body.walletAddress) {
+                to = body.walletAddress;
+                if (body.save) {
+                    if (!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
+                    await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id);
+                }
+            } else {
+                throw new APIError("Settlemtment account or wallet address is required", STATUS.bad);
+            }
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "", "from_USDT");
         const payout = await this.payoutRepository.createCryptoPayout(

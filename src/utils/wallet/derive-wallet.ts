@@ -3,11 +3,12 @@ import { derivePath } from "ed25519-hd-key";
 import { systemRepository } from "@/repositories/system.repository";
 import { decryptSeed } from "./crypto";
 import { wipeSensitive } from "./wipe";
+import { SystemConfig } from "../../../generated/prisma";
 
 export const deriveWallet = async (index: number) => {
     const seedData = await systemRepository.findConfig("master_seed");
     const mnemonic = decryptSeed(
-        seedData,
+        seedData as SystemConfig,
         <string>process.env.KEY_PASSWORD);
     const seed = mnemonicToSeedSync(mnemonic);
     const path = `m/44'/784'/0'/0'/${index}'`;
