@@ -20,9 +20,18 @@ if(process.env.PROCESS_TYPE === "worker") {
   });
 
 } else {
-  logger.info("🚀 Starting server...");
-  app.listen(PORT, async () => {
-    await initTransactionAndEmailOnboardJobs();
-    logger.info(`Server is running on Port: ${PORT}`);
-  });
+  (async () => {
+    try {
+      logger.info("🚀 Starting server...");
+
+      await initTransactionAndEmailOnboardJobs();
+
+      app.listen(PORT, () => {
+        logger.info(`Server is running on Port: ${PORT}`);
+      });
+    } catch (error) {
+      logger.error("Failed to initialize server:", error);
+      process.exit(1);
+    }
+  })();
 }
