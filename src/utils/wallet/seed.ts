@@ -1,4 +1,4 @@
-import bip39 from "bip39";
+import * as bip39 from "bip39";
 import { systemRepository } from "@/repositories/system.repository";
 import { encryptSeed } from "@/utils/wallet/crypto";
 import logger from "../logger";

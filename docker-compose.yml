@@ -70,6 +70,7 @@ services:
 
   redis:
     image: redis:latest
+    command: redis-server --maxmemory-policy noeviction
     ports:
       - "6379:6379"
     volumes:
