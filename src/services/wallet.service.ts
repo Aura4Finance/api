@@ -21,6 +21,7 @@ export class WalletService {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
     this.smart_contract_address = process.env.ORAFI_SMART_CONTRACT_ADDRESS as string;
   }
+  
 
   async createWallet() {
     const index = await this.systemRepository.getNextWalletIndex();
