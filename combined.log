@@ -5729,3 +5729,18 @@
 {"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-02-22T21:32:18.781Z"}
 {"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-02-22T21:32:19.008Z"}
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-02-22T21:32:19.087Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-03-09T16:32:11.253Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-03-09T16:32:11.952Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-03-09T16:32:14.209Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-03-09T16:32:16.684Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-03-09T16:32:16.693Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-03-09T16:32:16.753Z"}
+{"level":"error","message":"APIError: 2FA setup expired. Please try again.\n    at UserService.verify2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\user.service.ts:115:15)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at AuthService.verify2FAAndGenerateSecret (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\auth.service.ts:240:7)\n    at AuthController.continueWith2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\auth.controller.ts:124:34)","timestamp":"2026-03-09T16:39:37.242Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'iv')\n    at decryptSeed (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\utils\\wallet\\crypto.ts:34:22)\n    at deriveWallet (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\utils\\wallet\\derive-wallet.ts:10:33)\n    at WalletService.createWallet (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\wallet.service.ts:28:21)\n    at AuthService.registerUser (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\auth.service.ts:57:42)\n    at AuthController.register (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\auth.controller.ts:41:34)","timestamp":"2026-03-09T17:01:19.521Z"}
+{"level":"error","message":"TypeError: Cannot read properties of null (reading 'iv')\n    at decryptSeed (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\utils\\wallet\\crypto.ts:34:22)\n    at deriveWallet (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\utils\\wallet\\derive-wallet.ts:10:33)\n    at WalletService.createWallet (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\wallet.service.ts:28:21)\n    at AuthService.registerUser (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\auth.service.ts:57:42)\n    at AuthController.register (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\auth.controller.ts:41:34)","timestamp":"2026-03-09T17:02:41.981Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-03-09T17:04:25.494Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-03-09T17:04:27.180Z"}
+{"level":"info","message":"Master seed generated","timestamp":"2026-03-09T17:04:29.159Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-03-09T17:04:32.362Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-03-09T17:04:32.363Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-03-09T17:04:32.383Z"}

@@ -161,26 +161,27 @@ export const verifyPaylink = async (
   next();
 }
 
-export const verifyActionUsing2FA = async (
+export const verifyActionUsing2FA: RequestHandler =  async (
   req: Request,
   _: Response,
   next: NextFunction
 ) => {
+  const request = req as RequestAuth;
   // Only enforce 2FA for high-risk POST actions:
   // 1. API key creation/regeneration (POST /api-keys, /api-keys/regenerate)
   // 2. Initiating a payout (POST /transactions/payout/crypto, /transactions/payout/crypto/retry)
   // 3. Initiating a refund (POST /transactions/refund, /transactions/refund/retry)
-  if (req.method !== "POST") {
+  if (request.method !== "POST") {
     return next();
   }
 
-  const token = Array.isArray(req.headers["2-fa-key"])
-    ? req.headers["2-fa-key"][0]
-    : req.headers["2-fa-key"];
+  const token = Array.isArray(request.headers["2-fa-key"])
+    ? request.headers["2-fa-key"][0]
+    : request.headers["2-fa-key"];
   if(!token){
     throw new APIError("2FA token not found!", STATUS.bad);
   }
-  const userId = req.user?.id;
+  const userId = request.user?.id;
   const user = await userRepository.findUserById(<string>userId);
 
   if(!user?.twoFactorSecret && !user?.twoFactorEnabled){
