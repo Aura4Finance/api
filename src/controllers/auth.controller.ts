@@ -106,10 +106,8 @@ export class AuthController {
     return res.status(STATUS.ok).json({
       success: true,
       message,
-      data: {
-        code: payload,
-      },
-    });6
+      data: payload,
+    });
   }
 
   async continueWith2FA(req: Request, res: Response) {
