@@ -69,10 +69,11 @@ export class ApiKeyController {
     const { message, payload } = await this.apiKeyService.getApiKeys(
       <string>user!.businessProfile?.id
     );
+    payload.forEach((key: any) => key.liveKey = key.liveKey ? "lk_********************" + key.liveKey.slice(-4) : null);
     return res.status(STATUS.ok).json({
       success: true,
       message: message,
-      data: { ...payload, liveKey: "" },
+      data: payload,
     });
   }
 }

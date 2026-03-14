@@ -204,10 +204,12 @@ export class TransactionRepository {
     status = TransactionStatus.COMPLETED,
     mode = Mode.live,
     days = 7,
+    userId,
   }: {
     status?: TransactionStatus;
     mode?: Mode;
     days?: number;
+    userId?: string;
   }) {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -221,6 +223,7 @@ export class TransactionRepository {
       where: {
         status,
         mode,
+        ...(userId && { profileId: userId }),
         createdAt: {
           gte: startDate,
           lte: today,
@@ -471,7 +474,7 @@ export class TransactionRepository {
     };
   }
 
-  async countTransaction(mode: Mode = Mode.live) {
+  async countTransaction(mode: Mode = Mode.live, userId?: string) {
     const now = new Date();
 
     // Current month range
@@ -479,7 +482,7 @@ export class TransactionRepository {
     const currentEnd = new Date(
       now.getFullYear(),
       now.getMonth() + 1,
-      0,
+      0,  
       23,
       59,
       59,
@@ -502,6 +505,7 @@ export class TransactionRepository {
       db.transaction.count({
         where: {
           mode,
+          ...(userId && { profileId: userId }),
           createdAt: {
             gte: currentStart,
             lte: currentEnd,
@@ -511,6 +515,7 @@ export class TransactionRepository {
       db.transaction.count({
         where: {
           mode,
+          ...(userId && { profileId: userId }),
           createdAt: {
             gte: lastStart,
             lte: lastEnd,
@@ -600,6 +605,29 @@ export class TransactionRepository {
         (totalTransactions / merchantCount).toFixed(1)
       ),
       totalMerchants: merchantCount,
+    };
+  }
+
+  async getMerchantTransactionVolume(userId: string, mode: Mode = Mode.live) {
+    const volume = await db.transaction.aggregate({
+      _sum: {
+        amount: true,
+        amountInUSDC: true,
+      },
+      _count: {
+        _all: true,
+      },
+      where: {
+        profileId: userId,
+        mode,
+        status: TransactionStatus.COMPLETED,
+      },
+    });
+
+    return {
+      totalVolume: Number((volume._sum.amount ?? 0).toFixed(2)),
+      totalVolumeInUSDC: Number((volume._sum.amountInUSDC ?? 0).toFixed(2)),
+      transactionCount: volume._count._all,
     };
   }
 }

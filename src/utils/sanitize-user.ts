@@ -1,5 +1,5 @@
 export default function sanitizeUser(profile: any) {
-  const { password, disabled, role, businessProfile, googleId, twoFactorSecret, ...rest } = profile;
+  const { password, derivationIndex, disabled, role, businessProfile, googleId, twoFactorSecret, ...rest } = profile;
   const sanitized = { ...rest };
   if (businessProfile) {
     const { webhook, ...bpRest } = businessProfile;

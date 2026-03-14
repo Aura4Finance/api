@@ -238,6 +238,22 @@ export class Metrics {
     };
   }
 
+  async getMerchantDashboardMetrics(userId: string, mode: Mode = Mode.live) {
+    const transactionCount = await this.transactionRepository.countTransaction(mode, userId);
+    const transactionVolume = await this.transactionRepository.getMerchantTransactionVolume(userId, mode);
+    const transactionMetrics = await this.transactionRepository.getTransactionMetrics({ mode, userId });
+    const customerCount = await this.customerRepository.countCustomers(mode, userId);
+    return {
+      message: "Merchant dashboard metrics retrieved successfully",
+      payload: {
+        transactionCount,
+        customerCount,
+        transactionVolume,
+        transactionMetrics,
+      }
+    };
+  }
+
   async getDashboardMetrics(mode: Mode= Mode.live) {
     const transactionCount = await this.transactionRepository.countTransaction(mode);
     const merchantCount = await this.userRepository.countMerchants();

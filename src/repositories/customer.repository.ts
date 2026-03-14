@@ -331,7 +331,7 @@ export class CustomerRepository {
 
   }
 
-  async countCustomers(mode: Mode = Mode.live) {
+  async countCustomers(mode: Mode = Mode.live, userId?: string) {
     const now = new Date();
 
     // Current month
@@ -342,20 +342,33 @@ export class CustomerRepository {
     const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
+    const where: any = {
+      mode: {
+        has: mode
+      }
+    };
+
+    if (userId) {
+      where.userCustomers = {
+        some: {
+          profileId: userId,
+        },
+      };
+    }
+
     const [currentCount, lastCount] = await Promise.all([
       db.customer.count({
         where: {
+          ...where,
           createdAt: {
             gte: currentStart,
             lte: currentEnd
-          },
-          mode: {
-            has: mode
           }
         }
       }),
       db.customer.count({
         where: {
+          ...where,
           createdAt: {
             gte: lastStart,
             lte: lastEnd

@@ -15,6 +15,13 @@ router.get(
   )
 );
 
+router.get(
+  "/metrics",
+  asyncHandler((req: RequestAuth, res: Response) =>
+    profileController.getProfileMetrics(req, res)
+  )
+);
+
 router.post(
   "/request-email-change",
   verifyRequestBody,
