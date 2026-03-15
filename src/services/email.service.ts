@@ -234,7 +234,6 @@ async sendPaymentFailedEmail(
       reference,
       date: new Date().toLocaleString(),
     },
-    true,
     true
   );
 

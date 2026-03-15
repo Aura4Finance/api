@@ -338,28 +338,61 @@ export class PaymentService {
     }
     await this.setActiveNetwork(tx.mode);
 
-    const USDT = await this.client.getCoins({
-      owner: <string>tx.payment?.wallet?.address,
-      coinType: this.payoutService.cointype
-    });
     const { amountInUSDC, payment } = tx;
     const target = BigInt(Math.floor(Number(amountInUSDC) * 1_000_000));
-    const matchingCoin = USDT.data.find(
-      coin => BigInt(coin.balance) >= this.twoSigFig(target)
+
+    // Fetch every coin object in the deposit wallet across all pages
+    const allCoins: Awaited<ReturnType<typeof this.client.getCoins>>["data"] = [];
+    let cursor: string | null | undefined = undefined;
+    do {
+      const page = await this.client.getCoins({
+        owner: tx.payment?.wallet?.address as string,
+        coinType: this.payoutService.cointype,
+        cursor,
+      });
+      allCoins.push(...page.data);
+      cursor = page.hasNextPage ? page.nextCursor : undefined;
+    } while (cursor);
+
+    // ── Step 1: verify the payment was actually received ───────────────────
+    // Sum every coin object in the deposit wallet to get the true received total.
+    const receivedTotal = allCoins.reduce(
+      (sum, coin) => sum + BigInt(coin.balance),
+      0n
     );
 
-    if (!matchingCoin) {
-      throw new APIError("No matching coin found for the transfer", STATUS.notFound);
+    if (receivedTotal < target) {
+      // Customer has not sent the required amount yet (or sent nothing at all)
+      throw new APIError(
+        `Payment not received: expected ${target} but wallet only holds ${receivedTotal}`,
+        STATUS.bad
+      );
     }
 
-     const derivedWalletBuffer = await deriveWallet(<number>payment?.wallet?.derivationIndex);
-     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
+    // ── Step 2: select the best coin object for the forwarding transfer ────
+    // Prefer the smallest single coin object that still covers the target
+    // so we avoid splitting large objects unnecessarily.
+    const matchingCoin = allCoins
+      .filter(coin => BigInt(coin.balance) >= target)
+      .sort((a, b) => (BigInt(a.balance) < BigInt(b.balance) ? -1 : 1))[0] ?? null;
+
+    if (!matchingCoin) {
+      // Total balance is sufficient but fragmented across several small coin objects.
+      // The job layer must merge them before it can forward a single transfer.
+      throw new APIError(
+        "Payment received but split across multiple coin objects — merging required before forwarding",
+        STATUS.bad
+      );
+    }
+
+    const derivedWalletBuffer = await deriveWallet(payment?.wallet?.derivationIndex as number);
+    const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
     await transactionQueue.add("transfer-usdt", {
       walletPrivateKey: secretKey,
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
-      toAddress: <string>tx?.profile.wallet[0]?.address,
-      mode: tx.mode
+      toAddress: tx?.profile.wallet[0]?.address as string,
+      mode: tx.mode,
     })
 
     await this.confirmPayment(
@@ -382,10 +415,4 @@ export class PaymentService {
     };
   }
 
-  private twoSigFig = (num: any) => {
-    const n = Number(num);
-    if (n === 0) return 0;
-    const digits = Math.floor(Math.log10(Math.abs(n)));
-    return Number((n / 10 ** digits).toFixed(2 - 1)) * 10 ** digits;
-  };
 }
