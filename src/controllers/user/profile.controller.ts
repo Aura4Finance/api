@@ -35,7 +35,9 @@ export class ProfileController {
 
   async getProfileMetrics(req: RequestAuth, res: Response) {
        const profile = await this.userService.getUserById(req.user.id);
-       const { message, payload } = await this.metricsService.getMerchantDashboardMetrics(profile!.id, profile?.businessProfile?.isLive? "live" : "test"  );
+       const { message, payload } = await this.metricsService.getMerchantDashboardMetrics(
+        <string>profile?.businessProfile?.id, 
+        profile?.businessProfile?.isLive? "live" : "test"  );
   
     return res.status(STATUS.ok).json({
       success: true,
