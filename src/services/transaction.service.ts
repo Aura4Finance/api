@@ -1,5 +1,6 @@
 import { Service } from "typedi";
 import { STATUS } from "@/constants/status.constant";
+import { SUPPORTED_NETWORKS } from "@/constants/networks.constant";
 import { APIError } from "@/utils/error-handler";
 import { TransactionRepository } from "@/repositories/transaction.repository";
 import { UserRepository } from "@/repositories/user/user.repository";
@@ -13,6 +14,22 @@ export class TransactionService {
         private readonly transactionRepository: TransactionRepository,
         private readonly userRepository: UserRepository
     ) { }
+
+    private getNetworkLogoUrl(network?: string): string | null {
+        if (!network) return null;
+        const networkData = SUPPORTED_NETWORKS.find(n => n.code === network || n.symbol === network);
+        return networkData?.logoUrl || null;
+    }
+
+    private enrichTransactionWithNetworkLogo(transaction: any) {
+        return {
+            ...transaction,
+            network: {
+                symbol: transaction.network,
+                logo: this.getNetworkLogoUrl(transaction.network)
+            }
+        };
+    }
 
     async getTransactionById(
         txId: string,
@@ -33,7 +50,7 @@ export class TransactionService {
         }
         return {
             message: "Transaction retrieved successfully",
-            payload: transaction
+            payload: this.enrichTransactionWithNetworkLogo(transaction)
         };
     }
 
@@ -57,7 +74,10 @@ export class TransactionService {
         }
         return {
             message: "Transactions retrieved successfully",
-            payload: transactions
+            payload: {
+                ...transactions,
+                transactions: transactions.transactions.map((transaction) => this.enrichTransactionWithNetworkLogo(transaction))
+            }
         };
     }
 

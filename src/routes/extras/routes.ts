@@ -1,5 +1,6 @@
 import coinMarketClient from "@/config/coinMarketClient-config";
 import { STATUS } from "@/constants/status.constant";
+import { SUPPORTED_NETWORKS } from "@/constants/networks.constant";
 import { FiatController } from "@/controllers/user/fiat.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Request, Response } from "express";
@@ -61,24 +62,10 @@ router.get(
 router.get(
   "/networks",
   asyncHandler(async (_: Request, res: Response) => {
-    const networks = [
-      {
-        code: "00001",
-        name: "Sui",
-        symbol: "SUI",
-        chainId: "mainnet|testnet",
-        isActive: true,
-        supportsTokens: true,
-        supportsSmartContracts: true,
-        explorerUrl: "https://suiexplorer.com",
-        logoUrl: "https://res.cloudinary.com/dlhnwgcbe/image/upload/v1772482383/sui_jigntr.jpg",
-      },
-    ];
-
     res.status(STATUS.ok).json({
       status: "success",
-      message: "Support networks retrieved successfully!",
-      data: networks,
+      message: "Supported networks retrieved successfully!",
+      data: SUPPORTED_NETWORKS,
     });
   })
 );

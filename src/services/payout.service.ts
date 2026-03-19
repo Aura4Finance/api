@@ -91,8 +91,8 @@ export class PayoutService {
                 {
                     coinType: "USDC",
                     balance: cache?.totalBalance,
-                },
-            ],
+                }
+            ]
         };
     }
 
@@ -236,8 +236,9 @@ export class PayoutService {
                 throw new APIError("Settlemtment account or wallet address is required", STATUS.bad);
             }
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
-        const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "", "from_USDT");
+        const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createCryptoPayout(
+            body.network,
             amountInNGN,
             body.amount,
             "CRYPTO",

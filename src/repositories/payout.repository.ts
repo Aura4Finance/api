@@ -1,11 +1,12 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
-import { Mode, PayOutMethod, TransactionStatus } from "../../generated/prisma";
+import { Mode, Network, PayOutMethod, TransactionStatus } from "../../generated/prisma";
 import { PayoutQueryDto } from "@/dto/payout.dto";
 
 @Service()
 export class PayoutRepository {
   async createCryptoPayout(
+    network: Network,
     amount: number,
     amountInUSDC: number,
     method: PayOutMethod,
@@ -18,6 +19,8 @@ export class PayoutRepository {
         type: "PAYOUT",
         status: "PENDING",
         mode,
+        currency: "-",
+        network,
         amount,
         amountInUSDC,
         token: "USDC",
