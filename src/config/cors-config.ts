@@ -21,7 +21,7 @@ const CORS_OPTIONS: CorsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-api-key", "payment-link-id"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-api-key", "payment-link-id", "2-fa-key"],
 };
 
 export default CORS_OPTIONS;  
