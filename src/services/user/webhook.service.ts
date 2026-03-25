@@ -45,7 +45,7 @@ export class WebhookService {
 
     return {
       message: "Webhook retrieved successfully",
-      payload: webhook,
+      payload: webhook ? { ...webhook, secret: "***" } : webhook,
     };
   }
 

@@ -31,7 +31,7 @@ router.get(
 );
 
 router.delete(
-  "/:id",
+  "/:customerId",
   asyncHandler((req: RequestAuth, res: Response) =>
     customerController.deleteCustomer(req, res)
   )
