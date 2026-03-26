@@ -53,17 +53,24 @@ export class PaylinkController {
         throw new APIError("Only image files are allowed", STATUS.forbidden);
       }
     }
+    let imageBlobIds: string[] = []
+    try{
+      imageBlobIds = await Promise.all(
+        files.map(async (file) => {
+          const { blobId } =
+            await this.walrusService.uploadImageToWalrus(
+              file.buffer,
+              userId
+            );
+          return blobId;
+        })
+      );
 
-    const imageBlobIds = await Promise.all(
-      files.map(async (file) => {
-        const { blobId } =
-          await this.walrusService.uploadImageToWalrus(
-            file.buffer,
-            userId
-          );
-        return blobId;
-      })
-    );
+    }
+    catch{
+      throw new APIError("Unable to process image files", STATUS.serverError)
+    }
+
 
     return imageBlobIds;
   }
