@@ -15,7 +15,12 @@ import paymentRoutes from "./payment.routes";
 import notificationRoutes from "./user/notification.routes"
 import extraRoutes from "./extras/routes";
 
-import { checkUserRole, verifyAccessToken, verifyActionUsing2FA, verifyApiKey } from "@/middlewares/user.milddleware";
+import { 
+    checkUserRole, 
+    verifyAccessToken, 
+    verifyActionUsing2FA, 
+    verifyApiKey 
+} from "@/middlewares/user.milddleware";
 
 const dashboardRouter = express.Router();
 
