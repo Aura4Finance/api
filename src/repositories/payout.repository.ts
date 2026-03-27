@@ -19,7 +19,7 @@ export class PayoutRepository {
         type: "PAYOUT",
         status: "PENDING",
         mode,
-        currency: "-",
+        currency: "USD",
         network,
         amount,
         amountInUSDC,

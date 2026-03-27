@@ -32,6 +32,7 @@ export const retrieveWebhookDeliveriesValidation = (raw: any) => {
     status: Joi.string().valid("PENDING", "COMPLETED", "FAILED"),
     transactionId: Joi.string(),
     event: Joi.string().valid("payment.failed", "payment.success"),
+    limit: Joi.number().integer().min(1).optional(),
     date: Joi.object({
       startDate: Joi.date().optional(),
       endDate: Joi.date().optional(),

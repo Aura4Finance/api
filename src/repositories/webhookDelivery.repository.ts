@@ -83,7 +83,8 @@ export class WebhookDeliveryRepository {
             status,
             event,
             transactionId,
-            date
+            date,
+            limit
         } = query;
 
         const where: any = {};
@@ -101,6 +102,7 @@ export class WebhookDeliveryRepository {
 
         return await db.webhookDelivery.findMany({
             where,
+            take: limit || 100,
             orderBy: {
                 createdAt: "desc"
             }

@@ -15,6 +15,7 @@ export interface RetrieveWebhookDeliveries {
     startDate: string,
     endDate: string
   }
+  limit: number
 }
 
 export type EventType = "payment.success" | "payment.failed"
