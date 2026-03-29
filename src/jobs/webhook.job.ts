@@ -32,14 +32,7 @@ export const startWebhookWorker = () => {
     },
     {
       connection: redisConnection,
-      concurrency: 5,
-      defaultJobOptions: {
-        attempts: 8, // 1 initial attempt + 7 retries
-        backoff: {
-          type: 'exponential',
-          delay: 2000, // Start with 2 seconds
-        },
-      },
+      concurrency: 5
     }
   );
 
