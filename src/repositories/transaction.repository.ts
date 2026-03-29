@@ -630,4 +630,45 @@ export class TransactionRepository {
       transactionCount: volume._count._all,
     };
   }
+
+  async calculateMerchantEarnings(profileId: string, mode: Mode = Mode.live) {
+    // Get all completed payments and refunds for this merchant (USDC only)
+    const [payments, refunds] = await Promise.all([
+      // All completed payments
+      db.transaction.aggregate({
+        _sum: { amountInUSDC: true },
+        where: {
+          profileId,
+          mode,
+          type: "PAYMENT",
+          status: TransactionStatus.COMPLETED,
+        },
+      }),
+      // All completed refunds
+      db.transaction.aggregate({
+        _sum: { amountInUSDC: true },
+        where: {
+          profileId,
+          mode,
+          type: "REFUND",
+          status: TransactionStatus.COMPLETED,
+        },
+      }),
+    ]);
+
+    const paymentAmountUSDC = payments._sum.amountInUSDC ?? 0;
+    const refundAmountUSDC = refunds._sum.amountInUSDC ?? 0;
+    const netAmountUSDC = paymentAmountUSDC - refundAmountUSDC;
+
+    // Calculate 99% (after 1% fee)
+    const earningsUSDC = Number((netAmountUSDC * 0.99).toFixed(2));
+
+    return {
+      earningsUSDC,
+      grossEarningsUSDC: Number(netAmountUSDC.toFixed(2)),
+      totalPaymentsUSDC: Number(paymentAmountUSDC.toFixed(2)),
+      totalRefundsUSDC: Number(refundAmountUSDC.toFixed(2)),
+      platformFeeUSDC: Number((netAmountUSDC * 0.01).toFixed(2)),
+    };
+  }
 }

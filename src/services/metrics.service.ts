@@ -243,11 +243,13 @@ export class Metrics {
     const transactionVolume = await this.transactionRepository.getMerchantTransactionVolume(userId, mode);
     const transactionMetrics = await this.transactionRepository.getTransactionMetrics({ mode, userId });
     const customerCount = await this.customerRepository.countCustomers(mode, userId);
+    const earnings = await this.transactionRepository.calculateMerchantEarnings(userId, mode);
     return {
       message: "Merchant dashboard metrics retrieved successfully",
       payload: {
         transactionCount,
         customerCount,
+        earnings,
         transactionVolume,
         transactionMetrics,
       }

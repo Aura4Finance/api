@@ -25,7 +25,7 @@ router.get("/rates",
 );
 
 router.get(
-  "/currency",
+  "/currencies",
   asyncHandler(async (_: Request, res: Response) => {
     const cmcRes = await coinMarketClient.get("/fiat/map");
 
