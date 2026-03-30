@@ -5,6 +5,7 @@ const allowedOrigins = [
   "https://checkout.orafi.app",
   "https://auth.orafi.app",
   "https://admin.orafi.app",
+  "https://dashboard.orafi.app",
   "http://localhost:5173",
 ];
 
