@@ -186,6 +186,7 @@ export class PaymentService {
     paymentId: string,
     customerId: string,
     amount: number,
+    amountInUSDC: number,
     customerEmail: string,
     customerName: string,
     businessName: string,
@@ -193,7 +194,7 @@ export class PaymentService {
     currency: string
   ) {
     await this.paymentRepository.confirmPaymentStatus(paymentId);
-    await this.customerRepository.updateAmountSpent(customerId, amount);
+    await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
 
     await this.sendEmailIfNotSent(paymentId, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
@@ -247,6 +248,7 @@ export class PaymentService {
       await this.confirmPayment(
         tx.id,
         String(tx.customerId),
+        tx.amount,
         tx.amountInUSDC,
         String(customer?.email),
         String(customer?.firstname),
@@ -271,6 +273,7 @@ export class PaymentService {
             tx.id,
             String(tx.customerId),
             tx.amount,
+            tx.amountInUSDC,
             String(customer?.email),
             String(customer?.firstname),
             tx.profile.businessName,
@@ -293,6 +296,7 @@ export class PaymentService {
             tx.id,
             String(tx.customerId),
             tx.amount,
+            tx.amountInUSDC,
             String(customer?.email),
             String(customer?.firstname),
             tx.profile.businessName,
@@ -313,7 +317,7 @@ export class PaymentService {
       data: {
         transactionId: tx.id,
         amount: tx.amount,
-        currency: "NGN",
+        currency: tx.currency,
         status: event === "payment.success" ? "success" : "failed",
         occuredAt: new Date().toISOString(),
       },
@@ -399,6 +403,7 @@ export class PaymentService {
       tx.id,
       <string>tx.customerId,
       tx.amount,
+      tx.amountInUSDC,
       <string>tx.customer?.email,
       <string>tx.customer?.firstname,
       tx.profile.businessName,
