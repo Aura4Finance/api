@@ -11,7 +11,7 @@ export class PaylinkRepository {
         title: data.title,
         description: data.description,
         amount: data.amount,
-        imageBlobIds: data.imageBlobIds,
+        
         currency: data.currency,
         mode,
         profile: {
@@ -19,6 +19,15 @@ export class PaylinkRepository {
             id: profileId
           }
         },
+        images: {
+          create: data.images.map((image) => ({
+            blobId: image.blobId,
+            blobObjectId: image.blobObjectId,
+          })),
+        },
+      },
+      include: {
+        images: true,
       },
     });
 
@@ -31,7 +40,8 @@ export class PaylinkRepository {
         id: paylinkId,
       },
       include: {
-        profile: true
+        profile: true,
+        images: true,
       }
     });
 
@@ -46,6 +56,9 @@ export class PaylinkRepository {
       where: {
         profileId,
         mode
+      },
+      include: {
+        images: true,
       },
     });
 
@@ -62,15 +75,59 @@ export class PaylinkRepository {
   }
 
   async editPaylink(profileId: string, data: Partial<CreatePaylinkDto>, paylinkId: string) {
+    const { images, ...paylinkData } = data;
+
     const result = await db.paylink.update({
       where: {
         id: paylinkId,
         profileId
       },
       data: {
-        ...data
-      }
+        ...paylinkData,
+        ...(images && {
+          images: {
+            deleteMany: {},
+            create: images.map((image) => ({
+              blobId: image.blobId,
+              blobObjectId: image.blobObjectId,
+            })),
+          },
+        }),
+      },
+      include: {
+        images: true,
+      },
     });
     return result;
+  }
+
+  async createImages(paylinkId: string, images: any[]) {
+    const result = await db.images.createMany({
+      data: images.map((image) => ({
+        blobId: image.blobId,
+        blobObjectId: image.blobObjectId,
+        paylinkId,
+      })),
+    });
+
+    return result;
+  }
+
+  async getImageById(imageId: string) {
+    const result = await db.images.findUnique({
+      where: {
+        id: imageId,
+      },
+    });
+
+    return result;
+  }
+
+  async deleteImage(imageId: string) {
+    await db.images.delete({
+      where: {
+        id: imageId,
+      },
+    });
   }
 }

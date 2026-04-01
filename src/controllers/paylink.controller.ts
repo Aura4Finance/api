@@ -24,12 +24,13 @@ export class PaylinkController {
     files: Express.Multer.File[],
     userId: string,
     paylinkId?: string
-  ): Promise<string[]> {
+  ): Promise<Array<{ blobId: string; blobObjectId: string }>> {
     let existingImageCount = 0;
+    const images: Array<{ blobId: string; blobObjectId: string }> = [];
 
     if (paylinkId) {
       const paylink = await this.paylinkService.getPaylink(paylinkId);
-      existingImageCount = paylink.payload.imageBlobIds.length;
+      existingImageCount = paylink.payload.images.length;
     }
 
     const totalImages = (files?.length || 0) + existingImageCount;
@@ -53,26 +54,23 @@ export class PaylinkController {
         throw new APIError("Only image files are allowed", STATUS.forbidden);
       }
     }
-    let imageBlobIds: string[] = []
-    try{
-      imageBlobIds = await Promise.all(
-        files.map(async (file) => {
-          const { blobId } =
-            await this.walrusService.uploadImageToWalrus(
-              file.buffer,
-              userId
-            );
-          return blobId;
-        })
-      );
 
+    try {
+      for (const file of files) {
+        const { blobId, blobObject } = await this.walrusService.uploadImageToWalrus(
+          file.buffer,
+          userId
+        );
+        images.push({
+          blobId,
+          blobObjectId: blobObject?.id?.id
+        });
+      }
+    } catch (error) {
+      throw new APIError("Unable to process image files", STATUS.serverError);
     }
-    catch{
-      throw new APIError("Unable to process image files", STATUS.serverError)
-    }
-
-
-    return imageBlobIds;
+    
+    return images;
   }
 
   async createPaylink(req: RequestAuth, res: Response) {
@@ -91,11 +89,11 @@ export class PaylinkController {
 
     const files = req.files as Express.Multer.File[];
 
-    const imageBlobIds = await this.processImages(files, userId);
+    const images = await this.processImages(files, userId);
 
     const body: CreatePaylinkDto = {
       ...(value as CreatePaylinkDto),
-      imageBlobIds,
+      images,
     };
 
     const { message, payload } =
@@ -162,6 +160,26 @@ export class PaylinkController {
     });
   }
 
+  async removeImageFromPaylink(req: RequestAuth, res: Response) {
+    const userId = req.user?.id as string;
+    const { imageId } = req.params;
+
+    if (!imageId) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: "Image ID is required",
+      });
+    }
+
+    await this.paylinkService.deleteImage(userId, imageId);
+
+    return res.status(STATUS.ok).json({
+      success: true,
+      message: "Image removed successfully",
+      data: null,
+    });
+  }
+
   async editPaylink(req: RequestAuth, res: Response) {
     const userId = req.user.id as string;
     const { error: refError, value: refValue } = paymentLinkReferenceValidation(req.params as any);
@@ -186,8 +204,8 @@ export class PaylinkController {
     let body: Partial<CreatePaylinkDto> = value as CreatePaylinkDto;
 
     if(files.length > 0) {
-      const newImageBlobIds = await this.processImages(files, userId, refValue.paylinkId);
-      body.imageBlobIds = newImageBlobIds;
+      const newImages = await this.processImages(files, userId, refValue.paylinkId);
+      body.images = newImages;
     }
 
     const { message, payload } =

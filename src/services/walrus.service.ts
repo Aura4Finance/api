@@ -1,4 +1,5 @@
 import { getFullnodeUrl } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
 import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 import { walrus, RetryableWalrusClientError } from "@mysten/walrus";
 import { Service } from "typedi";
@@ -17,45 +18,80 @@ export class WalrusService {
         private readonly walletSerice: WalletService
     ) { }
 
-    async uploadImageToWalrus(imageBuffer: Uint8Array, userId: string) {
-        const network =
-            (await this.userRepository.findUserById(userId))?.businessProfile?.isLive
-                ? "mainnet"
-                : "testnet";
+    private async getNetwork(userId: string): Promise<'mainnet' | 'testnet'> {
+        const isLive = (await this.userRepository.findUserById(userId))?.businessProfile?.isLive;
+        return isLive ? "mainnet" : "testnet";
+    }
 
-                
-        const suiJsonRpcClient = new SuiJsonRpcClient({
+    private getWalrusClient(network: 'mainnet' | 'testnet') {
+        return new SuiJsonRpcClient({
             url: getFullnodeUrl(network),
             network,
         }).$extend(
             walrus({
                 uploadRelay: {
-                    host: network ===  "testnet" ? "https://upload-relay.testnet.walrus.space" : "https://upload-relay.walrus.space",
-                    sendTip: {
-                        max: 1_000,
-                    },
+                    host: network === "testnet" 
+                        ? "https://upload-relay.testnet.walrus.space" 
+                        : "https://upload-relay.mainnet.walrus.space",
+                    sendTip: { max: 1_000 },
                 },
             })
         );
-        const upload = () =>
-            suiJsonRpcClient.walrus.writeBlob({
-                blob: imageBuffer,
-                deletable: true,
-                epochs: 2,
-                signer: Ed25519Keypair.fromSecretKey(this.walletSerice.admin_secret_key),
-            });
+    }
+
+    private getSigner() {
+        return Ed25519Keypair.fromSecretKey(this.walletSerice.admin_secret_key);
+    }
+
+    async deleteImageFromWalrus(blobObjectId: string, userId: string) {
         try {
+            const network = await this.getNetwork(userId);
+            const suiJsonRpcClient = this.getWalrusClient(network);
+            const signer = this.getSigner();
+
+            const storage = suiJsonRpcClient.walrus.deleteBlob({ blobObjectId });
+            const tx = new Transaction();
+            tx.transferObjects([storage], signer.getPublicKey().toSuiAddress());
+            
+            await suiJsonRpcClient.signAndExecuteTransaction({
+                signer,
+                transaction: tx,
+                options: { showEffects: true, showObjectChanges: true },
+            });
+        } catch (error: any) {
+            logger.error(error);
+            throw new APIError(`Blob deletion failed: ${error.message}`, STATUS.serverError);
+        }
+    }
+
+    async uploadImageToWalrus(imageBuffer: Uint8Array, userId: string) {
+        try {
+            const network = await this.getNetwork(userId);
+            const suiJsonRpcClient = this.getWalrusClient(network);
+            const signer = this.getSigner();
+
+            const upload = () =>
+                suiJsonRpcClient.walrus.writeBlob({
+                    blob: imageBuffer,
+                    deletable: true,
+                    epochs: 2,
+                    signer,
+                });
+
             const { blobId, blobObject } = await upload().catch(async (error: any) => {
                 if (error instanceof RetryableWalrusClientError) {
                     suiJsonRpcClient.walrus.reset();
                     return upload();
                 }
-                throw new APIError(`Unable to upload to Walrus: ${error?.cause?.toString() ?? error.message}`, STATUS.serverError);
+                throw new APIError(
+                    `Unable to upload to Walrus: ${error?.cause?.toString() ?? error.message}`,
+                    STATUS.serverError
+                );
             });
 
             return { blobId, blobObject };
         } catch (error: any) {
-            logger.error(error)
+            logger.error(error);
             throw new APIError(`Blob upload failed: ${error.message}`, STATUS.serverError);
         }
     }

@@ -12346,3 +12346,21 @@
 {"level":"error","message":"APIError: Invalid access token\n    at verifyAccessToken (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:55:11)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)","timestamp":"2026-04-01T13:32:20.448Z"}
 {"level":"error","message":"APIError: Invalid access token\n    at verifyAccessToken (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:55:11)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)","timestamp":"2026-04-01T13:32:25.308Z"}
 {"level":"error","message":"APIError: Invalid access token\n    at verifyAccessToken (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:55:11)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)","timestamp":"2026-04-01T13:32:32.969Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-01T13:35:15.948Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-01T13:35:17.515Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-01T13:35:21.658Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-01T13:35:24.276Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-01T13:35:24.348Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-01T13:35:24.756Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-01T13:46:41.906Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-01T13:46:42.941Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-01T13:46:46.506Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-01T13:46:49.129Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-01T13:46:49.132Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-01T13:46:49.147Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-01T13:52:26.520Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-01T13:52:27.064Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-01T13:52:30.674Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-01T13:52:34.165Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-01T13:52:34.492Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-01T13:52:35.632Z"}

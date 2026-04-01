@@ -197,10 +197,18 @@ model Paylink {
   mode         Mode
   amount       Int
   currency     String
-  imageBlobIds String[]
+  images       Images[]        @relation("PaylinkImages")
   payments     Payment[]       @relation("PaylinkPayments")
   profile      BusinessProfile @relation("ProfilePaylinks", fields: [profileId], references: [id], onDelete: Cascade)
   profileId    String
+}
+
+model Images {
+  id            String   @id @default(cuid()) @map("_id")
+  blobId        String
+  blobObjectId  String
+  paylink       Paylink  @relation("PaylinkImages", fields: [paylinkId], references: [id], onDelete: Cascade)
+  paylinkId     String
 }
 
 model Payout {

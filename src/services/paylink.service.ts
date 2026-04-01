@@ -3,14 +3,15 @@ import { CreatePaylinkDto } from "@/dto/paylink.dto";
 import { PaylinkRepository } from "@/repositories/paylink.repository";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { APIError } from "@/utils/error-handler";
+import { WalrusService } from "./walrus.service";
 import { Service } from "typedi";
 
 @Service()
 export class PaylinkService {
   constructor
   (private readonly paylinkRepository: PaylinkRepository,
-    private readonly userRepository: UserRepository
-
+    private readonly userRepository: UserRepository,
+    private readonly walrusService: WalrusService
   ) {}
 
   async createPaylink(userId: string, body: CreatePaylinkDto) {
@@ -69,6 +70,25 @@ export class PaylinkService {
     return {
       message: "Paylink updated successfully",
       payload: paylink,
+    };
+  }
+
+  async deleteImage(userId: string, imageId: string) {
+    const image = await this.paylinkRepository.getImageById(imageId);
+
+    if (!image) {
+      throw new APIError("Image not found", STATUS.notFound);
+    }
+
+    // Delete from Walrus
+    await this.walrusService.deleteImageFromWalrus(image.blobObjectId, userId);
+
+    // Delete from database
+    await this.paylinkRepository.deleteImage(imageId);
+
+    return {
+      message: "Image deleted successfully",
+      payload: null,
     };
   }
 }

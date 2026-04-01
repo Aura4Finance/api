@@ -3,7 +3,12 @@ export interface CreatePaylinkDto {
   description: string;
   amount: number;
   currency: string;
-  imageBlobIds: string[];
+  images: Image[]
+}
+
+export interface Image {
+  blobId: string;
+  blobObjectId: string;
 }
 
 export interface PaylinkReferenceDto {

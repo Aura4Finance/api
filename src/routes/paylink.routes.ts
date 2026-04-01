@@ -18,6 +18,12 @@ router.post(
   )
 );
 
+router.delete(
+  "/images/:imageId",
+  asyncHandler((req: RequestAuth, res: Response) =>
+    paylinkController.removeImageFromPaylink(req, res)
+  )
+);
 
 router.get(
   "/:paylinkId",
@@ -47,4 +53,5 @@ router.patch(
     paylinkController.editPaylink(req, res)
   )
 );
+
 export default router;
