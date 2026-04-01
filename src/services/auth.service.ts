@@ -67,10 +67,14 @@ export class AuthService {
     );
 
     const otpSecret = crypto.randomInt(100000, 999999).toString();
-    const otp = await this.authRepository.registerOtp(newUser.id, otpSecret);
+    const hashedCode = crypto
+      .createHash("sha256")
+      .update(otpSecret)
+      .digest("hex");
+    await this.authRepository.registerOtp(newUser.id, hashedCode);
     await this.emailService.sendOtp(
       newUser.email,
-      otp.secret
+      otpSecret
     );
 
     return {
@@ -120,7 +124,12 @@ export class AuthService {
 
     const existingOtp = await this.authRepository.findOtpByEmail(email);
 
-    if (existingOtp?.secret != otp || existingOtp.expiresAt < new Date()) {
+    const hashedOtp = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    if (existingOtp?.secret != hashedOtp || existingOtp.expiresAt < new Date()) {
       throw new APIError("Invalid OTP", STATUS.bad);
     }
 
@@ -149,13 +158,15 @@ export class AuthService {
     }
 
     const otpSecret = crypto.randomInt(100000, 999999).toString();
-    const otp = await this.authRepository.registerOtp(user.id, otpSecret);
-
-
+    const hashedCode = crypto
+      .createHash("sha256")
+      .update(otpSecret)
+      .digest("hex");
     await this.emailService.sendOtp(
       user.email,
-      otp.secret
+      otpSecret
     );
+    await this.authRepository.registerOtp(user.id, hashedCode);
 
     return {
       message: "OTP resent successfully",
@@ -223,12 +234,35 @@ export class AuthService {
       throw new APIError("Invalid password", STATUS.unauthorized);
     }
 
+    let payload: any;
+    if(user?.twoFactorEnabled){
+      payload = {
+        twoFANeeded: true,
+        userId: user.id
+      }
+    }else{
+      payload = {
+        twoFactorNeeded: false,
+        otpSecret: await this.generateSecret(user.id)
+      }
+    }
+
+
     return {
       message: "User signed in successfully. Verify 2FA to continue",
-      payload: {
-        userId: user.id,
-      },
+      payload
     }
+  }
+
+  private async generateSecret(userId: string){
+    const otpSecret = `orafi_${crypto.randomBytes(32).toString("hex")}`;
+    const hashedCode = crypto
+      .createHash("sha256")
+      .update(otpSecret)
+      .digest("hex");
+
+    await this.authRepository.registerOtp(userId, hashedCode);
+    return otpSecret;
   }
 
   async verify2FAAndGenerateSecret(userId: string, token: string) {
@@ -251,18 +285,9 @@ export class AuthService {
       }
     }
 
-
-    const otpSecret = `orafi_${crypto.randomBytes(32).toString("hex")}`;
-    const hashedCode = crypto
-      .createHash("sha256")
-      .update(otpSecret)
-      .digest("hex");
-
-    await this.authRepository.registerOtp(user.id, hashedCode);
-
     return {
       message: "User login successful",
-      payload: otpSecret,
+      payload: await this.generateSecret(user.id),
     };
   }
 
@@ -318,9 +343,8 @@ export class AuthService {
         .update(otp)
         .digest("hex");
       const existingOtp = await this.authRepository.findDtoByCode(hashedCode);
-
       if (!existingOtp || existingOtp.expiresAt < new Date()) {
-        throw new APIError("Invalid Otp", STATUS.bad)
+        throw new APIError("Invalid Otp", STATUS.bad);
       }
       user = await this.userRepository.findUserById(existingOtp?.userId);
       await this.authRepository.deleteOtp(existingOtp.id);
@@ -350,11 +374,15 @@ export class AuthService {
     }
 
     const otpSecret = crypto.randomInt(100000, 999999).toString();
-    const otp = await this.authRepository.registerOtp(user.id, otpSecret);
-
+    const hashedCode = crypto
+      .createHash("sha256")
+      .update(otpSecret)
+      .digest("hex");
+    
+    await this.authRepository.registerOtp(user.id, hashedCode);
     await this.emailService.sendOtp(
       user.email,
-      otp.secret
+      otpSecret
     );
 
     return {
@@ -374,7 +402,12 @@ export class AuthService {
 
     const existingOtp = await this.authRepository.findOtpByEmail(email);
 
-    if (existingOtp?.secret != otp || existingOtp.expiresAt < new Date()) {
+    const hashedOtp = crypto
+      .createHash("sha256")
+      .update(otp)
+      .digest("hex");
+
+    if (existingOtp?.secret != hashedOtp || existingOtp.expiresAt < new Date()) {
       throw new APIError("Invalid OTP", STATUS.bad);
     }
 

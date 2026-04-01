@@ -173,7 +173,7 @@ private async queueEmail(emailPayload: any) {
     );
 
     //throttle OTP for 60 seconds
-   await redis.set(throttleKey, "1", "EX", 60 * 10);
+   await redis.set(throttleKey, "1", "EX", 60);
   }
 
 
