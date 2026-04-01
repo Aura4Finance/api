@@ -21,7 +21,6 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { EmailQueue } from "./schedule.email.service";
 import { v4 as uuid } from "uuid";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
 import speakeasy from "speakeasy";
 import { UserService } from "./user/user.service";
 
@@ -291,10 +290,7 @@ export class AuthService {
     };
   }
 
-  async signOut(jtl: string, exp: number) {
-    const ttl = exp - Math.floor(Date.now() / 1000);
-    await redisClient.set(`bl:${jtl}`, '1', "EX", ttl);
-
+  async signOut() {
     return {
       message: "User signed out successfully",
       payload: null,

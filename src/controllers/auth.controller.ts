@@ -132,9 +132,14 @@ export class AuthController {
   }
     
 
-  async signOut(req: RequestAuth, res: Response) {
-    const { jti, exp } = req;
-    const { payload, message } = await this.authService.signOut(jti as string, exp as number);
+  async signOut(_req: RequestAuth, res: Response) {
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    const { payload, message } = await this.authService.signOut();
 
     return res.status(STATUS.ok).json({
       success: true,
