@@ -26,7 +26,7 @@ export class PaylinkController {
     paylinkId?: string
   ): Promise<Array<{ blobId: string; blobObjectId: string }>> {
     let existingImageCount = 0;
-    const images: Array<{ blobId: string; blobObjectId: string }> = [];
+    let images: Array<{ blobId: string; blobObjectId: string }> = [];
 
     if (paylinkId) {
       const paylink = await this.paylinkService.getPaylink(paylinkId);
@@ -203,9 +203,12 @@ export class PaylinkController {
     const files = req.files as Express.Multer.File[];
     let body: Partial<CreatePaylinkDto> = value as CreatePaylinkDto;
 
-    if(files.length > 0) {
-      const newImages = await this.processImages(files, userId, refValue.paylinkId);
+    if(files && files.length > 0) {
+      const newImages = await this.processImages(files, userId);
       body.images = newImages;
+    } else {
+      // If no new images, don't modify the images property
+      delete (body as any).images;
     }
 
     const { message, payload } =

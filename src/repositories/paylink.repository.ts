@@ -86,7 +86,6 @@ export class PaylinkRepository {
         ...paylinkData,
         ...(images && {
           images: {
-            deleteMany: {},
             create: images.map((image) => ({
               blobId: image.blobId,
               blobObjectId: image.blobObjectId,

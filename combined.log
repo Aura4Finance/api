@@ -12364,3 +12364,9 @@
 {"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-01T13:52:34.165Z"}
 {"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-01T13:52:34.492Z"}
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-01T13:52:35.632Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-01T15:25:46.280Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-01T15:25:46.812Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-01T15:25:51.163Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-01T15:25:54.072Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-01T15:25:54.076Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-01T15:25:54.099Z"}
