@@ -3,7 +3,7 @@ import Joi from "joi";
 
 export const rotateApiKeySchema = (data: RotateApiKeyDto) => {
     const schema = Joi.object({
-        keyId: Joi.string().uuid().required(),
+        keyId: Joi.string().required(),
     });
 
     return schema.validate(data);
