@@ -65,7 +65,7 @@ export class PaylinkService {
   async editPaylink(userId: string, paylinkId: string, body: Partial<CreatePaylinkDto>) {
     const profileId = await this.userRepository.findUserById(userId)
       .then((data) => data?.businessProfile?.id);
-    const paylink = await this.paylinkRepository.editPaylink(profileId as string, body, paylinkId);
+    const paylink = await this.paylinkRepository.editPaylink(<string>profileId, body, paylinkId);
 
     return {
       message: "Paylink updated successfully",
@@ -76,7 +76,7 @@ export class PaylinkService {
   async deleteImage(userId: string, imageId: string) {
     const profileId = await this.userRepository.findUserById(userId)
       .then((data) => data?.businessProfile?.id);
-    const image = await this.paylinkRepository.getImageById(imageId, profileId);
+    const image = await this.paylinkRepository.getImageById(imageId, <string>profileId);
 
     if (!image) {
       throw new APIError("Image not found", STATUS.notFound);
