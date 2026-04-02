@@ -74,21 +74,22 @@ export class PaylinkService {
   }
 
   async deleteImage(userId: string, imageId: string) {
-    const image = await this.paylinkRepository.getImageById(imageId);
+    const profileId = await this.userRepository.findUserById(userId)
+      .then((data) => data?.businessProfile?.id);
+    const image = await this.paylinkRepository.getImageById(imageId, profileId);
 
     if (!image) {
       throw new APIError("Image not found", STATUS.notFound);
     }
-
     // Delete from Walrus
-    await this.walrusService.deleteImageFromWalrus(image.blobObjectId, userId);
+    await this.walrusService.deleteImageFromWalrus(image.blobObjectId, profileId as string);
 
     // Delete from database
     await this.paylinkRepository.deleteImage(imageId);
 
     return {
       message: "Image deleted successfully",
-      payload: null,
+      payload: null
     };
   }
 }

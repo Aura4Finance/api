@@ -21,8 +21,8 @@ export const loginSchemaValidation = (data: LoginDto) => {
 
 export const createAccountValidation = (data: CreateAccountDto) => {
   const schema = Joi.object({
-    firstname: Joi.string().min(2).required(),
-    lastname: Joi.string().min(2).required(),
+    firstname: Joi.string().min(2).pattern(/^[a-zA-Z]+$/).required(),
+    lastname: Joi.string().min(2).pattern(/^[a-zA-Z]+$/).required(),
     email: Joi.string().email().required(),
     password: Joi.string().min(8).required(),
   });
@@ -33,8 +33,8 @@ export const createAccountValidation = (data: CreateAccountDto) => {
 export const adminAuthSchemaValidation = (data: AdminAuthDto) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
-    firstname: Joi.string().min(5),
-    lastname: Joi.string().min(5)
+    firstname: Joi.string().min(5).pattern(/^[a-zA-Z]+$/).required(),
+    lastname: Joi.string().min(5).pattern(/^[a-zA-Z]+$/).required()
   });
 
   return schema.validate(data);

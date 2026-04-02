@@ -11,7 +11,6 @@ export class PaylinkRepository {
         title: data.title,
         description: data.description,
         amount: data.amount,
-        
         currency: data.currency,
         mode,
         profile: {
@@ -112,10 +111,13 @@ export class PaylinkRepository {
     return result;
   }
 
-  async getImageById(imageId: string) {
+  async getImageById(imageId: string, profileId: string) {
     const result = await db.images.findUnique({
       where: {
         id: imageId,
+        paylink: {
+          profileId
+        }
       },
     });
 

@@ -42,7 +42,7 @@ export class PaylinkController {
       );
     }
 
-    if (files.length + existingImageCount > 4) {
+    if (totalImages >= 4) {
       throw new APIError(
         "A maximum of 4 image files are allowed",
         STATUS.bad

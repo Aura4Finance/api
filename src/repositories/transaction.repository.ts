@@ -474,7 +474,7 @@ export class TransactionRepository {
     };
   }
 
-  async   countTransaction(mode: Mode = Mode.live, userId?: string) {
+  async countTransaction(mode: Mode = Mode.live, userId?: string) {
     const now = new Date();
 
     // Current month range
