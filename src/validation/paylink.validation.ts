@@ -22,6 +22,12 @@ export const editPaylinkValidation = (data: Partial<CreatePaylinkDto>) => {
   return schema.validate(data);
 }
 
+export const editPaymentLinkImageValidation = (data: string) => {
+  const schema = Joi.string().required();
+  return schema.validate(data);
+};
+
+
 export const paymentLinkReferenceValidation = (data: PaylinkReferenceDto) => {
   const schema =  Joi.object({
     paylinkId: Joi.string().required(),

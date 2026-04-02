@@ -9,6 +9,7 @@ import {
   createPaylinkValidation,
   editPaylinkValidation,
   paymentLinkReferenceValidation,
+  editPaymentLinkImageValidation
 } from "@/validation/paylink.validation";
 import { Response } from "express";
 import { Service } from "typedi";
@@ -162,16 +163,16 @@ export class PaylinkController {
 
   async removeImageFromPaylink(req: RequestAuth, res: Response) {
     const userId = req.user?.id as string;
-    const { imageId } = req.params;
+   const { error, value } = editPaymentLinkImageValidation(<any>req.params);
 
-    if (!imageId) {
+    if (error) {
       return res.status(STATUS.bad).json({
         success: false,
-        message: "Image ID is required",
+        message: formatErrorValidation(error),
       });
     }
 
-    await this.paylinkService.deleteImage(userId, imageId);
+    await this.paylinkService.deleteImage(userId, value);
 
     return res.status(STATUS.ok).json({
       success: true,
