@@ -3,7 +3,7 @@ import Joi from "joi";
 
 export const cryptoPayoutSchemaValidation = (data: any) => {
   const schema = Joi.object({
-    network: Joi.valid("SUI").required(),
+    network: Joi.valid("SUI").optional(),
     amount: Joi.number().positive().required(),
     walletAddress: Joi.string().optional(),
     cryptoSettlementAccountId: Joi.string().optional(),
