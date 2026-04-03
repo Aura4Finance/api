@@ -50,10 +50,10 @@ export class ApiKeyController {
       });
     }
 
-    const keyId = value as RotateApiKeyDto
+    const body = value as RotateApiKeyDto
     const { message, payload } = await this.apiKeyService.regenerateApikeys(
       <string>user!.businessProfile?.id,
-      keyId.keyId
+      body.keyId
     );
 
     return res.status(STATUS.created).json({
