@@ -24,6 +24,7 @@ export class SettlementRepository {
       select: {
         id: true,
         walletAddress: true,
+        network: true,
       }
     });
   }
