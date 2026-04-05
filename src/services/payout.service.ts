@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType } from "../../generated/prisma";
+import { TransactionStatus, TransactionType, Network } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 
 @Service()
@@ -226,7 +226,7 @@ export class PayoutService {
                 throw new APIError("Invalid settlement account ID", STATUS.bad);
             }
             to = settlementAccount.walletAddress;
-            network = settlementAccount.network;
+            network = <Network>settlementAccount.network;
         } else
             if (body.walletAddress && body.network) {
                 to = body.walletAddress;
