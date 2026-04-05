@@ -219,14 +219,14 @@ export class PayoutService {
             throw new Error("Merchant or business profile not found");
         }
         let to: string;
-        let network: string;
+        let network: Network;
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
             if (!settlementAccount) {
                 throw new APIError("Invalid settlement account ID", STATUS.bad);
             }
             to = settlementAccount.walletAddress;
-            network = <Network>settlementAccount.network;
+            network = settlementAccount.network;
         } else
             if (body.walletAddress && body.network) {
                 to = body.walletAddress;
