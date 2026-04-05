@@ -111,7 +111,7 @@ export class RefundServices {
             throw new APIError("Invalid refund transaction ID", STATUS.bad);
         }
         const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, userId);
-        if(paymentTx?.refunded){
+        if(paymentTx.payment?.refunded){
             throw new APIError("Payment transaction already refunded", STATUS.bad);
         }
         this.profile = await this.userRepository
@@ -143,7 +143,7 @@ export class RefundServices {
         if (paymentTx.type != "PAYMENT") {
             throw new APIError("Invalid transaction ID", STATUS.bad);
         }
-        if(paymentTx.refunded){
+        if(paymentTx.payment?.refunded){
             throw new APIError("Payment transaction already refunded.", STATUS.bad);
         }
 
