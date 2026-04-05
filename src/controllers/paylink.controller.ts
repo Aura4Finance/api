@@ -172,7 +172,7 @@ export class PaylinkController {
       });
     }
 
-    await this.paylinkService.deleteImage(userId, value);
+    await this.paylinkService.deleteImage(userId, <string>value);
 
     return res.status(STATUS.ok).json({
       success: true,
