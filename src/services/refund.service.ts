@@ -146,7 +146,7 @@ export class RefundServices {
             throw new APIError("Invalid transaction ID", STATUS.bad);
         }
         if(paymentTx.refunded){
-            throw new APIError("Payment transaction already refunded.", STATUS.bad):
+            throw new APIError("Payment transaction already refunded.", STATUS.bad);
         }
 
         this.profile = await this.userRepository
