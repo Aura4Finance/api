@@ -219,15 +219,21 @@ export class PayoutService {
             throw new Error("Merchant or business profile not found");
         }
         let to: string;
+        let network: string;
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
             if (!settlementAccount) {
                 throw new APIError("Invalid settlement account ID", STATUS.bad);
             }
             to = settlementAccount.walletAddress;
+            network = settlementAccount.network;
         } else
             if (body.walletAddress) {
                 to = body.walletAddress;
+                if(!body.network){
+                    throw new APIError("network is required for crypto payout", STATUS.bad);
+                }
+                network = body.network;
                 if (body.save) {
                     if (!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
                     await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id);
@@ -238,7 +244,7 @@ export class PayoutService {
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createCryptoPayout(
-            body.network,
+            network,
             amountInNGN,
             body.amount,
             "CRYPTO",
