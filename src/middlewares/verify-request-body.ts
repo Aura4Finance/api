@@ -9,11 +9,13 @@ export const verifyRequestBody = (
 ) => {
   const body = req.body;
 
-  if (!body) {
-    next();
+  // Allow requests with no body or empty body
+  if (!body || Object.keys(body).length === 0) {
+    return next();
   }
 
-  if (!body || typeof body !== "object") {
+  // Only validate if body exists and has content
+  if (typeof body !== "object") {
     throw new APIError("Invalid request data", STATUS.bad);
   }
 
