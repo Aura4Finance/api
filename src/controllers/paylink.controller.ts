@@ -13,17 +13,20 @@ import {
 } from "@/validation/paylink.validation";
 import { Response } from "express";
 import { Service } from "typedi";
+import { Mode } from "../../generated/prisma";
+import { UserService } from "@/services/user/user.service";
 
 @Service()
 export class PaylinkController {
   constructor(
     private readonly paylinkService: PaylinkService,
-    private readonly walrusService: WalrusService
+    private readonly walrusService: WalrusService,
+    private readonly userService: UserService,
   ) { }
 
   private async processImages(
     files: Express.Multer.File[],
-    userId: string,
+    mode: Mode,
     paylinkId?: string
   ): Promise<Array<{ blobId: string; blobObjectId: string }>> {
     let existingImageCount = 0;
@@ -60,7 +63,7 @@ export class PaylinkController {
       for (const file of files) {
         const { blobId, blobObject } = await this.walrusService.uploadImageToWalrus(
           file.buffer,
-          userId
+          mode
         );
         images.push({
           blobId,
@@ -76,7 +79,6 @@ export class PaylinkController {
 
   async createPaylink(req: RequestAuth, res: Response) {
     const userId = req.user?.id as string;
-
     const { error, value } = createPaylinkValidation(
       JSON.parse(req.body.payload)
     );
@@ -87,18 +89,24 @@ export class PaylinkController {
         message: formatErrorValidation(error),
       });
     }
-
     const files = req.files as Express.Multer.File[];
-
-    const images = await this.processImages(files, userId);
+    
+    let mode: Mode;
+    if(req.mode) {
+      mode = req.mode;
+    }else{
+      const profile = await this.userService.getUserById(userId);
+      mode = profile?.businessProfile?.isLive ? "live" : "test";
+    }
+    
+    const images = await this.processImages(files, mode);
 
     const body: CreatePaylinkDto = {
       ...(value as CreatePaylinkDto),
       images,
     };
-
     const { message, payload } =
-      await this.paylinkService.createPaylink(userId, body);
+      await this.paylinkService.createPaylink(userId, body, mode);
 
     return res.status(STATUS.created).json({
       success: true,
@@ -172,7 +180,15 @@ export class PaylinkController {
       });
     }
 
-    await this.paylinkService.deleteImage(userId, <string>value.imageId);
+    let mode: Mode;
+    if(req.mode) {
+      mode = req.mode;
+    }else{
+      const profile = await this.userService.getUserById(userId);
+      mode = profile?.businessProfile?.isLive ? "live" : "test";
+    }
+
+    await this.paylinkService.deleteImage(userId, <string>value.imageId, mode);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -203,9 +219,16 @@ export class PaylinkController {
 
     const files = req.files as Express.Multer.File[];
     let body: Partial<CreatePaylinkDto> = value as CreatePaylinkDto;
+    let mode: Mode;
+    if(req.mode) {
+      mode = req.mode;
+    }else{
+      const profile = await this.userService.getUserById(userId);
+      mode = profile?.businessProfile?.isLive ? "live" : "test";
+    }
 
     if(files && files.length > 0) {
-      const newImages = await this.processImages(files, userId);
+      const newImages = await this.processImages(files, mode);
       body.images = newImages;
     } else {
       // If no new images, don't modify the images property

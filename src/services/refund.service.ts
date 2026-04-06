@@ -9,7 +9,7 @@ import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { TransactionStatus, TransactionType } from "../../generated/prisma";
+import { Mode, TransactionStatus, TransactionType } from "../../generated/prisma";
 
 
 @Service()
@@ -24,10 +24,8 @@ export class RefundServices {
         private readonly userRepository: UserRepository,
         private readonly customerRepository: CustomerRepository,
     ) { }
-    private async setActiveNetwork(userId: string) {
-        const user = await this.userRepository.findUserById(userId);
-        if (user?.businessProfile?.isLive) this.client = new SuiClient({ url: getFullnodeUrl("mainnet") });
-        this.client = new SuiClient({ url: getFullnodeUrl("testnet") })
+    private async setActiveNetwork(mode: Mode) {
+        this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) })
     }
 
     private async finalizeRefund(
@@ -100,7 +98,8 @@ export class RefundServices {
 
     async retryRefund(
         txId: string,
-        userId: string
+        userId: string,
+        mode: Mode
     ) {
         const refundTransaction = await this.refundRepository.getRefundById(txId, userId);
         if (
@@ -117,7 +116,7 @@ export class RefundServices {
         this.profile = await this.userRepository
             .findUserById(userId)
             .then((user) => user?.businessProfile);
-        await this.setActiveNetwork(this.profile.userId);
+        await this.setActiveNetwork(mode);
         return await this.finalizeRefund(
             refundTransaction.amount, 
             <number>paymentTx?.amountInUSDC, 
@@ -132,6 +131,7 @@ export class RefundServices {
         reason: string,
         txId: string,
         userId: string,
+        mode: Mode
     ) {
         const paymentTx = await this.paymentRepository.findPaymentById(txId, userId);
         if (!paymentTx) {
@@ -151,7 +151,7 @@ export class RefundServices {
             .findUserById(userId)
             .then((user) => user?.businessProfile);
 
-        await this.setActiveNetwork(this.profile.userId);
+        await this.setActiveNetwork(mode);
         const refundTx = await this.refundRepository.createRefund(
             paymentTx.amount,
             paymentTx.amountInUSDC,

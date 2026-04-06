@@ -7,21 +7,15 @@ import { WalletService } from "./wallet.service";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
-import { UserRepository } from "@/repositories/user/user.repository";
 import logger from "@/utils/logger";
+import { Mode } from "../../generated/prisma";
 
 
 @Service()
 export class WalrusService {
     constructor(
-        private readonly userRepository: UserRepository,
         private readonly walletSerice: WalletService
     ) { }
-
-    private async getNetwork(userId: string): Promise<'mainnet' | 'testnet'> {
-        const isLive = (await this.userRepository.findUserById(userId))?.businessProfile?.isLive;
-        return isLive ? "mainnet" : "testnet";
-    }
 
     private getWalrusClient(network: 'mainnet' | 'testnet') {
         return new SuiJsonRpcClient({
@@ -43,9 +37,9 @@ export class WalrusService {
         return Ed25519Keypair.fromSecretKey(this.walletSerice.admin_secret_key);
     }
 
-    async deleteImageFromWalrus(blobObjectId: string, userId: string) {
+    async deleteImageFromWalrus(blobObjectId: string, mode: Mode) {
         try {
-            const network = await this.getNetwork(userId);
+            const network = mode === Mode.live ? "mainnet" : "testnet";
             const suiJsonRpcClient = this.getWalrusClient(network);
             const signer = this.getSigner();
 
@@ -64,9 +58,9 @@ export class WalrusService {
         }
     }
 
-    async uploadImageToWalrus(imageBuffer: Uint8Array, userId: string) {
+    async uploadImageToWalrus(imageBuffer: Uint8Array, mode: Mode) {
         try {
-            const network = await this.getNetwork(userId);
+            const network = mode === Mode.live ? "mainnet" : "testnet";
             const suiJsonRpcClient = this.getWalrusClient(network);
             const signer = this.getSigner();
 

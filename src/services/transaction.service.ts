@@ -33,6 +33,7 @@ export class TransactionService {
 
     async getTransactionById(
         txId: string,
+        mode: Mode,
         userId?: string
     ) {
         let transaction;
@@ -41,9 +42,9 @@ export class TransactionService {
             if (!profile) {
                 throw new APIError("Invalid user ID", STATUS.bad);
             }
-            transaction = await this.transactionRepository.getTransactionById(txId, profile.businessProfile?.id);
+            transaction = await this.transactionRepository.getTransactionById(txId, mode, profile.businessProfile?.id);
         } else {
-            transaction = await this.transactionRepository.getTransactionById(txId);
+            transaction = await this.transactionRepository.getTransactionById(txId, mode);
         }
         if (!transaction) {
             throw new APIError("Transaction not found", STATUS.notFound);
@@ -56,6 +57,7 @@ export class TransactionService {
 
     async getAllTransactions(
         query: GetAllTransactionsDto,
+        mode: Mode,
         userId?: string
     ) {
         let transactions;
@@ -64,9 +66,9 @@ export class TransactionService {
             if (!profile) {
                 throw new APIError("Invalid user ID", STATUS.bad);
             }
-            transactions = await this.transactionRepository.getAllTransactions(query, query.mode? query.mode: profile?.businessProfile?.isLive ? Mode.live : undefined, profile?.businessProfile?.id);
+            transactions = await this.transactionRepository.getAllTransactions(query, mode, profile?.businessProfile?.id);
         } else {
-            transactions = await this.transactionRepository.getAllTransactions(query, query.mode ? query.mode : Mode.test);
+            transactions = await this.transactionRepository.getAllTransactions(query, query.mode);
         }
 
         if (!transactions) {

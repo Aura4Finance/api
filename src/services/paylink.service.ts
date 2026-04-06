@@ -5,6 +5,7 @@ import { UserRepository } from "@/repositories/user/user.repository";
 import { APIError } from "@/utils/error-handler";
 import { WalrusService } from "./walrus.service";
 import { Service } from "typedi";
+import { Mode } from "../../generated/prisma";
 
 @Service()
 export class PaylinkService {
@@ -14,12 +15,12 @@ export class PaylinkService {
     private readonly walrusService: WalrusService
   ) {}
 
-  async createPaylink(userId: string, body: CreatePaylinkDto) {
+  async createPaylink(userId: string, body: CreatePaylinkDto, mode: Mode) {
     const profile = await this.userRepository.findUserById(userId)
     const paylink = await this.paylinkRepository.createPaylink(
       profile?.businessProfile?.id as string, 
       body,
-      profile?.businessProfile?.isLive? "live" : "test"
+      mode
     );
 
     return {
@@ -73,7 +74,7 @@ export class PaylinkService {
     };
   }
 
-  async deleteImage(userId: string, imageId: string) {
+  async deleteImage(userId: string, imageId: string, mode: Mode) {
     const profileId = await this.userRepository.findUserById(userId)
       .then((data) => data?.businessProfile?.id);
     const image = await this.paylinkRepository.getImageById(imageId, <string>profileId);
@@ -82,7 +83,7 @@ export class PaylinkService {
       throw new APIError("Image not found", STATUS.notFound);
     }
     // Delete from Walrus
-    await this.walrusService.deleteImageFromWalrus(image.blobObjectId, profileId as string);
+    await this.walrusService.deleteImageFromWalrus(image.blobObjectId, mode);
 
     // Delete from database
     await this.paylinkRepository.deleteImage(imageId);

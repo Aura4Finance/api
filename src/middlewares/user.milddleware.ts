@@ -43,10 +43,6 @@ export const verifyAccessToken = async (
       throw new APIError("User not authorized", STATUS.unauthorized);
     }
 
-    if (user.disabled) {
-      throw new APIError("User not authorized", STATUS.unauthorized);
-    }
-
     (req as any).user = user;
     (req as any).jti = decoded.jti;
     (req as any).exp = (decoded as any).exp;

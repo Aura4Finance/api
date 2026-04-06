@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType, Network } from "../../generated/prisma";
+import { TransactionStatus, TransactionType, Network, Mode } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 
 @Service()
@@ -27,9 +27,8 @@ export class PayoutService {
         private readonly settlementRepository: SettlementRepository
     ) { }
 
-    private async setActiveNetwork(userId: string) {
-        const user = await this.userRepository.findUserById(userId);
-        this.client = new SuiClient({ url: getFullnodeUrl(`${user?.businessProfile?.isLive ? "mainnet" : "testnet"}`) });
+    private async setActiveNetwork(mode: Mode) {
+        this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
     }
 
     private async fetchCoins(walletAddress: string) {
@@ -69,7 +68,7 @@ export class PayoutService {
     /**
      * Gets total balance for a user.
      */
-    async getBalances(userId: string) {
+    async getBalances(userId: string, mode: Mode) {
         const profile = await this.userRepository
             .findUserById(userId)
             .then((user) => user?.businessProfile);
@@ -82,7 +81,7 @@ export class PayoutService {
         if (!walletAddress) {
             throw new Error("Wallet address not found");
         }
-        await this.setActiveNetwork(userId);
+        await this.setActiveNetwork(mode);
         const cache: any = await this.fetchCoins(walletAddress);
 
         return {
@@ -182,9 +181,10 @@ export class PayoutService {
 
     async retryCryptoPayout(
         transactionId: string,
-        userId: string
+        userId: string,
+        mode: Mode
     ) {
-        await this.setActiveNetwork(userId);
+        await this.setActiveNetwork(mode);
         const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, userId);
         if (
             !payoutTransaction ||
@@ -210,9 +210,10 @@ export class PayoutService {
      */
     async initiateCryptoPayout(
         body: CryptoPayOutDto,
-        userId: string
+        userId: string,
+        mode: Mode
     ) {
-        await this.setActiveNetwork(userId);
+        await this.setActiveNetwork(mode);
         const keys = await this.userRepository.findUserById(userId);
         const profile = keys?.businessProfile;
         if (!profile) {

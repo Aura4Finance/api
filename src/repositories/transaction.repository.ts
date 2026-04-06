@@ -7,16 +7,17 @@ import { Mode, TransactionStatus } from "../../generated/prisma";
 
 @Service()
 export class TransactionRepository {
-  async getTransactionById(txId: string, profileId?: string) {
+  async getTransactionById(txId: string, mode: Mode, profileId?: string, ) {
     return await db.transaction.findUnique({
       where: {
         id: txId,
+        mode
       },
       ...(profileId && {
         where: {
           id: txId,
           profileId: profileId,
-        },
+        }
       }),
       include: {
         customer: true,

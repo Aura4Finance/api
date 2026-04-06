@@ -6,11 +6,14 @@ import { formatErrorValidation } from "@/utils/format-validation-error";
 import { transactionIdSchemaValidation, transactionQuerySchemaValidation } from "@/validation/transaction.validation";
 import { Service } from "typedi";
 import { Response } from "express"
+import { UserService } from "@/services/user/user.service";
+import { Mode } from "../../generated/prisma";
 
 @Service()
 export class TransactionController {
     constructor(
-        private readonly transactionService: TransactionService
+        private readonly transactionService: TransactionService,
+        private readonly userService: UserService
     ) {}
 
     async getTransactionById(req: RequestAuth, res: Response) {
@@ -23,8 +26,15 @@ export class TransactionController {
                 message: formatErrorValidation(error),
             });
         }
+        let mode: Mode;
+        if(req.mode){
+            mode = req.mode
+        }else {
+            const profile = await this.userService.getUserById(userId);
+            mode = profile?.businessProfile?.isLive ? "live" : "test";
+        }
         const params: GetATransactionDto = value;
-        const { message, payload } = await this.transactionService.getTransactionById(params.txId, userId);
+        const { message, payload } = await this.transactionService.getTransactionById(params.txId, mode, userId);
 
         return res.status(STATUS.ok).json({
             success: true,
@@ -44,7 +54,14 @@ export class TransactionController {
             });
         }
         const query: GetAllTransactionsDto = value;
-        const { message, payload } = await this.transactionService.getAllTransactions(query, userId);
+        let mode: Mode;
+        if(req.mode){
+            mode = req.mode
+        }else {
+            const profile = await this.userService.getUserById(userId);
+            mode = profile?.businessProfile?.isLive ? "live" : "test";
+        }
+        const { message, payload } = await this.transactionService.getAllTransactions(query, mode, userId);
 
         return res.status(200).json({
             success: true,
