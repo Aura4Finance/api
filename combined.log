@@ -12460,3 +12460,13 @@
 {"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:12:40.157Z"}
 {"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:13:03.420Z"}
 {"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:13:18.136Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-06T00:23:44.727Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-06T00:23:45.440Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-06T00:23:50.379Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-06T00:25:00.431Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-06T00:25:00.437Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-06T00:25:00.458Z"}
+{"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:25:17.266Z"}
+{"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:28:46.742Z"}
+{"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:28:56.990Z"}
+{"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:197:11)","timestamp":"2026-04-06T00:29:02.501Z"}
