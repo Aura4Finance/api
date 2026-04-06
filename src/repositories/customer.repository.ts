@@ -321,6 +321,7 @@ export class CustomerRepository {
     customerId: string,
     amount: number,
     type: "add" | "remove" = "add"
+
   ) {
     return await db.customer.update({
       where: { id: customerId },

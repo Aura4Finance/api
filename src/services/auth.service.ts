@@ -290,13 +290,6 @@ export class AuthService {
     };
   }
 
-  async signOut() {
-    return {
-      message: "User signed out successfully",
-      payload: null,
-    };
-  }
-
   async exchangeCodeForAccessToken(body: AuthCodeDto) {
     const { otp } = body;
     let jwtPayload: any;

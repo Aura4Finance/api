@@ -139,12 +139,9 @@ export class AuthController {
       sameSite: "strict",
     });
 
-    const { payload, message } = await this.authService.signOut();
-
     return res.status(STATUS.ok).json({
       success: true,
-      message,
-      data: payload 
+      message: "Logout successful!"
     });
   }
 
