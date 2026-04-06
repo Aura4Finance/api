@@ -110,12 +110,14 @@ export class RefundServices {
             refundTransaction.type !== TransactionType.REFUND) {
             throw new APIError("Invalid refund transaction ID", STATUS.bad);
         }
+        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, userId);
+        if(paymentTx?.payment?.refunded){
+            throw new APIError("Payment transaction already refunded", STATUS.bad);
+        }
         this.profile = await this.userRepository
             .findUserById(userId)
             .then((user) => user?.businessProfile);
         await this.setActiveNetwork(this.profile.userId);
-        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, userId);
-
         return await this.finalizeRefund(
             refundTransaction.amount, 
             <number>paymentTx?.amountInUSDC, 
@@ -140,6 +142,9 @@ export class RefundServices {
         }
         if (paymentTx.type != "PAYMENT") {
             throw new APIError("Invalid transaction ID", STATUS.bad);
+        }
+        if(paymentTx.payment?.refunded){
+            throw new APIError("Payment transaction already refunded.", STATUS.bad);
         }
 
         this.profile = await this.userRepository

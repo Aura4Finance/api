@@ -7,7 +7,7 @@ import Joi from "joi";
 
 export const onboardingSchemaValidation = (data: OnboardUserDto) => {
   const schema = Joi.object({
-    businessName: Joi.string().min(2).required().pattern(/^[a-zA-Z]+$/).required(),
+    businessName: Joi.string().min(2).required().pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/).required(),
     businessSector: Joi.string().pattern(/^[a-zA-Z]+$/).required(),
     country: Joi.string().pattern(/^[a-zA-Z]+$/).required(),
     websiteLink: Joi.string().pattern(/^[a-zA-Z]+$/).optional(),

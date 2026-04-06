@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType } from "../../generated/prisma";
+import { TransactionStatus, TransactionType, Network } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 
 @Service()
@@ -219,7 +219,7 @@ export class PayoutService {
             throw new Error("Merchant or business profile not found");
         }
         let to: string;
-        let network: string;
+        let network: Network;
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
             if (!settlementAccount) {
@@ -228,18 +228,15 @@ export class PayoutService {
             to = settlementAccount.walletAddress;
             network = settlementAccount.network;
         } else
-            if (body.walletAddress) {
+            if (body.walletAddress && body.network) {
                 to = body.walletAddress;
-                if(!body.network){
-                    throw new APIError("network is required for crypto payout", STATUS.bad);
-                }
                 network = body.network;
                 if (body.save) {
                     if (!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
                     await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id);
                 }
             } else {
-                throw new APIError("Settlemtment account or wallet address is required", STATUS.bad);
+                throw new APIError("Settlemtment account or wallet address and network is required", STATUS.bad);
             }
         this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
