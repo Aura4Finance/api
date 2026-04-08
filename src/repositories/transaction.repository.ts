@@ -41,7 +41,7 @@ export class TransactionRepository {
 
   async getAllTransactions(
     query: GetAllTransactionsDto,
-    mode: Mode = Mode.test,
+    mode: Mode,
     profileId?: string
   ) {
     const {
@@ -58,7 +58,10 @@ export class TransactionRepository {
       cursor,
     } = query;
 
-    const where: any = { payment: {} };
+    const where: any = { 
+      mode,
+      payment: {} 
+    };
 
     // Filter: type
     if (type) where.type = type;
@@ -69,9 +72,6 @@ export class TransactionRepository {
 
     // Filter: status
     if (status) where.status = status;
-
-    // Filter: mode
-    if (mode) where.mode = mode;
 
     // Filter: token
     if (token) where.token = token;

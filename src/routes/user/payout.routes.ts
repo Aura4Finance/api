@@ -4,6 +4,7 @@ import express, {Response} from "express";
 import { RequestAuth } from "@/@types/request";
 import { PayoutController } from "@/controllers/payout.controller";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";
+import { checkIfUserIsDisabled } from "@/middlewares/user.milddleware";
 
 const payOutController = Container.get(PayoutController);
 const router = express.Router(); 
@@ -16,12 +17,14 @@ router.get(
 router.use(verifyRequestBody);
 router.post(
     "/crypto",
+    checkIfUserIsDisabled,
     asyncHandler((req: RequestAuth, res: Response) =>
         payOutController.cryptoPayout(req, res))
 );
 
 router.post(
     "/crypto/retry",
+    checkIfUserIsDisabled,
     asyncHandler((req: RequestAuth, res: Response) => 
         payOutController.retryCryptoPayout(req, res)
     )

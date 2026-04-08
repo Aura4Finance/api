@@ -34,3 +34,10 @@ export const verifyEmailChangeSchemaValidation = (
 
   return schema.validate(data);
 };
+
+export const chechAdminMode = (data: any) => {
+  const schema = Joi.object({
+    mode: Joi.string().valid("test", "live").required()
+  })
+  return schema.validate(data);
+}

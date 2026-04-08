@@ -7,7 +7,7 @@ import { GetCustomersQueryDto } from "@/dto/customer.dto";
 
 @Service()
 export class CustomerRepository {
-  async findCustomerbyEmailorId(emailOrId: string, profileId?: string) {
+  async findCustomerbyEmailorId(emailOrId: string, mode: Mode, profileId?: string) {
 
     const where: any = {
       customer: {
@@ -15,7 +15,10 @@ export class CustomerRepository {
             { email: emailOrId },
             { id: emailOrId },
           ],
-        },
+          mode: {
+          has: mode
+        }
+      },
     }
 
     if(profileId){
@@ -127,7 +130,7 @@ export class CustomerRepository {
 
   async getAllCustomers(
     query: GetCustomersQueryDto,
-    mode: Mode = Mode.test,
+    mode: Mode,
     userId?: string,
   ) {
     const {
@@ -136,7 +139,11 @@ export class CustomerRepository {
       cursor
     } = query;
 
-    const where: any = {};
+    const where: any = {
+      mode: {
+        has: mode,
+      }
+    };
     const include: any = {};
 
     // Scope customer to user
@@ -161,14 +168,6 @@ export class CustomerRepository {
           createdAt: true
         }
       }
-    }
-
-
-    // Mode filter
-    if (mode) {
-      where.mode = {
-        has: mode,
-      };
     }
 
     // Amount spent filter

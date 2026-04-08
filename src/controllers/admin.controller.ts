@@ -22,6 +22,7 @@ import { GetACustomerQueryDto, GetCustomersQueryDto } from "@/dto/customer.dto";
 import { CustomerService } from "@/services/customer.service";
 import { Metrics } from "@/services/metrics.service";
 import { UserService } from "@/services/user/user.service";
+import { chechAdminMode } from "@/validation/user.validation";
 
 @Service()
 export class AdminController {
@@ -189,7 +190,7 @@ export class AdminController {
     }
 
     const transactionQuery: GetAllTransactionsDto = value as GetAllTransactionsDto;
-    const { message, payload } = await this.transactionService.getAllTransactions(transactionQuery, transactionQuery?.userId);
+    const { message, payload } = await this.transactionService.getAllTransactions(transactionQuery, transactionQuery.mode ? transactionQuery.mode : "live", transactionQuery?.userId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -200,15 +201,16 @@ export class AdminController {
 
   async getTransactionById(req: Request, res: Response) {
     const { error, value } = transactionIdSchemaValidation(req.params as any);
-
+    
     if (error) {
       return res.status(STATUS.bad).json({
         success: false,
         message: formatErrorValidation(error)
       })
     }
+    const { error: modeError, value: modeValue } = chechAdminMode(req.query);
     const transactionQuery: GetATransactionDto = value as GetATransactionDto;
-    const { message, payload } = await this.transactionService.getTransactionById(transactionQuery.txId);
+    const { message, payload } = await this.transactionService.getTransactionById(transactionQuery.txId, modeError ? "live" :  modeValue.mode);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -227,7 +229,7 @@ export class AdminController {
       })
     }
     const customerQuery: GetCustomersQueryDto = value as GetCustomersQueryDto;
-    const { message, payload } = await this.customerService.getAllCustomers(customerQuery, customerQuery?.userId);
+    const { message, payload } = await this.customerService.getAllCustomers(customerQuery, customerQuery.mode ? customerQuery.mode : "live", customerQuery?.userId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -248,7 +250,8 @@ export class AdminController {
     }
 
     const customerId: GetACustomerQueryDto = value as GetACustomerQueryDto;
-    const { message, payload } = await this.customerService.getSingleCustomer(customerId.customerId);
+    const { error: modeError, value: modeValue } = chechAdminMode(req.query);
+    const { message, payload } = await this.customerService.getSingleCustomer(customerId.customerId, modeError ? "live": modeValue.mode);
 
     return res.status(STATUS.ok).json({
       success: true,

@@ -46,6 +46,7 @@ export const verifyAccessToken = async (
     (req as any).user = user;
     (req as any).jti = decoded.jti;
     (req as any).exp = (decoded as any).exp;
+    (req as any).mode = user.businessProfile?.isLive ? "live" : "test";
     next();
   } catch (err) {
     throw new APIError("Invalid access token", STATUS.unauthorized);
@@ -76,7 +77,7 @@ export const checkIfUserIsDisabled: RequestHandler = (
   }
 
   if (request.user.disabled) {
-    throw new APIError("User account is disabled!", STATUS.forbidden);
+    throw new APIError("Merchant account is disabled!", STATUS.forbidden);
   }
   next();
 };

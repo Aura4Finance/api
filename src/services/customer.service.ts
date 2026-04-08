@@ -11,28 +11,23 @@ export class CustomerService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly customerRepository: CustomerRepository) { }
-  async createCustomer(data: CreateCustomerDto, userId: string) {
+  async createCustomer(data: CreateCustomerDto, userId: string, mode: Mode) {
     const { firstname, lastname, email } = data;
 
     const profileId = (await this.userRepository.findUserById(userId))?.businessProfile?.id;
     const existingCustomer =
-      await this.customerRepository.findCustomerbyEmailorId(
-        email,
-        profileId as string
-      );
+      await this.customerRepository.findCustomer(email);
 
     if (existingCustomer) {
       throw new APIError("Customer already exists", STATUS.conflict);
     }
-    const isLive = await this.userRepository.findUserById(userId)
-      .then(data => data?.businessProfile?.isLive);
 
     const customer = await this.customerRepository.createCustomer(
       firstname,
       lastname,
       email,
       profileId as string,
-      isLive ? "live" : "test"
+      mode
     );
 
     return {
@@ -41,16 +36,16 @@ export class CustomerService {
     };
   }
 
-  async getAllCustomers(query: GetCustomersQueryDto, userId?: string) {
+  async getAllCustomers(query: GetCustomersQueryDto, mode: Mode, userId?: string) {
     let customers;
     if (userId) {
       const profile = await this.userRepository.findUserById(userId)
       if(!profile){
         throw new APIError("Invalid user ID!", STATUS.bad);
       }
-      customers = await this.customerRepository.getAllCustomers(query, profile?.businessProfile?.isLive ? "live" : undefined, profile?.businessProfile?.id);
+      customers = await this.customerRepository.getAllCustomers(query, mode, profile?.businessProfile?.id);
     }else {
-      customers = await this.customerRepository.getAllCustomers(query, query.mode? query.mode: Mode.test);
+      customers = await this.customerRepository.getAllCustomers(query, mode);
     }
 
     return {
@@ -59,16 +54,16 @@ export class CustomerService {
     };
   }
 
-  async getSingleCustomer(customerId: string, userId?: string) {
+  async getSingleCustomer(customerId: string, mode: Mode, userId?: string) {
     let customer;
     if(userId){
       const profile = await this.userRepository.findUserById(userId);
       if(!profile){
         throw new APIError("Invalid user ID!", STATUS.bad);
       }
-       customer = await this.customerRepository.findCustomerbyEmailorId(customerId, profile.businessProfile?.id);
+       customer = await this.customerRepository.findCustomerbyEmailorId(customerId, mode, profile.businessProfile?.id);
     }else {
-      customer = await this.customerRepository.findCustomerbyEmailorId(customerId);
+      customer = await this.customerRepository.findCustomerbyEmailorId(customerId, mode);
     }
 
     if (!customer) {

@@ -68,7 +68,7 @@ export class TransactionService {
             }
             transactions = await this.transactionRepository.getAllTransactions(query, mode, profile?.businessProfile?.id);
         } else {
-            transactions = await this.transactionRepository.getAllTransactions(query, query.mode);
+            transactions = await this.transactionRepository.getAllTransactions(query, mode);
         }
 
         if (!transactions) {

@@ -1,6 +1,6 @@
 import { RequestAuth } from "@/@types/request";
 import { PaymentController } from "@/controllers/payment.controller";
-import { verifyApiKey, verifyPaylink } from "@/middlewares/user.milddleware";
+import { checkIfUserIsDisabled, verifyApiKey, verifyPaylink } from "@/middlewares/user.milddleware";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response } from "express";
@@ -20,6 +20,7 @@ router.use(verifyRequestBody);
 router.post(
   "/",
   verifyApiKey,
+  checkIfUserIsDisabled,
   asyncHandler((req: RequestAuth, res: Response) =>
     paymentController.createPayment(req, res)
   )

@@ -24,10 +24,11 @@ export class CustomerController {
 
     const body: CreateCustomerDto = value as CreateCustomerDto;
     const userId = req.user?.id as string;
-
+ 
     const { payload, message } = await this.cusomerService.createCustomer(
       body,
-      userId
+      userId,
+      req.mode
     );
 
     return res.status(STATUS.created).json({
@@ -47,7 +48,7 @@ export class CustomerController {
       })
     }
     const query: GetCustomersQueryDto = value as GetCustomersQueryDto;
-    const { message, payload } = await this.cusomerService.getAllCustomers(query, userId);
+    const { message, payload } = await this.cusomerService.getAllCustomers(query, req.mode, userId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -72,7 +73,7 @@ export class CustomerController {
       throw new APIError("Invalid request", STATUS.bad);
     }
 
-    const { message, payload } = await this.cusomerService.getSingleCustomer(customerId.customerId, userId);
+    const { message, payload } = await this.cusomerService.getSingleCustomer(customerId.customerId, req.mode, userId);
 
     return res.status(STATUS.ok).json({
       success: true,
