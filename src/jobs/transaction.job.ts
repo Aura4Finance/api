@@ -6,7 +6,6 @@ import { PaymentService } from "@/services/payment.service";
 import Container from "typedi";
 import { redisConnection } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 
 export const startTransactionWorker = () => {
   const paymentService = Container.get(PaymentService);
@@ -60,16 +59,12 @@ export const startTransactionWorker = () => {
           mode
         } = job.data;
         const walletService = Container.get(WalletService);
-
-        const client = new SuiClient({
-          url: getFullnodeUrl(`${mode === 'test' ? 'testnet' : 'mainnet'}`),
-        });
         await walletService.splitSendToMerchantsAndAdmin(
           walletPrivateKey,
           coinObjectId,
           amount,
           toAddress,
-          client
+          mode
         )
       }
     },

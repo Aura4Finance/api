@@ -8,3 +8,11 @@ export interface CreateAccountDto {
 export interface UpdateAccountDto {
     isPrimary: boolean
 }
+
+export interface InitiatePayoutDto {
+    amount: number,
+    accountId?: string,
+    accountIdentifier?: string,
+    bankCode?: string,
+    accountName?: string
+}

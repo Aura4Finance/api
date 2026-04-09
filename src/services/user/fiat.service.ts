@@ -33,7 +33,7 @@ export class FiatService {
                 rateDescription: response.data.rateDescription
             }
         }
-    } 
+    }
 
     async getBanks() {
         let response: any;
@@ -125,7 +125,10 @@ export class FiatService {
         }
         return {
             message: "Account resolved successfully",
-            payload: response.data.data
+            payload: response.data.data as {
+                accountNumber: string;
+                accountName: string;
+            }
         }
     }
 
@@ -151,7 +154,7 @@ export class FiatService {
             .findUserById(userId)
             .then((user) => user?.businessProfile?.id);
 
-        const account = await this.fiatRepository.findAccountById(id);
+        const account = await this.fiatRepository.findAccountById(<string>profileId, id);
         if (!account) {
             throw new APIError("Fiat account not found!", STATUS.notFound);
         }
@@ -174,7 +177,7 @@ export class FiatService {
             throw new APIError("Business profile not found", STATUS.notFound);
         }
 
-        const account = await this.fiatRepository.findAccountById(id);
+        const account = await this.fiatRepository.findAccountById(<string>profileId, id);
         if (!account) {
             throw new APIError("Fiat account not found!", STATUS.notFound);
         }
@@ -199,5 +202,33 @@ export class FiatService {
         }
 
         await this.fiatRepository.updateAccount(id, profileId, isPrimary);
+    }
+
+    async initiatePayout(
+        txDigest: string,
+        bankCode: string,
+        accountIdentifier: string,
+        accountName: string
+    ) {
+        try {
+            const result = await payfricaClient.post("offramp/instant", {
+                digest: txDigest,
+                cryptoAsset: "USDC",
+                recipient: {
+                    institution: bankCode,
+                    accountIdentifier,
+                    accountName,
+                    currency: "NGN",
+                    memo: "Instant payout"
+                }
+            });
+            return result.data.data as {
+                rampOrderId: string;
+                status: string;
+            };
+        }catch(err: any) {
+            throw new APIError(`Payout initiation failed: ${err.response?.data?.message || err.message}`, STATUS.bad);
+        }
+
     }
 }

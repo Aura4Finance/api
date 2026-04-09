@@ -90,12 +90,15 @@ export class PaymentService {
         ),
         currency,
         "to_USDT");
+
       const depositAddress = await this.walletService.generatePaymentWallet(
         user?.businessProfile?.wallet[0]?.address as string,
         amountToPay,
-        this.client
+        mode
       );
+
       const transferAddress = await this.walletService.createWallet();
+      
       let transaction;
       if (type == "HOSTED_CHECKOUT") {
         if (!redirectUrl) throw new APIError("Redirect URL is required for the specified payment method", STATUS.bad)

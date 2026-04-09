@@ -3,10 +3,11 @@ import db from "@/config/db-config";
 
 @Service()
 export class FiatRepository {
-    async findAccountById(id: string) {
+    async findAccountById(profileId: string, id: string) {
         const account = await db.fiatAccount.findUnique({
             where: {
-                id
+                id,
+                profileId
             },
             select: {
                 bankName: true,

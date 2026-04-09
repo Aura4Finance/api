@@ -8,13 +8,11 @@ import { PayoutService } from "@/services/payout.service";
 import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Mode, TransactionStatus, TransactionType } from "../../generated/prisma";
 
 
 @Service()
 export class RefundServices {
-    private client: any;
     private profile: any;
     constructor(
         private readonly refundRepository: RefundRepository,
@@ -24,29 +22,27 @@ export class RefundServices {
         private readonly userRepository: UserRepository,
         private readonly customerRepository: CustomerRepository,
     ) { }
-    private async setActiveNetwork(mode: Mode) {
-        this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) })
-    }
 
     private async finalizeRefund(
         amount: number,
         amountInUSDC: number,
         reciever: string,
         refundTxId: string,
-        paymentTxId: string
+        paymentTxId: string,
+        mode: Mode
     ) {
         const wallet = (await this.userRepository.findUserById(this.profile.userId))?.businessProfile?.wallet[0];
         const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         let result;
         try {
-            const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(wallet, this.client);
+            const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(wallet, mode);
             result = await this.walletService.splitAndSend(
                 secretKey,
                 primaryCoinObjectId,
                 amountInUSDC,
                 reciever,
-                this.client
+                mode
             )
         } catch (error: any) {
             console.error("Refund processing error:", error);
@@ -78,7 +74,7 @@ export class RefundServices {
 
         await this.refundRepository.confirmRefund(refundTxId, result?.digest as string);
         const refundedPayment = await this.paymentRepository.refundPayment(paymentTxId);
-        await this.customerRepository.updateAmountSpent(<string>refundedPayment?.customer?.id, amount, "remove");
+        await this.customerRepository.updateAmountSpent(<string>refundedPayment?.customer?.id, amountInUSDC, "remove");
         const gasUsed = result.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
 
@@ -116,13 +112,13 @@ export class RefundServices {
         this.profile = await this.userRepository
             .findUserById(userId)
             .then((user) => user?.businessProfile);
-        await this.setActiveNetwork(mode);
         return await this.finalizeRefund(
             refundTransaction.amount, 
             <number>paymentTx?.amountInUSDC, 
             <string>refundTransaction.refund?.walletAddress, 
             refundTransaction.id,
-            <string>paymentTx?.id
+            <string>paymentTx?.id,
+            mode
         );
     }
 
@@ -151,7 +147,6 @@ export class RefundServices {
             .findUserById(userId)
             .then((user) => user?.businessProfile);
 
-        await this.setActiveNetwork(mode);
         const refundTx = await this.refundRepository.createRefund(
             paymentTx.amount,
             paymentTx.amountInUSDC,
@@ -162,14 +157,15 @@ export class RefundServices {
             to,
             paymentTx?.customerId as string,
             this.profile.id,
-            this.profile.isLive ? "live" : "test"
+            mode
         );
         return await this.finalizeRefund(
             paymentTx.amount, 
             <number>paymentTx?.amountInUSDC, 
             to, 
             refundTx.id,
-            paymentTx.id
+            paymentTx.id,
+            mode
         );
     }
 }

@@ -3,25 +3,34 @@ import { Service } from "typedi";
 import { Transaction } from "@mysten/sui/transactions";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
-import { SuiClient } from "@mysten/sui/client";
+import { getFullnodeUrl, SuiClient, SuiObjectChange } from "@mysten/sui/client";
 import coinMarketClient from "@/config/coinMarketClient-config";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
+import { Mode } from "../../generated/prisma";
 
 type ConversionDirection = 'to_USDT' | 'from_USDT';
 @Service()
 export class WalletService {
-  private smart_contract_address: any;
-  //private USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC"; 
-  //private PAYFRICA_ID = "0xe945ec6c4e688d654025d375e321d709f67ed6935ccbd21e94abb66af63ea7b1";
+  private TESTNET_SMART_CONTRACT_ADDRESS: string;
+  private MAINNET_SMART_CONTRACT_ADDRESS: string;
+  private PAYFRICA_ID = "0x4378b5bf4c21d313150634d529218ea11166ca113a2869a31c88deb4bb8c2417";
+  private PAYFRICA_CONFIG_ID = "0x50eee353064aa82f120bfc212486acf9bd9acf5b3a3b5aadea8284ce30a20f84";
+  private USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
+  private client!: SuiClient;
   admin_secret_key: string;
   constructor(
     private readonly systemRepository: SystemRepository
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
-    this.smart_contract_address = process.env.ORAFI_SMART_CONTRACT_ADDRESS as string;
+    this.TESTNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_TESTNET as string;
+    this.MAINNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_MAIN as string;
   }
-  
+
+    private async setActiveNetwork(mode: Mode) {
+        this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
+        return mode === "live" ? this.MAINNET_SMART_CONTRACT_ADDRESS : this.TESTNET_SMART_CONTRACT_ADDRESS;
+    }
 
   async createWallet() {
     const index = await this.systemRepository.getNextWalletIndex();
@@ -34,25 +43,26 @@ export class WalletService {
     }
   }
 
-  async serializeDerivedKeyToSuiSecretKey(derived: Buffer<ArrayBuffer>){
+  async serializeDerivedKeyToSuiSecretKey(derived: Buffer<ArrayBuffer>) {
     const keypair = Ed25519Keypair.fromSecretKey(derived);
     return keypair.getSecretKey();
   }
 
-  async generatePaymentWallet(merchantAddress: string, amount: number, client: any) {
+  async generatePaymentWallet(merchantAddress: string, amount: number, mode: Mode) {
+    const smart_contract_address = await this.setActiveNetwork(mode);
     const admin_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
 
     const tx = new Transaction();
 
     tx.moveCall({
-      target: `${this.smart_contract_address}::main::generatePaymentWallet`,
+      target: `${smart_contract_address}::main::generatePaymentWallet`,
       arguments: [
         tx.pure.address(merchantAddress),
         tx.pure.u64(Math.round(amount * 1000000)) // USDC has 6 decimals
       ],
     });
 
-    const result = await client.signAndExecuteTransaction({
+    const result = await this.client.signAndExecuteTransaction({
       signer: admin_keypair,
       transaction: tx,
       options: {
@@ -61,8 +71,7 @@ export class WalletService {
       },
     });
 
-    const createdWallet = result.objectChanges?.find(
-      (change: { type: string; objectType: string | string[] }) =>
+    const createdWallet = (result.objectChanges as SuiObjectChange[]).find((change) =>
         change.type === "created" && change.objectType.includes("::main::Wallet")
     );
 
@@ -76,7 +85,6 @@ export class WalletService {
   private async sponsoredTransaction(
     tx: Transaction,
     merchantSecretKey: string,
-    client: SuiClient
   ) {
     // Merchant builds the transaction kind (no gas)
     const merchant_keypair = Ed25519Keypair.fromSecretKey(merchantSecretKey);
@@ -85,20 +93,20 @@ export class WalletService {
 
     // Build unsigned transaction (no gas)
     const kindBytes = await tx.build({
-      client,
+      client: this.client,
       onlyTransactionKind: true,
     });
     // Sponsor adds gas payment  // Sponsor setup
     const sponsor_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
     const sponsor_address = sponsor_keypair.getPublicKey().toSuiAddress();
 
-    const sponsorCoins = await client.getAllCoins({ owner: sponsor_address });
+    const sponsorCoins = await this.client.getAllCoins({ owner: sponsor_address });
     if (sponsorCoins.data.length === 0) {
       throw new Error("Sponsor has no SUI coins for gas.");
     }
 
     const sponsorCoin = sponsorCoins.data[0];
-    if(!sponsorCoin) {
+    if (!sponsorCoin) {
       throw new APIError("Unable to retrieve sponsor coin", STATUS.serverError);
     }
 
@@ -115,14 +123,14 @@ export class WalletService {
     sponsoredTx.setGasBudget(100000000);
 
     // Build transaction bytes
-    const txBytes = await sponsoredTx.build({ client });
+    const txBytes = await sponsoredTx.build({ client: this.client });
 
     // Sign with both parties
     const merchantSignature = (await merchant_keypair.signTransaction(txBytes)).signature;
     const sponsorSignature = (await sponsor_keypair.signTransaction(txBytes)).signature;
 
     // Execute transaction once with both signatures
-    const result = await client.executeTransactionBlock({
+    const result = await this.client.executeTransactionBlock({
       transactionBlock: txBytes,
       signature: [merchantSignature, sponsorSignature],
       options: {
@@ -138,12 +146,12 @@ export class WalletService {
     secret_key: string,
     primaryCoinObjectId: string,
     mergeTargetsObjectIds: string[],
-    client: SuiClient
+    mode: Mode,
   ) {
+    const smart_contract_address = this.setActiveNetwork(mode);
     const tx = new Transaction();
-
     tx.moveCall({
-      target: `${this.smart_contract_address}::main::merge_all_usdc`,
+      target: `${smart_contract_address}::main::merge_all_usdc`,
       arguments: [
         tx.object(primaryCoinObjectId),
         tx.makeMoveVec({
@@ -151,7 +159,7 @@ export class WalletService {
         }),
       ],
     });
-    const result = await this.sponsoredTransaction(tx, secret_key, client);
+    const result = await this.sponsoredTransaction(tx, secret_key);
     return result;
 
   }
@@ -162,19 +170,19 @@ export class WalletService {
     primaryCoinObjectId: string,
     amount: number,
     to: string,
-    client: SuiClient
+    mode: Mode,
   ) {
+    const smart_contract_address = this.setActiveNetwork(mode);
     const tx = new Transaction();
-
     tx.moveCall({
-      target: `${this.smart_contract_address}::main::withdraw_to_merchant`,
+      target: `${smart_contract_address}::main::withdraw_to_merchant`,
       arguments: [
         tx.object(primaryCoinObjectId),
         tx.pure.u64(amount * 1000000),
         tx.pure.address(to),
       ],
     });
-    const result = await this.sponsoredTransaction(tx, secret_key, client);
+    const result = await this.sponsoredTransaction(tx, secret_key);
     return result;
   }
 
@@ -183,132 +191,120 @@ export class WalletService {
     primaryCoinObjectId: string,
     amount: number,
     to: string,
-    client: any
+    mode: Mode
   ) {
-
+    this.setActiveNetwork(mode);
     const tx = new Transaction();
     const [new_coin] = tx.splitCoins(primaryCoinObjectId, [tx.pure.u64(Math.round(amount * 1000000))]);
     tx.transferObjects([new_coin], tx.pure.address(to));
 
-    const result = await this.sponsoredTransaction(tx, secret_key, client);
+    const result = await this.sponsoredTransaction(tx, secret_key);
     return result;
   }
 
-async splitSendToMerchantsAndAdmin(
-  secret_key: string,
-  primaryCoinObjectId: string,
-  amount: string, // amount in smallest unit (u64)
-  to: string,
-  client: SuiClient
-) {
-  const tx = new Transaction();
-
-  // Normalize amount
-  const totalAmount = BigInt(amount);
-
-  // 1% platform fee
-  const platformFee = totalAmount / 100n;
-
-  // Split out platform fee
-  const [platformCoin] = tx.splitCoins(
-    tx.object(primaryCoinObjectId),
-    [tx.pure.u64(platformFee.toString())]
-  );
-
-  // Send platform fee
-  tx.transferObjects(
-    [platformCoin],
-    tx.pure.address(String(process.env.PLATFORM_PUBLIC_KEY))
-  );
-
-  // Send remaining balance to merchant
-  tx.transferObjects(
-    [tx.object(primaryCoinObjectId)],
-    tx.pure.address(to)
-  );
-
-  const result = await this.sponsoredTransaction(tx, secret_key, client);
-  return result;
-}
-
-
-async convertBetweenCurrencyAndUSDT(
-  amount: number,
-  currency: string,
-  direction: ConversionDirection
-) {
-  if (!amount || amount <= 0) {
-    throw new APIError('Invalid amount', STATUS.bad);
-  }
-
-  // Determine base and convert symbols dynamically
-  const isToUSDT = direction === 'to_USDT';
-
-  const symbol = isToUSDT ? currency : 'USDT';
-  const convert = isToUSDT ? 'USDT' : currency;
-
-  const res = await coinMarketClient.get("/tools/price-conversion", {
-    params: {
-      amount,
-      symbol,
-      convert,
-    },
-  });
-
-  if (
-    res.status !== 200 ||
-    res.data?.status?.error_code !== 0 ||
-    !res.data?.data?.quote?.[convert]?.price
+  async splitSendToMerchantsAndAdmin(
+    secret_key: string,
+    primaryCoinObjectId: string,
+    amount: string, // amount in smallest unit (u64)
+    to: string,
+    mode: Mode
   ) {
-    throw new APIError(
-      'Unable to resolve conversion rate',
-      STATUS.serverError
+    await this.setActiveNetwork(mode);
+    const tx = new Transaction();
+    // Normalize amount
+    const totalAmount = BigInt(amount);
+
+    // 1% platform fee
+    const platformFee = totalAmount / 100n;
+
+    // Split out platform fee
+    const [platformCoin] = tx.splitCoins(
+      tx.object(primaryCoinObjectId),
+      [tx.pure.u64(platformFee.toString())]
     );
+
+    // Send platform fee
+    tx.transferObjects(
+      [platformCoin],
+      tx.pure.address(String(process.env.PLATFORM_PUBLIC_KEY))
+    );
+
+    // Send remaining balance to merchant
+    tx.transferObjects(
+      [tx.object(primaryCoinObjectId)],
+      tx.pure.address(to)
+    );
+
+    const result = await this.sponsoredTransaction(tx, secret_key);
+    return result;
   }
 
-  return res.data.data.quote[convert].price;
-}
 
-  
-  // async offRampSmartContractCall( 
-  //   amount: bigint, 
-  //   cryptoAsset: string, 
-  //   coinType: string = this.USDC_COIN_TYPE 
-  // ){
-  //    const CRYPTO_DECIMALS: Record<string, number> = { SUI: 1e9, USDC: 1e6, }; 
-  //    const upperCrypto = cryptoAsset.toUpperCase(); 
-  //    const decimals = CRYPTO_DECIMALS[upperCrypto] || 1e6; 
-  //    const tx = new Transaction(); // Use BigInt for all fee calculations to avoid precision issues 
-  //    const fee = (amount * BigInt(5)) / BigInt(1000); 
+  async convertBetweenCurrencyAndUSDT(
+    amount: number,
+    currency: string,
+    direction: ConversionDirection
+  ) {
+    if (!amount || amount <= 0) {
+      throw new APIError('Invalid amount', STATUS.bad);
+    }
 
-  //    if (upperCrypto === "SUI") { // Set explicit gas budget of 0.01 SUI (10,000,000 MIST)
-  //     tx.setGasBudget(10_000_000);
-  //    } 
-     
-  //   let coin; // Safety check for userBalance to avoid NaN 
-  //   const safeUserBalance = Number(userBalance) || 0; 
-  //   if ( BigInt(Math.floor(Number(amount))) == BigInt(Math.floor(safeUserBalance * decimals)) ) { 
-  //     coin = await handleMergeSplit( client, tx, amount - fee, fee, coinType, address ); 
-  //   } else { 
-  //     coin = await handleMergeSplit(client, tx, amount, fee, coinType, address); 
-  //   } if (coin.feeSplit) { 
-  //     tx.transferObjects( [coin.feeSplit], 
-  //     tx.pure.address( "0xdcfd7fd641a0d74b8fb83ae9949c560eb6c183a3d8c3b975e697527eada62b45" ) ); 
-  //   } tx.moveCall({ 
-  //     target: `${PAYFRICA_ID}::payfrica::off_ramp`, 
-  //     arguments: [ 
-  //       coin.split, tx.pure.string(sessionState?.to || "NGN"), 
-  //       tx.object.clock(), 
-  //     ], 
-  //     typeArguments: [coinType] }); 
-  //     try { 
-  //       const result = await signAndExecuteTransaction({ transaction: tx, }); // Return transaction digest (hash) return 
-  //       result.digest; 
-  //     } 
-  //       catch (error) { 
-  //         throw error; 
-  //       } 
-  //     };
+    // Determine base and convert symbols dynamically
+    const isToUSDT = direction === 'to_USDT';
 
+    const symbol = isToUSDT ? currency : 'USDT';
+    const convert = isToUSDT ? 'USDT' : currency;
+
+    const res = await coinMarketClient.get("/tools/price-conversion", {
+      params: {
+        amount,
+        symbol,
+        convert,
+      },
+    });
+
+    if (
+      res.status !== 200 ||
+      res.data?.status?.error_code !== 0 ||
+      !res.data?.data?.quote?.[convert]?.price
+    ) {
+      throw new APIError(
+        'Unable to resolve conversion rate',
+        STATUS.serverError
+      );
+    }
+
+    return res.data.data.quote[convert].price;
+  }
+
+
+  async offrampSmartContractCall(
+    amount: bigint,
+    secret_key: string,
+    mode: Mode
+  ) {
+    // Fee: 0.5% flat for amounts 1–500 USDC or 1–500 SUI
+    const fee = (amount * 5n) / 1000n; // 0.5%
+
+    const tx = new Transaction();
+    const coinType = this.USDC_COIN_TYPE; // or SUI_COIN_TYPE
+
+    // Split the coin to cover amount + fee, then pass to off_ramp
+    const [splitCoin] = tx.splitCoins(tx.gas, [amount + fee]);
+
+    tx.moveCall({
+      target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,
+      arguments: [
+        tx.object(this.PAYFRICA_CONFIG_ID), // Shared config object
+        splitCoin,                      // Coin covering amount + fee
+        tx.pure.string("NGN"),          // Target fiat currency
+        tx.object.clock(),              // Sui clock (0x6)
+      ],
+      typeArguments: [coinType],
+    });
+    await this.setActiveNetwork(mode);
+    const result = await this.sponsoredTransaction(tx, secret_key)
+    return result;
+  }
 
 }

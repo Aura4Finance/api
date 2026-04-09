@@ -11,7 +11,12 @@ export class CustomerService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly customerRepository: CustomerRepository) { }
-  async createCustomer(data: CreateCustomerDto, userId: string, mode: Mode) {
+
+  async createCustomer(data: 
+    CreateCustomerDto, 
+    userId: string, 
+    mode: Mode
+  ) {
     const { firstname, lastname, email } = data;
 
     const profileId = (await this.userRepository.findUserById(userId))?.businessProfile?.id;
@@ -36,7 +41,11 @@ export class CustomerService {
     };
   }
 
-  async getAllCustomers(query: GetCustomersQueryDto, mode: Mode, userId?: string) {
+  async getAllCustomers(
+    query: GetCustomersQueryDto, 
+    mode: Mode, 
+    userId?: string
+  ) {
     let customers;
     if (userId) {
       const profile = await this.userRepository.findUserById(userId)
@@ -54,7 +63,11 @@ export class CustomerService {
     };
   }
 
-  async getSingleCustomer(customerId: string, mode: Mode, userId?: string) {
+  async getSingleCustomer(
+    customerId: string, 
+    mode: Mode, 
+    userId?: string
+  ) {
     let customer;
     if(userId){
       const profile = await this.userRepository.findUserById(userId);

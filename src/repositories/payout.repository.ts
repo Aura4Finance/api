@@ -5,7 +5,7 @@ import { PayoutQueryDto } from "@/dto/payout.dto";
 
 @Service()
 export class PayoutRepository {
-  async createCryptoPayout(
+  async createPayout(
     network: Network,
     amount: number,
     amountInUSDC: number,
@@ -13,7 +13,8 @@ export class PayoutRepository {
     walletAddress: string,
     userId: string,
     mode: Mode,
-    settlementAccountId?: string
+    settlementAccountId?: string,
+    fiatAccountId?: string
   ) {
     let data: any = {
         type: "PAYOUT",
@@ -41,6 +42,13 @@ export class PayoutRepository {
           }
         }
       }
+      if(fiatAccountId) {
+        data.payout.create.fiatAccount = {
+          connect: {
+            id: fiatAccountId
+          }
+        }
+      }
     const tx = await db.transaction.create({
       data,
       select: { 
@@ -49,10 +57,6 @@ export class PayoutRepository {
     });
     
     return tx;
-  }
-
-  async createFiatPayout() {
-
   }
 
   async confirmPayout(

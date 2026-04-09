@@ -1,5 +1,5 @@
 import { Service } from "typedi";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { getFullnodeUrl, SuiClient, type SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { WalletService } from "./wallet.service";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
@@ -9,10 +9,13 @@ import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
 import { TransactionStatus, TransactionType, Network, Mode } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
+import { InitiatePayoutDto } from "@/dto/fiat.dto";
+import { FiatService } from "./user/fiat.service";
+import { FiatRepository } from "@/repositories/user/fiat.repository";
 
 @Service()
 export class PayoutService {
-    private client: any;
+    private client!: SuiClient;
     private primaryCoin: any;
     cointype =
         "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC";
@@ -24,6 +27,8 @@ export class PayoutService {
         private readonly userRepository: UserRepository,
         private readonly walletService: WalletService,
         private readonly payoutRepository: PayoutRepository,
+        private readonly fiatRepository: FiatRepository,
+        private readonly fiatService: FiatService,
         private readonly settlementRepository: SettlementRepository
     ) { }
 
@@ -97,11 +102,10 @@ export class PayoutService {
 
     async getPrimaryCoin(
         keys: any,
-        client: any = this.client
+        mode: Mode
     ) {
-        this.client = client;
+        await this.setActiveNetwork(mode);
         const cache: any = await this.fetchCoins(keys.address);
-
         if (cache?.coinObjects.length == 0) {
             throw new APIError("No balance to withdrawl", STATUS.bad);
         }
@@ -115,7 +119,7 @@ export class PayoutService {
                 secretKey,
                 primaryCoin,
                 mergeTargets,
-                this.client
+                mode
             )
             const isSuccess = result?.effects?.status?.status === "success"
             if (!isSuccess) {
@@ -129,7 +133,8 @@ export class PayoutService {
         userId: string,
         amount: number,
         to: string,
-        payoutId: string
+        payoutId: string,
+        mode: Mode
     ) {
         const user = await this.userRepository.findUserById(userId);
         const wallet = user?.businessProfile?.wallet[0];
@@ -140,7 +145,7 @@ export class PayoutService {
             this.primaryCoin,
             amount,
             to,
-            this.client
+            mode
         );
         const isSuccess = result?.effects?.status?.status === "success"
         if (!isSuccess) {
@@ -195,13 +200,14 @@ export class PayoutService {
             throw new APIError("Invalid payout transaction ID", STATUS.bad);
         }
         const keys = await this.userRepository.findUserById(userId);
-        this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
+        this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0], mode);
 
         return await this.finalizeCryptoPayout(
             userId,
             payoutTransaction.amount,
             <string>payoutTransaction.payout?.walletAddress,
-            payoutTransaction.id
+            payoutTransaction.id,
+            mode
         );
     }
 
@@ -239,20 +245,112 @@ export class PayoutService {
             } else {
                 throw new APIError("Settlemtment account or wallet address and network is required", STATUS.bad);
             }
-        this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0]);
+        this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0], mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
-        const payout = await this.payoutRepository.createCryptoPayout(
+        const payout = await this.payoutRepository.createPayout(
             network,
             amountInNGN,
             body.amount,
             "CRYPTO",
             <string>keys?.businessProfile?.wallet[0]?.address,
             <string>keys?.businessProfile?.id,
-            keys?.businessProfile?.isLive ? "live" : "test"
+            mode
         );
-        return this.finalizeCryptoPayout(userId, body.amount, to, payout.id);
+        return this.finalizeCryptoPayout(userId, body.amount, to, payout.id, mode);
     }
 
     //using Linq or our custom API service
-    async initiateFiatPayout() { }
+    async initiateFiatPayout(
+        userId: string,
+        mode: Mode,
+        body: InitiatePayoutDto
+    ) {
+        const user = await this.userRepository.findUserById(userId);
+        let {
+            amount,
+            accountId,
+            accountIdentifier,
+            accountName,
+            bankCode
+        } = body;
+
+        if (accountId) {
+            const account = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, accountId);
+            if (!account) {
+                throw new APIError("Account not found", STATUS.notFound);
+            }
+            accountIdentifier = account.accountNumber;
+            bankCode = account.bankCode;
+            accountName = account.accountName;
+        } else if (accountIdentifier && bankCode && accountName) {
+            const resolvedAccount =  await this.fiatService.resolveAccountName(accountIdentifier, bankCode);
+            if(resolvedAccount.payload.accountName == accountName) {
+                accountName = resolvedAccount.payload.accountName;
+            }
+            return;
+        } else {
+            throw new APIError("Either accountId or both accountIdentifier and bankCode must be provided", STATUS.bad);
+        }
+        const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
+        const wallet = await deriveWallet(<number>walletIndex);
+        const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(wallet);
+
+        let tx: SuiTransactionBlockResponse;
+        try {
+            tx = await this.walletService.offrampSmartContractCall(BigInt(amount), secretKey, mode)
+        } catch (err: any) {
+            throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
+        }
+
+        if(!tx.effects || tx.effects.status.status !== "success") {
+            throw new APIError(`Payout failed: On-chain transaction failed`, STATUS.bad);
+         }
+        const payoutTx = await this.payoutRepository.createPayout(
+            "SUI",
+            amount,
+            amount,
+            "CRYPTO",
+            <string>user?.businessProfile?.wallet[0]?.address,
+            <string>user?.businessProfile?.id,
+            mode        
+        );
+        try{
+           const result = await this.fiatService.initiatePayout(
+                tx.digest,
+                bankCode,
+                accountIdentifier,
+                accountName,
+            );
+            if(result.status !== "SUCCESS") {
+                return {
+                    message: "Payout initiated on-chain but failed at payout provider. This will be retried automatically by our system. If the issue persists, please contact support.",
+                    payload: {
+                        status: "FAILED"
+                    }
+                }
+            }
+        }catch(err: any) {
+            throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
+        }
+        await this.payoutRepository.confirmPayout(
+            payoutTx.id,
+            tx.digest,
+        );
+        const gasUsed = tx.effects?.gasUsed;
+        const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
+        
+        return {
+            message: "Payout initiated successfully",
+            payload: {
+                status: "COMPLETED",
+                amount,
+                txDigest: tx.digest,
+                executionTime: tx.effects?.executedEpoch,
+                gasFee: totalGas,
+                platformFee: amount * 0.005,
+                amountRecieved: amount * 0.995,
+            }
+
+        }
+    }
 }
