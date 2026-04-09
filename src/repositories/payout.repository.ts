@@ -61,7 +61,8 @@ export class PayoutRepository {
 
   async confirmPayout(
     txId: string,
-    txDigest: string
+    txDigest: string,
+    rampOrderId?: string
   ) {
     const tx = await db.transaction.update({
       where: {
@@ -72,7 +73,12 @@ export class PayoutRepository {
         confirmedAt: new Date(),
         payout: {
           update: {
-            txDigest
+            txDigest,
+            ...(rampOrderId && {
+              payout: {
+                rampOrderId
+              }
+            })
           },
         },
       }

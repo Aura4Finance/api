@@ -216,6 +216,7 @@ model Payout {
   method          PayOutMethod
   walletAddress   String?
   txDigest        String?
+  rampOrderId     String?
   fiatAccountId   String?
   fiatAccount     FiatAccount?   @relation(fields: [fiatAccountId], references: [id])
   cryptoAccountId String?

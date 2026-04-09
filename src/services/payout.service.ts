@@ -314,8 +314,12 @@ export class PayoutService {
             <string>user?.businessProfile?.id,
             mode        
         );
+        let result: {
+                rampOrderId: string;
+                status: string;
+            };
         try{
-           const result = await this.fiatService.initiatePayout(
+            result = await this.fiatService.initiatePayout(
                 tx.digest,
                 bankCode,
                 accountIdentifier,
@@ -335,6 +339,7 @@ export class PayoutService {
         await this.payoutRepository.confirmPayout(
             payoutTx.id,
             tx.digest,
+            result.rampOrderId
         );
         const gasUsed = tx.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
