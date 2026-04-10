@@ -27,11 +27,9 @@ export const createFiatPayoutValidation = (data: InitiatePayoutDto) => {
         amount: Joi.number().positive().required(),
         accountId: Joi.string().optional(),
         bankCode: Joi.string().optional(),
-        bankName: Joi.string().optional(),
-        accountName: Joi.string().optional(),
         accountIdentifier: Joi.string().optional(),
         save: Joi.boolean().optional(),
-    }).or("accountId", "accountIdentifier");
+    })
     return schema.validate(data);
 }
 
