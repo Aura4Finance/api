@@ -1,3 +1,4 @@
+import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { RetryCryptoPayoutDto } from "@/dto/payout.dto";
 import Joi from "joi";
 
@@ -19,6 +20,19 @@ export const retryCryptoPayoutValidation = (data: RetryCryptoPayoutDto) => {
     });
 
     return schema.validate(data)
+}
+
+export const createFiatPayoutValidation = (data: InitiatePayoutDto) => {
+    const schema = Joi.object({
+        amount: Joi.number().positive().required(),
+        accountId: Joi.string().optional(),
+        bankCode: Joi.string().optional(),
+        bankName: Joi.string().optional(),
+        accountName: Joi.string().optional(),
+        accountIdentifier: Joi.string().optional(),
+        save: Joi.boolean().optional(),
+    }).or("accountId", "accountIdentifier");
+    return schema.validate(data);
 }
 
 export const queryPayoutSchemaValidation = (data: any) => {

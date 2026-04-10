@@ -14,5 +14,5 @@ export interface InitiatePayoutDto {
     accountId?: string,
     accountIdentifier?: string,
     bankCode?: string,
-    accountName?: string
+    save?: boolean;
 }

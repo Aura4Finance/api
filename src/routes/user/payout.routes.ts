@@ -30,4 +30,12 @@ router.post(
     )
 )
 
+router.post(
+    "/fiat",
+    checkIfUserIsDisabled,
+    asyncHandler((req: RequestAuth, res: Response) =>
+        payOutController.createFiatPayout(req, res)
+    )
+)
+
 export default router;

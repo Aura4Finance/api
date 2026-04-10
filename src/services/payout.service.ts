@@ -17,8 +17,7 @@ import { FiatRepository } from "@/repositories/user/fiat.repository";
 export class PayoutService {
     private client!: SuiClient;
     private primaryCoin: any;
-    cointype =
-        "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC";
+    cointype = "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC";
 
     // cache for coin data: walletAddress -> { coinObjects, totalBalance }
     private walletCache: Map<string, { coinObjects: string[]; totalBalance: number }> = new Map();
@@ -270,10 +269,10 @@ export class PayoutService {
             amount,
             accountId,
             accountIdentifier,
-            accountName,
-            bankCode
+            bankCode,
+            save
         } = body;
-
+        let accountName: string;
         if (accountId) {
             const account = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, accountId);
             if (!account) {
@@ -282,14 +281,26 @@ export class PayoutService {
             accountIdentifier = account.accountNumber;
             bankCode = account.bankCode;
             accountName = account.accountName;
-        } else if (accountIdentifier && bankCode && accountName) {
+        } else if (accountIdentifier && bankCode) {
             const resolvedAccount =  await this.fiatService.resolveAccountName(accountIdentifier, bankCode);
-            if(resolvedAccount.payload.accountName == accountName) {
-                accountName = resolvedAccount.payload.accountName;
+            if(!resolvedAccount.payload.accountName) {
+                throw new APIError("Provided account cannot be resolved!", STATUS.bad);
             }
-            return;
-        } else {
-            throw new APIError("Either accountId or both accountIdentifier and bankCode must be provided", STATUS.bad);
+            accountName = resolvedAccount.payload.accountName;
+            if(save){
+                const { payload: banks} = await this.fiatService.getBanks();
+                const bank = banks.find(bank => bank.bankCode == bankCode );
+                await this.fiatService.addBankAccount( accountIdentifier, bankCode, <string>bank?.name, true, userId);
+            }
+            
+        } 
+        else {
+            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id)
+            if(!primaryFiatAccount) throw new APIError("Either accountId or both accountIdentifier and bankCode must be provided", STATUS.bad);
+        
+            accountIdentifier = primaryFiatAccount.accountNumber;
+            bankCode = primaryFiatAccount.bankCode;
+            accountName = primaryFiatAccount.accountName;
         }
         const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
         const wallet = await deriveWallet(<number>walletIndex);

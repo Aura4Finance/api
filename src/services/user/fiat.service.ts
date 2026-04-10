@@ -49,7 +49,10 @@ export class FiatService {
 
         return {
             message: "Banks retrieved successfully",
-            payload: response.data.data
+            payload: response.data.data as {
+                name: string,
+                bankCode: string
+            }[]
         }
     }
 
@@ -66,13 +69,10 @@ export class FiatService {
             throw new APIError("Unable to resolve account name", STATUS.bad);
         }
 
-        const profile = await this.userRepository
+        const profileId = await this.userRepository
             .findUserById(userId)
-            .then((user) => user?.businessProfile);
+            .then((user) => user?.businessProfile?.id);
 
-        if (!profile?.businessName) {
-            throw new APIError("Business profile incomplete", STATUS.bad);
-        }
         const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(String(accountNumber), bankCode);
 
         if (existingAccount) {
@@ -80,8 +80,8 @@ export class FiatService {
         }
 
         const [existingAccounts, primaryAccount] = await Promise.all([
-            this.fiatRepository.getAccounts(profile.id),
-            this.fiatRepository.getPrimaryAccount(profile.id)
+            this.fiatRepository.getAccounts(<string>profileId),
+            this.fiatRepository.getPrimaryAccount(<string>profileId)
         ]);
 
         // If no existing accounts, force this as primary
@@ -90,7 +90,7 @@ export class FiatService {
         }
 
         if (primaryAccount && isPrimary) {
-            await this.fiatRepository.updateAccount(primaryAccount.id, profile.id as string, false);
+            await this.fiatRepository.updateAccount(primaryAccount.id, profileId as string, false);
         }
 
         //Create the new account
@@ -100,7 +100,7 @@ export class FiatService {
             resolvedAccount.payload.accountName,
             bankCode,
             isPrimary,
-            profile.id
+            <string>profileId
         );
 
         return createdAccount;
