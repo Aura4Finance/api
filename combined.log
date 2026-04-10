@@ -12526,3 +12526,9 @@
 {"level":"error","message":"APIError: 2FA not enabled for this user!\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:185:11)","timestamp":"2026-04-10T12:10:12.066Z"}
 {"level":"error","message":"APIError: 2FA not enabled for this user!\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:185:11)","timestamp":"2026-04-10T12:10:20.968Z"}
 {"level":"error","message":"APIError: Invalid 2FA token\n    at AuthService.verify2FAAndGenerateSecret (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\auth.service.ts:283:15)\n    at AuthController.continueWith2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\auth.controller.ts:124:34)","timestamp":"2026-04-10T12:11:43.490Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-10T12:15:37.931Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-10T12:15:39.553Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-10T12:15:42.047Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-10T12:15:44.678Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-10T12:15:44.683Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-10T12:15:44.695Z"}
