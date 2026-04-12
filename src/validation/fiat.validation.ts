@@ -17,10 +17,6 @@ export const addBankAccountSchemaValidation = (data: CreateAccountDto) => {
           'string.max': 'Bank code cannot exceed 8 characters',
           'any.required': 'Bank code is required',
         }),
-        bankName: Joi.string().max(100).required().messages({
-          'string.max': 'Bank name cannot exceed 100 characters',
-          'any.required': 'Bank name is required',
-        }),
         isPrimary: Joi.boolean().optional()
     });
 

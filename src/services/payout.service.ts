@@ -288,11 +288,8 @@ export class PayoutService {
             }
             accountName = resolvedAccount.payload.accountName;
             if(save){
-                const { payload: banks} = await this.fiatService.getBanks();
-                const bank = banks.find(bank => bank.bankCode == bankCode );
-                await this.fiatService.addBankAccount( accountIdentifier, bankCode, <string>bank?.name, true, userId);
-            }
-            
+                await this.fiatService.addBankAccount( accountIdentifier, bankCode, false, userId);
+            }  
         } 
         else {
             const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id)

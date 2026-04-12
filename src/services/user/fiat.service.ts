@@ -59,7 +59,6 @@ export class FiatService {
     async addBankAccount(
         accountNumber: string,
         bankCode: string,
-        bankName: string,
         isPrimary: boolean,
         userId: string
     ) {
@@ -68,6 +67,9 @@ export class FiatService {
         if (!resolvedAccount.payload) {
             throw new APIError("Unable to resolve account name", STATUS.bad);
         }
+
+        const { payload: banks } = await this.getBanks();
+        const resolvedBank = banks.find(bank => bank.bankCode == bankCode);
 
         const profileId = await this.userRepository
             .findUserById(userId)
@@ -95,7 +97,7 @@ export class FiatService {
 
         //Create the new account
         const createdAccount = await this.fiatRepository.createAccount(
-            bankName,
+            <string>resolvedBank?.name,
             accountNumber,
             resolvedAccount.payload.accountName,
             bankCode,

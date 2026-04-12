@@ -48,7 +48,7 @@ export class FiatController {
     }
 
     async resolveAccount(req: Request, res: Response) {
-        const { error, value } = resolveAccountSchemaValidation(req.body as any);
+        const { error, value } = resolveAccountSchemaValidation(req.query as any);
         if (error) {
             return res.status(STATUS.bad).json({
                 success: false,
@@ -74,11 +74,11 @@ export class FiatController {
                 data: null
             })
         }
+
         const body: CreateAccountDto = value;
         const revolvedAccount = await this.fiatService.addBankAccount(
             body.accountNumber,
             body.bankCode,
-            body.bankName,
             body.isPrimary,
             req.user.id
         );
