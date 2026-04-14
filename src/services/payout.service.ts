@@ -311,7 +311,7 @@ export class PayoutService {
         }
 
         if(!tx.effects || tx.effects.status.status !== "success") {
-            throw new APIError(`Payout failed: On-chain transaction failed`, STATUS.bad);
+            throw new APIError(`Payout failed: On-chain transaction failed${tx.digest ? `( ${tx.digest})` : ''}`, STATUS.bad);
          }
         const payoutTx = await this.payoutRepository.createPayout(
             "SUI",

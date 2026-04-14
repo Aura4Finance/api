@@ -12651,3 +12651,40 @@
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-14T16:58:27.562Z"}
 {"level":"error","message":"APIError: Bank account already exists\n    at FiatService.addBankAccount (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\fiat.service.ts:81:19)\n    at FiatController.addBankAccount (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\user\\fiat.controller.ts:79:33)","timestamp":"2026-04-14T17:52:01.189Z"}
 {"level":"error","message":"APIError: Bank account already exists\n    at FiatService.addBankAccount (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\fiat.service.ts:81:19)\n    at FiatController.addBankAccount (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\user\\fiat.controller.ts:79:33)","timestamp":"2026-04-14T17:56:15.680Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-14T18:01:59.211Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-14T18:02:00.610Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-14T18:02:04.108Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-14T18:02:08.273Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-14T18:02:08.275Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-14T18:02:08.298Z"}
+{"level":"error","message":"APIError: Payout failed: Package object does not exist with ID 0x4378b5bf4c21d313150634d529218ea11166ca113a2869a31c88deb4bb8c2417\n    at PayoutService.initiateFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:310:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PayoutController.createFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:79:38)","timestamp":"2026-04-14T18:05:21.100Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-14T18:11:46.646Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-14T18:11:48.648Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-14T18:11:52.939Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-14T18:12:10.555Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-14T18:12:10.557Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-14T18:12:10.571Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-14T18:13:45.261Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-14T18:13:46.765Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-14T18:13:49.858Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-14T18:13:53.594Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-14T18:13:53.595Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-14T18:13:53.602Z"}
+{"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:194:11)","timestamp":"2026-04-14T18:14:02.339Z"}
+{"level":"error","message":"APIError: Payout failed: Fiat Payout is not available in test environment.\n    at PayoutService.initiateFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:310:19)\n    at PayoutController.createFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:79:38)","timestamp":"2026-04-14T18:14:17.554Z"}
+{"level":"error","message":"APIError: Payout failed: On-chain transaction failed\n    at PayoutService.initiateFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:314:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PayoutController.createFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:79:38)","timestamp":"2026-04-14T18:17:53.592Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-14T18:19:23.652Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-14T18:19:25.313Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-14T18:19:27.938Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-14T18:19:30.785Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-14T18:19:30.787Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-14T18:19:30.797Z"}
+{"level":"error","message":"APIError: Payout failed: On-chain transaction failed: 6hHeid9KXwC54WF3FacZM6qRGUMxwV6f2E1wb7YGhsHw\n    at PayoutService.initiateFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:314:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PayoutController.createFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:79:38)","timestamp":"2026-04-14T18:19:38.138Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-14T18:27:17.076Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-14T18:27:18.432Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-14T18:27:21.435Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-04-14T18:27:25.671Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-04-14T18:27:25.673Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-04-14T18:27:25.685Z"}
+{"level":"error","message":"APIError: Invalid 2FA token\n    at verifyActionUsing2FA (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:194:11)","timestamp":"2026-04-14T18:27:27.828Z"}
+{"level":"error","message":"APIError: Payout failed: On-chain transaction failed( GaCDyA4R3Nucr9kbWuJLbi1DpSs4CT84p85ZWjj99rM2)\n    at PayoutService.initiateFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:314:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PayoutController.createFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:79:38)","timestamp":"2026-04-14T18:27:53.527Z"}

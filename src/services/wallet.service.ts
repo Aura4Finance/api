@@ -283,6 +283,9 @@ export class WalletService {
     secret_key: string,
     mode: Mode
   ) {
+    if(mode == "test"){
+      throw new APIError("Fiat Payout is not available in test environment.", STATUS.bad)
+    }
     // Fee: 0.5% flat for amounts 1–500 USDC or 1–500 SUI
     const fee = (amount * 5n) / 1000n; // 0.5%
 
