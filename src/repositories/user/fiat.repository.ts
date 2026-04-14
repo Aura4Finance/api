@@ -41,11 +41,13 @@ export class FiatRepository {
     async getAccountByBankCodeAndNumber(
         accountNumber: string,
         bankCode: string,
+        profileId: string
     ) {
         const account = await db.fiatAccount.findFirst({
             where: {
                 accountNumber,
-                bankCode
+                bankCode,
+                profileId
             }
         });
         return account;

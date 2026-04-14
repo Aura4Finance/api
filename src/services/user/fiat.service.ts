@@ -75,7 +75,7 @@ export class FiatService {
             .findUserById(userId)
             .then((user) => user?.businessProfile?.id);
 
-        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(String(accountNumber), bankCode);
+        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(<string>accountNumber, bankCode, <string>profileId);
 
         if (existingAccount) {
             throw new APIError("Bank account already exists", STATUS.conflict);
