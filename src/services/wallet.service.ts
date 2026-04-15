@@ -287,14 +287,12 @@ export class WalletService {
     if(mode == "test"){
       throw new APIError("Fiat Payout is not available in test environment.", STATUS.bad)
     }
-    // Fee: 0.5% flat for amounts 1–500 USDC or 1–500 SUI
-    const fee = (amount * 5n) / 1000n; // 0.5%
 
     const tx = new Transaction();
     const coinType = this.USDC_COIN_TYPE; // or SUI_COIN_TYPE
 
     // Split the coin to cover amount + fee, then pass to off_ramp
-    const [splitCoin] = tx.splitCoins(tx.object(primaryCoinObjectId), [amount + fee]);
+    const [splitCoin] = tx.splitCoins(tx.object(primaryCoinObjectId), [amount]);
 
     tx.moveCall({
       target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,
