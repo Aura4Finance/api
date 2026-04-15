@@ -309,7 +309,12 @@ export class PayoutService {
 
         let tx: SuiTransactionBlockResponse;
         try {
-            tx = await this.walletService.offrampSmartContractCall(BigInt(Number(amount)), primaryCoinObjectId, secretKey, mode)
+            tx = await this.walletService.offrampSmartContractCall(
+         BigInt((amount.split(".")[0] + (amount.split(".")[1] || "").padEnd(6, "0").slice(0, 6))),
+        primaryCoinObjectId,
+        secretKey,
+        mode
+         );
         } catch (err: any) {
             throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
         }
