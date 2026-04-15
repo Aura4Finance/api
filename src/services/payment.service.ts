@@ -92,7 +92,7 @@ export class PaymentService {
         "to_USDT");
 
       const depositAddress = await this.walletService.generatePaymentWallet(
-        user?.businessProfile?.wallet[0]?.address as string,
+        <string>user?.businessProfile?.wallet[0]?.address,
         amountToPay,
         mode
       );
@@ -160,6 +160,7 @@ export class PaymentService {
         },
       };
     } catch (error: any) {
+      console.log(error)
       throw new APIError(
         error.message || "Failed to create payment",
         error.status || STATUS.bad

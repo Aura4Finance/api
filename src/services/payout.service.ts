@@ -318,7 +318,7 @@ export class PayoutService {
             "SUI",
             amount,
             amount,
-            "CRYPTO",
+            "FIAT",
             <string>user?.businessProfile?.wallet[0]?.address,
             <string>user?.businessProfile?.id,
             mode        
@@ -334,14 +334,6 @@ export class PayoutService {
                 accountIdentifier,
                 accountName,
             );
-            if(result.status !== "SUCCESS") {
-                return {
-                    message: "Payout initiated on-chain but failed at payout provider. This will be retried automatically by our system. If the issue persists, please contact support.",
-                    payload: {
-                        status: "FAILED"
-                    }
-                }
-            }
         }catch(err: any) {
             throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
         }
