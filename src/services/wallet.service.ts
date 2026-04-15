@@ -148,7 +148,7 @@ export class WalletService {
     mergeTargetsObjectIds: string[],
     mode: Mode,
   ) {
-    const smart_contract_address = this.setActiveNetwork(mode);
+    const smart_contract_address = await this.setActiveNetwork(mode);
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::merge_all_usdc`,
@@ -172,7 +172,7 @@ export class WalletService {
     to: string,
     mode: Mode,
   ) {
-    const smart_contract_address = this.setActiveNetwork(mode);
+    const smart_contract_address = await this.setActiveNetwork(mode);
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
@@ -193,7 +193,7 @@ export class WalletService {
     to: string,
     mode: Mode
   ) {
-    this.setActiveNetwork(mode);
+    await this.setActiveNetwork(mode);
     const tx = new Transaction();
     const [new_coin] = tx.splitCoins(primaryCoinObjectId, [tx.pure.u64(Math.round(amount * 1000000))]);
     tx.transferObjects([new_coin], tx.pure.address(to));

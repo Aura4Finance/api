@@ -83,6 +83,12 @@ export class PaymentService {
       }
 
       await this.customerRepository.addModeToCustomer(customer.id, mode);
+      
+      const merchantAddress = user?.businessProfile?.wallet[0]?.address;
+      if (!merchantAddress) {
+        throw new APIError("Merchant wallet address not configured", STATUS.bad);
+      }
+
       const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
         ((payLink && type == "PAYMENT_LINK")
           ? payLink.amount
@@ -92,7 +98,7 @@ export class PaymentService {
         "to_USDT");
 
       const depositAddress = await this.walletService.generatePaymentWallet(
-        <string>user?.businessProfile?.wallet[0]?.address,
+        merchantAddress,
         amountToPay,
         mode
       );
@@ -160,7 +166,6 @@ export class PaymentService {
         },
       };
     } catch (error: any) {
-      console.log(error)
       throw new APIError(
         error.message || "Failed to create payment",
         error.status || STATUS.bad

@@ -305,10 +305,10 @@ export class PayoutService {
         const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
         const wallet = await deriveWallet(<number>walletIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(wallet);
-        const primaryCoinObjectId = await this.getPrimaryCoin(<Wallet>user?.businessProfile?.wallet[0], mode);
-
         let tx: SuiTransactionBlockResponse;
         try {
+            const primaryCoinObjectId = await this.getPrimaryCoin(<Wallet>user?.businessProfile?.wallet[0], mode);
+            
             tx = await this.walletService.offrampSmartContractCall(
             BigInt((amount.toFixed(6).replace(".", ""))),
             primaryCoinObjectId,
