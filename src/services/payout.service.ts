@@ -17,7 +17,7 @@ import { FiatRepository } from "@/repositories/user/fiat.repository";
 export class PayoutService {
     private client!: SuiClient;
     private primaryCoin: any;
-    private cointype!: string;
+    cointype!: string;
 
     // cache for coin data: walletAddress -> { coinObjects, totalBalance }
     private walletCache: Map<string, { coinObjects: string[]; totalBalance: number }> = new Map();
