@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType, Network, Mode } from "../../generated/prisma";
+import { TransactionStatus, TransactionType, Network, Mode, Wallet } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "./user/fiat.service";
@@ -100,7 +100,7 @@ export class PayoutService {
     }
 
     async getPrimaryCoin(
-        keys: any,
+        keys: Wallet,
         mode: Mode
     ) {
         await this.setActiveNetwork(mode);
@@ -199,7 +199,7 @@ export class PayoutService {
             throw new APIError("Invalid payout transaction ID", STATUS.bad);
         }
         const keys = await this.userRepository.findUserById(userId);
-        this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0], mode);
+        this.primaryCoin = await this.getPrimaryCoin(<Wallet>keys?.businessProfile?.wallet[0], mode);
 
         return await this.finalizeCryptoPayout(
             userId,
@@ -244,7 +244,7 @@ export class PayoutService {
             } else {
                 throw new APIError("Settlemtment account or wallet address and network is required", STATUS.bad);
             }
-        this.primaryCoin = await this.getPrimaryCoin(keys?.businessProfile?.wallet[0], mode);
+        this.primaryCoin = await this.getPrimaryCoin(<Wallet>keys?.businessProfile?.wallet[0], mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createPayout(
             network,
@@ -302,10 +302,11 @@ export class PayoutService {
         const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
         const wallet = await deriveWallet(<number>walletIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(wallet);
+        const primaryCoinObjectId = await this.getPrimaryCoin(<Wallet>user?.businessProfile?.wallet[0], mode);
 
         let tx: SuiTransactionBlockResponse;
         try {
-            tx = await this.walletService.offrampSmartContractCall(BigInt(amount), secretKey, mode)
+            tx = await this.walletService.offrampSmartContractCall(BigInt(amount), primaryCoinObjectId, secretKey, mode)
         } catch (err: any) {
             throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
         }

@@ -8,7 +8,7 @@ import { PayoutService } from "@/services/payout.service";
 import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
-import { Mode, TransactionStatus, TransactionType } from "../../generated/prisma";
+import { Mode, TransactionStatus, TransactionType, Wallet } from "../../generated/prisma";
 
 
 @Service()
@@ -36,7 +36,7 @@ export class RefundServices {
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         let result;
         try {
-            const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(wallet, mode);
+            const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(<Wallet>wallet, mode);
             result = await this.walletService.splitAndSend(
                 secretKey,
                 primaryCoinObjectId,

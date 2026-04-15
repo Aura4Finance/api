@@ -280,6 +280,7 @@ export class WalletService {
 
   async offrampSmartContractCall(
     amount: bigint,
+    primaryCoinObjectId: string,
     secret_key: string,
     mode: Mode
   ) {
@@ -293,7 +294,7 @@ export class WalletService {
     const coinType = this.USDC_COIN_TYPE; // or SUI_COIN_TYPE
 
     // Split the coin to cover amount + fee, then pass to off_ramp
-    const [splitCoin] = tx.splitCoins(tx.gas, [amount + fee]);
+    const [splitCoin] = tx.splitCoins(tx.object(primaryCoinObjectId), [amount + fee]);
 
     tx.moveCall({
       target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,
