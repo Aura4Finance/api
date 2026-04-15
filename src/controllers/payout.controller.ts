@@ -6,6 +6,7 @@ import { Response } from "express";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { createFiatPayoutValidation, cryptoPayoutSchemaValidation, retryCryptoPayoutValidation } from "@/validation/payout.validation";
 import { CryptoPayOutDto, RetryCryptoPayoutDto } from "@/dto/payout.dto";
+import { InitiatePayoutDto } from "@/dto/fiat.dto";
 
 @Service()
 export class PayoutController {
@@ -75,8 +76,8 @@ export class PayoutController {
                 message: formatErrorValidation(error),
             });
         }
-
-        const { message, payload } = await this.payoutService.initiateFiatPayout(userId, req.mode, value);
+        const body = value as InitiatePayoutDto;
+        const { message, payload } = await this.payoutService.initiateFiatPayout(userId, req.mode, body);
 
         return res.status(STATUS.ok).json({
             success: true,
