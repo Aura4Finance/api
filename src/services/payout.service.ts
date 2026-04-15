@@ -17,7 +17,7 @@ import { FiatRepository } from "@/repositories/user/fiat.repository";
 export class PayoutService {
     private client!: SuiClient;
     private primaryCoin: any;
-    cointype = "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC";
+    private cointype!: string;
 
     // cache for coin data: walletAddress -> { coinObjects, totalBalance }
     private walletCache: Map<string, { coinObjects: string[]; totalBalance: number }> = new Map();
@@ -33,6 +33,9 @@ export class PayoutService {
 
     private async setActiveNetwork(mode: Mode) {
         this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
+        this.cointype = mode == "test" ? 
+            "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC" :
+            "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC"
     }
 
     private async fetchCoins(walletAddress: string) {
