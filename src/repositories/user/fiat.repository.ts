@@ -10,6 +10,7 @@ export class FiatRepository {
                 profileId
             },
             select: {
+                id: true,
                 bankName: true,
                 accountNumber: true,
                 bankCode: true,

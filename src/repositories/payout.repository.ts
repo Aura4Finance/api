@@ -175,14 +175,13 @@ export class PayoutRepository {
       hasNextPage: !!nextCursor,
     };
   }
-  async getPayoutById(txId: string, userId: string) {
+  async getPayoutById(txId: string, profileId: string) {
     const payout = await db.transaction.findFirst({
       where: {
         id: txId,
-        profile: {
-          userId
-        }
-      },
+        type: "PAYOUT",
+        profileId,
+        },
       include: {
         payout: true,
       }

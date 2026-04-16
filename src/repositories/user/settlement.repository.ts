@@ -34,7 +34,7 @@ export class SettlementRepository {
     network: Network, 
     alias: string,
     businessProfileId: string) {
-    await db.cryptoAccount.create({
+   return  await db.cryptoAccount.create({
       data: {
         walletAddress,
         alias,
@@ -45,6 +45,11 @@ export class SettlementRepository {
           },
         },
       },
+      select: {
+        id: true,
+        walletAddress: true,
+        network: true,
+      }
     });
   }
 

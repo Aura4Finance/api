@@ -229,6 +229,7 @@ export class PayoutService {
         }
         let to: string;
         let network: Network;
+        let cryptoAccountId: string | undefined = undefined;
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
             if (!settlementAccount) {
@@ -236,13 +237,14 @@ export class PayoutService {
             }
             to = settlementAccount.walletAddress;
             network = settlementAccount.network;
+            cryptoAccountId = settlementAccount.id;
         } else
             if (body.walletAddress && body.network) {
                 to = body.walletAddress;
                 network = body.network;
                 if (body.save) {
                     if (!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
-                    await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id);
+                    cryptoAccountId = (await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id)).id;
                 }
             } else {
                 throw new APIError("Settlemtment account or wallet address and network is required", STATUS.bad);
@@ -254,54 +256,24 @@ export class PayoutService {
             amountInNGN,
             body.amount,
             "CRYPTO",
-            <string>keys?.businessProfile?.wallet[0]?.address,
+            to,
             <string>keys?.businessProfile?.id,
-            mode
+            mode,
+            cryptoAccountId
         );
         return this.finalizeCryptoPayout(userId, body.amount, to, payout.id, mode);
     }
 
-    //using Linq or our custom API service
-    async initiateFiatPayout(
+    private async finalizeFiatPayout(
         userId: string,
-        mode: Mode,
-        body: InitiatePayoutDto
+        amount: number,
+        accountIdentifier: string,
+        bankCode: string,
+        accountName: string,
+        payoutId: string,
+        mode: Mode
     ) {
         const user = await this.userRepository.findUserById(userId);
-        let {
-            amount,
-            accountId,
-            accountIdentifier,
-            bankCode,
-            save
-        } = body;
-        let accountName: string;
-        if (accountId) {
-            const account = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, accountId);
-            if (!account) {
-                throw new APIError("Account not found", STATUS.notFound);
-            }
-            accountIdentifier = account.accountNumber;
-            bankCode = account.bankCode;
-            accountName = account.accountName;
-        } else if (accountIdentifier && bankCode) {
-            const resolvedAccount =  await this.fiatService.resolveAccountName(accountIdentifier, bankCode);
-            if(!resolvedAccount.payload.accountName) {
-                throw new APIError("Provided account cannot be resolved!", STATUS.bad);
-            }
-            accountName = resolvedAccount.payload.accountName;
-            if(save){
-                await this.fiatService.addBankAccount( accountIdentifier, bankCode, false, userId);
-            }  
-        } 
-        else {
-            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id)
-            if(!primaryFiatAccount) throw new APIError("Either accountId or both accountIdentifier and bankCode must be provided", STATUS.bad);
-        
-            accountIdentifier = primaryFiatAccount.accountNumber;
-            bankCode = primaryFiatAccount.bankCode;
-            accountName = primaryFiatAccount.accountName;
-        }
         const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
         const wallet = await deriveWallet(<number>walletIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(wallet);
@@ -310,47 +282,49 @@ export class PayoutService {
             const primaryCoinObjectId = await this.getPrimaryCoin(<Wallet>user?.businessProfile?.wallet[0], mode);
             
             tx = await this.walletService.offrampSmartContractCall(
-            BigInt((amount.toFixed(6).replace(".", ""))),
-            primaryCoinObjectId,
-            secretKey,
-            mode
-         );
+                BigInt((amount.toFixed(6).replace(".", ""))),
+                primaryCoinObjectId,
+                secretKey,
+                mode
+            );
         
         } catch (err: any) {
             throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
         }
 
-        if(!tx.effects || tx.effects.status.status !== "success") {
+        if (!tx.effects || tx.effects.status.status !== "success") {
+            await this.payoutRepository.failPayout(
+                payoutId,
+                tx.digest
+            );
             throw new APIError(`Payout failed: On-chain transaction failed${tx.digest ? `( ${tx.digest})` : ''}`, STATUS.bad);
-         }
-        const payoutTx = await this.payoutRepository.createPayout(
-            "SUI",
-            amount,
-            amount,
-            "FIAT",
-            <string>user?.businessProfile?.wallet[0]?.address,
-            <string>user?.businessProfile?.id,
-            mode        
-        );
+        }
+
         let result: {
-                rampOrderId: string;
-                status: string;
-            };
-        try{
+            rampOrderId: string;
+            status: string;
+        };
+        try {
             result = await this.fiatService.initiatePayout(
                 tx.digest,
                 bankCode,
                 accountIdentifier,
                 accountName,
             );
-        }catch(err: any) {
+        } catch (err: any) {
+            await this.payoutRepository.failPayout(
+                payoutId,
+                tx.digest
+            );
             throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
         }
+
         await this.payoutRepository.confirmPayout(
-            payoutTx.id,
+            payoutId,
             tx.digest,
             result.rampOrderId
         );
+
         const gasUsed = tx.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
         
@@ -364,8 +338,133 @@ export class PayoutService {
                 gasFee: totalGas,
                 platformFee: amount * 0.005,
                 amountRecieved: amount * 0.995,
+            },
+        };
+    }
+
+    async retryFiatPayout(
+        transactionId: string,
+        userId: string,
+        mode: Mode
+    ) {
+        const user = await this.userRepository.findUserById(userId);
+        await this.setActiveNetwork(mode);
+        const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, <string>user?.businessProfile?.id);
+        if (
+            !payoutTransaction ||
+            payoutTransaction.confirmedAt ||
+            payoutTransaction.status !== TransactionStatus.FAILED ||
+            payoutTransaction?.payout?.method!== "FIAT" ||
+            payoutTransaction.type !== TransactionType.PAYOUT
+        ) {
+            throw new APIError("Invalid payout transaction ID", STATUS.bad);
+        }
+
+        let accountIdentifier: string;
+        let bankCode: string;
+        let accountName: string;
+
+        // Try to get fiat account from payout transaction
+        const fiatAccountId = payoutTransaction.payout.fiatAccountId;
+        if (fiatAccountId) {
+            const fiatAccount = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, fiatAccountId);
+            if (fiatAccount) {
+                accountIdentifier = fiatAccount.accountNumber;
+                bankCode = fiatAccount.bankCode;
+                accountName = fiatAccount.accountName;
+            } else {
+                throw new APIError("Fiat account associated with this payout not found!", STATUS.notFound);
+            }
+        } else {
+            // Fallback to user's primary fiat account
+            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id);
+            if (!primaryFiatAccount) {
+                throw new APIError("No fiat account found for this payout. Please provide account details.", STATUS.notFound);
             }
 
+            accountIdentifier = primaryFiatAccount.accountNumber;
+            bankCode = primaryFiatAccount.bankCode;
+            accountName = primaryFiatAccount.accountName;
         }
+
+        return await this.finalizeFiatPayout(
+            userId,
+            payoutTransaction.amount,
+            accountIdentifier,
+            bankCode,
+            accountName,
+            payoutTransaction.id,
+            mode
+        );
+    }
+
+    //using Linq or our custom API service
+    async initiateFiatPayout(
+        userId: string,
+        mode: Mode,
+        body: InitiatePayoutDto
+    ) {
+        await this.setActiveNetwork(mode);
+        const user = await this.userRepository.findUserById(userId);
+        let {
+            amount,
+            accountId,
+            accountIdentifier,
+            bankCode,
+            save
+        } = body;
+        let accountName: string;
+        let fiatAccountId: string | undefined = undefined;
+        if (accountId) {
+            const account = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, accountId);
+            if (!account) {
+                throw new APIError("Account not found", STATUS.notFound);
+            }
+            accountIdentifier = account.accountNumber;
+            bankCode = account.bankCode;
+            accountName = account.accountName;
+            fiatAccountId = account.id;
+        } else if (accountIdentifier && bankCode) {
+            const resolvedAccount = await this.fiatService.resolveAccountName(accountIdentifier, bankCode);
+            if (!resolvedAccount.payload.accountName) {
+                throw new APIError("Provided account cannot be resolved!", STATUS.bad);
+            }
+            accountName = resolvedAccount.payload.accountName;
+            if (save) {
+               fiatAccountId = (await this.fiatService.addBankAccount(accountIdentifier, bankCode, false, userId)).id;
+            } else {
+               fiatAccountId = undefined;
+            }  
+        } else {
+            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id);
+            if (!primaryFiatAccount) throw new APIError("Either accountId or both accountIdentifier and bankCode must be provided", STATUS.bad);
+        
+            accountIdentifier = primaryFiatAccount.accountNumber;
+            bankCode = primaryFiatAccount.bankCode;
+            accountName = primaryFiatAccount.accountName;
+            fiatAccountId = primaryFiatAccount.id;
+        }
+
+        const payout = await this.payoutRepository.createPayout(
+            "SUI",
+            amount,
+            amount,
+            "FIAT",
+            <string>user?.businessProfile?.wallet[0]?.address,
+            <string>user?.businessProfile?.id,
+            mode,
+            undefined,
+            fiatAccountId      
+        );
+
+        return this.finalizeFiatPayout(
+            userId,
+            amount,
+            accountIdentifier,
+            bankCode,
+            accountName,
+            payout.id,
+            mode
+        );
     }
 }
