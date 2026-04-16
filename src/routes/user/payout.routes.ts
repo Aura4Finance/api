@@ -12,7 +12,7 @@ const router = express.Router();
 router.get(
     "/balances",
     asyncHandler((req: RequestAuth, res: Response) =>
-        payOutController.getBalances(req, res))x
+        payOutController.getBalances(req, res))
 )
 router.use(verifyRequestBody);
 router.post(
