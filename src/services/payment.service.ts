@@ -72,7 +72,7 @@ export class PaymentService {
             customerFirstname,
             customerLastname,
             email,
-            user?.businessProfile?.id as string,
+            <string>user?.businessProfile?.id,
             mode
           );
         } else {
@@ -97,11 +97,16 @@ export class PaymentService {
         currency,
         "to_USDT");
 
-      const depositAddress = await this.walletService.generatePaymentWallet(
-        merchantAddress,
-        amountToPay,
-        mode
-      );
+      let depositAddress: string;
+      try{
+        depositAddress = await this.walletService.generatePaymentWallet(
+          merchantAddress,
+          amountToPay,
+          mode
+        );
+      }catch(error: any){
+        throw new APIError("Unable to process deposit address creation",  STATUS.serverUnavailable);
+      }
 
       const transferAddress = await this.walletService.createWallet();
       

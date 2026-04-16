@@ -79,7 +79,7 @@ export class WalletService {
       return createdWallet.objectId;
     }
 
-    throw new Error("Wallet creation failed");
+    throw new APIError("Wallet creation failed", STATUS.serverError);
   }
 
   private async sponsoredTransaction(
