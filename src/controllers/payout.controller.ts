@@ -85,4 +85,24 @@ export class PayoutController {
             data: payload,
         });
     }
+
+    async retryFiatPayout(req: RequestAuth, res: Response) {
+        const userId = req.user?.id as string;
+        const { error, value } = retryCryptoPayoutValidation(req.body);
+
+        if (error) {
+            return res.status(STATUS.bad).json({
+                success: false,
+                message: formatErrorValidation(error),
+            });
+        }
+        const { transactionId }: RetryCryptoPayoutDto = value;
+        const { message, payload } = await this.payoutService.retryFiatPayout(transactionId, userId, req.mode);
+
+        return res.status(STATUS.ok).json({
+            success: true,
+            message,
+            data: payload,
+        });
+    }
 }

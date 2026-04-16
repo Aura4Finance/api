@@ -197,6 +197,7 @@ export class PayoutService {
             !payoutTransaction ||
             payoutTransaction.confirmedAt ||
             payoutTransaction.status !== TransactionStatus.FAILED ||
+            payoutTransaction?.payout?.method!== "CRYPTO" ||
             payoutTransaction.type !== TransactionType.PAYOUT
         ) {
             throw new APIError("Invalid payout transaction ID", STATUS.bad);

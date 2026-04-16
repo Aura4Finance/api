@@ -38,4 +38,12 @@ router.post(
     )
 )
 
+router.post(
+    "/fiat/retry",
+    checkIfUserIsDisabled,
+    asyncHandler((req: RequestAuth, res: Response) =>
+        payOutController.retryFiatPayout(req, res)
+    )
+)
+
 export default router;
