@@ -70,6 +70,7 @@ export class WalrusService {
                     deletable: true,
                     epochs: 2,
                     signer,
+                    tip: 1000,
                 });
 
             const { blobId, blobObject } = await upload().catch(async (error: any) => {

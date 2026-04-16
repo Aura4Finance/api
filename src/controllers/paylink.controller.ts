@@ -68,8 +68,9 @@ export class PaylinkController {
           blobObjectId: blobObject?.id?.id
         });
       }
-    } catch (error) {
-      throw new APIError("Unable to process image files", STATUS.serverError);
+    } catch (error: any) {
+      console.log(error)
+      throw new APIError(`Unable to process image files: ${error.message}`, STATUS.serverError);
     }
     
     return images;
