@@ -24,7 +24,7 @@ export class WalletService {
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
     this.TESTNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_TESTNET as string;
-    this.MAINNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_MAIN as string;
+    this.MAINNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_MAINNET as string;
   }
 
     private async setActiveNetwork(mode: Mode) {

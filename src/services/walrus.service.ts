@@ -19,6 +19,7 @@ export class WalrusService {
     ) { }
 
     private getWalrusClient(network: 'mainnet' | 'testnet') {
+        
         return new SuiJsonRpcClient({
             url: getFullnodeUrl(network),
             network,
@@ -27,10 +28,11 @@ export class WalrusService {
                 uploadRelay: {
                     host: network === "testnet" 
                         ? "https://upload-relay.testnet.walrus.space" 
-                        : "http://auth-proxy.railway.internal",
-                    sendTip: { max: 1_000 },
-                },
-            })
+                        : "https://upload-relay.mainnet.walrus.space",
+                    sendTip: { max: 1_000_000 }
+                }
+            }
+        )
         );
     }
 
