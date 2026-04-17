@@ -27,7 +27,7 @@ export class WalrusService {
                 uploadRelay: {
                     host: network === "testnet" 
                         ? "https://upload-relay.testnet.walrus.space" 
-                        : "auth-proxy.railway.internal",
+                        : "http://auth-proxy.railway.internal",
                     sendTip: { max: 1_000 },
                 },
             })
