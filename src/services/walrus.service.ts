@@ -29,7 +29,7 @@ export class WalrusService {
                     host: network === "testnet" 
                         ? "https://upload-relay.testnet.walrus.space" 
                         : "https://upload-relay.mainnet.walrus.space",
-                    sendTip: { max: 1_000_000 }
+                    sendTip: { max: 1_000_000_000 }, // 1k SUI, adjust as needed
                 }
             }
         )
