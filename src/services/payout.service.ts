@@ -12,6 +12,7 @@ import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "./user/fiat.service";
 import { FiatRepository } from "@/repositories/user/fiat.repository";
+import logger from "@/utils/logger";
 
 @Service()
 export class PayoutService {
@@ -302,7 +303,7 @@ export class PayoutService {
         }
 
         let result: {
-            rampOrderId: string;
+            id: string;
             status: string;
         };
         try {
@@ -312,6 +313,12 @@ export class PayoutService {
                 accountIdentifier,
                 accountName,
             );
+
+            if(result.id !== "COMPLETED"){
+                logger.info(`Payout initiation returned non-completed status: ${result.status} (Ramp order ID: ${result.id})`);
+                throw new APIError("Payout initiation failed, on-chain transaction succeeded but off-chain payout failed", STATUS.bad);
+            }
+
         } catch (err: any) {
             await this.payoutRepository.failPayout(
                 payoutId,
@@ -323,7 +330,7 @@ export class PayoutService {
         await this.payoutRepository.confirmPayout(
             payoutId,
             tx.digest,
-            result.rampOrderId
+            result.id
         );
 
         const gasUsed = tx.effects?.gasUsed;

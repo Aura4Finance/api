@@ -149,13 +149,42 @@ export class WalletService {
     mode: Mode,
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
+    
+    // Fetch the latest coin objects with current versions to avoid stale version errors
+    const primaryCoin = await this.client.getObject({
+      id: primaryCoinObjectId,
+      options: { showOwner: true, showContent: true, showType: true }
+    });
+    
+    if (!primaryCoin.data) {
+      throw new APIError("Primary coin object not found or not available", STATUS.bad);
+    }
+    
+    // Fetch all merge target coins with current versions
+    const mergeTargets = await Promise.all(
+      mergeTargetsObjectIds.map((id) =>
+        this.client.getObject({
+          id,
+          options: { showOwner: true, showContent: true, showType: true }
+        })
+      )
+    );
+    
+    const validMergeTargets = mergeTargets
+      .filter((target) => target.data)
+      .map((target) => target.data!.objectId);
+    
+    if (validMergeTargets.length === 0) {
+      throw new APIError("No valid merge target coins found", STATUS.bad);
+    }
+    
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::merge_all_usdc`,
       arguments: [
-        tx.object(primaryCoinObjectId),
+        tx.object(primaryCoin.data.objectId),
         tx.makeMoveVec({
-          elements: mergeTargetsObjectIds.map((id) => tx.object(id)),
+          elements: validMergeTargets.map((id) => tx.object(id)),
         }),
       ],
     });
@@ -173,11 +202,22 @@ export class WalletService {
     mode: Mode,
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
+    
+    // Fetch the latest coin object with current version to avoid stale version errors
+    const coinObject = await this.client.getObject({
+      id: primaryCoinObjectId,
+      options: { showOwner: true, showContent: true, showType: true }
+    });
+    
+    if (!coinObject.data) {
+      throw new APIError("Coin object not found or not available", STATUS.bad);
+    }
+    
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
       arguments: [
-        tx.object(primaryCoinObjectId),
+        tx.object(coinObject.data.objectId),
         tx.pure.u64(amount * 1000000),
         tx.pure.address(to),
       ],
@@ -194,8 +234,19 @@ export class WalletService {
     mode: Mode
   ) {
     await this.setActiveNetwork(mode);
+    
+    // Fetch the latest coin object with current version to avoid stale version errors
+    const coinObject = await this.client.getObject({
+      id: primaryCoinObjectId,
+      options: { showOwner: true, showContent: true, showType: true }
+    });
+    
+    if (!coinObject.data) {
+      throw new APIError("Coin object not found or not available", STATUS.bad);
+    }
+    
     const tx = new Transaction();
-    const [new_coin] = tx.splitCoins(primaryCoinObjectId, [tx.pure.u64(Math.round(amount * 1000000))]);
+    const [new_coin] = tx.splitCoins(coinObject.data.objectId, [tx.pure.u64(Math.round(amount * 1000000))]);
     tx.transferObjects([new_coin], tx.pure.address(to));
 
     const result = await this.sponsoredTransaction(tx, secret_key);
@@ -210,6 +261,17 @@ export class WalletService {
     mode: Mode
   ) {
     await this.setActiveNetwork(mode);
+    
+    // Fetch the latest coin object with current version to avoid stale version errors
+    const coinObject = await this.client.getObject({
+      id: primaryCoinObjectId,
+      options: { showOwner: true, showContent: true, showType: true }
+    });
+    
+    if (!coinObject.data) {
+      throw new APIError("Coin object not found or not available", STATUS.bad);
+    }
+    
     const tx = new Transaction();
     // Normalize amount
     const totalAmount = BigInt(amount);
@@ -219,7 +281,7 @@ export class WalletService {
 
     // Split out platform fee
     const [platformCoin] = tx.splitCoins(
-      tx.object(primaryCoinObjectId),
+      tx.object(coinObject.data.objectId),
       [tx.pure.u64(platformFee.toString())]
     );
 
@@ -231,7 +293,7 @@ export class WalletService {
 
     // Send remaining balance to merchant
     tx.transferObjects(
-      [tx.object(primaryCoinObjectId)],
+      [tx.object(coinObject.data.objectId)],
       tx.pure.address(to)
     );
 

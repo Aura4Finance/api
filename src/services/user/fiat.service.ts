@@ -224,9 +224,8 @@ export class FiatService {
                     memo: "Instant payout"
                 }
             });
-            console.log(result.data);
-            return result.data.data as {
-                rampOrderId: string;
+            return result.data as {
+                id: string;
                 status: string;
             };
         }catch(err: any) {

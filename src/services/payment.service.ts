@@ -382,7 +382,7 @@ export class PaymentService {
     if (receivedTotal < target) {
       // Customer has not sent the required amount yet (or sent nothing at all)
       throw new APIError(
-        `Payment not received: expected ${target} but wallet only holds ${receivedTotal}`,
+        `Payment not received`,
         STATUS.bad
       );
     }
