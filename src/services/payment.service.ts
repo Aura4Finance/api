@@ -205,10 +205,11 @@ export class PaymentService {
     customerName: string,
     businessName: string,
     businessEmail: string,
-    currency: string
+    currency: string,
+    mode: Mode
   ) {
     await this.paymentRepository.confirmPaymentStatus(paymentId);
-    await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
+    if(mode == "live") await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
 
     await this.sendEmailIfNotSent(paymentId, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
@@ -268,7 +269,8 @@ export class PaymentService {
         String(customer?.firstname),
         tx.profile.businessName,
         String(merchantEmail),
-        tx.currency
+        tx.currency,
+        tx.mode
       );
 
       event = "payment.success";
@@ -292,7 +294,8 @@ export class PaymentService {
             String(customer?.firstname),
             tx.profile.businessName,
             String(merchantEmail),
-            tx.currency
+            tx.currency,
+            tx.mode
           );
 
           event = "payment.success";
@@ -315,7 +318,8 @@ export class PaymentService {
             String(customer?.firstname),
             tx.profile.businessName,
             String(merchantEmail),
-            tx.currency
+            tx.currency,
+            tx.mode
           );
 
           event = "payment.success";
@@ -372,7 +376,7 @@ export class PaymentService {
       cursor = page.hasNextPage ? page.nextCursor : undefined;
     } while (cursor);
 
-    // ── Step 1: verify the payment was actually received ───────────────────
+    //verify the payment was actually received
     // Sum every coin object in the deposit wallet to get the true received total.
     const receivedTotal = allCoins.reduce(
       (sum, coin) => sum + BigInt(coin.balance),
@@ -387,7 +391,7 @@ export class PaymentService {
       );
     }
 
-    // ── Step 2: select the best coin object for the forwarding transfer ────
+    // select the best coin object for the forwarding transfer
     // Prefer the smallest single coin object that still covers the target
     // so we avoid splitting large objects unnecessarily.
     const matchingCoin = allCoins
@@ -422,7 +426,8 @@ export class PaymentService {
       <string>tx.customer?.firstname,
       tx.profile.businessName,
       <string>tx.profile.user?.email,
-      tx.currency
+      tx.currency,
+      tx.mode
     )
 
     return {
