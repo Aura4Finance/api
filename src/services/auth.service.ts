@@ -300,14 +300,19 @@ export class AuthService {
         process.env.CLIENT_SECRET,
         process.env.REDIRECT_URI
       );
-      const { tokens } = await client.getToken(otp);
-      if (!tokens) {
-        throw new APIError("Invalid code", STATUS.bad);
+      let ticket: any;
+      try{
+        const { tokens } = await client.getToken(otp);
+        if (!tokens) {
+          throw new APIError("Invalid code", STATUS.bad);
+        }
+        ticket = await client.verifyIdToken({
+          idToken: tokens.id_token as string,
+          audience: process.env.CLIENT_ID as string
+        })
+      }catch(err: any){
+        throw new APIError(err.message || "Google authentication failed", STATUS.unauthorized);
       }
-      const ticket = await client.verifyIdToken({
-        idToken: tokens.id_token as string,
-        audience: process.env.CLIENT_ID as string
-      })
       const payload = ticket.getPayload();
       user = await this.userRepository.findUserByEmail(payload?.email as string);
       if (!user) {

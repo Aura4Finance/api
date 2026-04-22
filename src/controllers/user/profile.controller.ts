@@ -27,9 +27,7 @@ export class ProfileController {
     return res.status(STATUS.ok).json({
       success: true,
       message: "User profile retrived successfully!",
-      data: {
-        profile: safeProfile,
-      },
+      data: safeProfile
     });
   }
 
