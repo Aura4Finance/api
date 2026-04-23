@@ -7,6 +7,7 @@ const allowedOrigins = [
   "https://admin.orafi.app",
   "https://dashboard.orafi.app",
   "http://localhost:5173",
+  "http://localhost:5174",
 ];
 
 const CORS_OPTIONS: CorsOptions = {
