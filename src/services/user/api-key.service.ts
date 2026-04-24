@@ -45,7 +45,7 @@ export class ApiKeyService {
       businessProfileId
     );
     if (!keys) {
-      throw new APIError("No API key found", STATUS.notFound);
+      await this.generateApiKeys(businessProfileId, true);
     }
 
     return {

@@ -23,7 +23,6 @@ import { EmailQueue } from "./schedule.email.service";
 import { v4 as uuid } from "uuid";
 import speakeasy from "speakeasy";
 import { UserService } from "./user/user.service";
-import { ApiKeyService } from "./user/api-key.service";
 
 @Service()
 export class AuthService {
@@ -39,7 +38,6 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly emailService: EmailService,
     private readonly emailQueue: EmailQueue,
-    private readonly apiKeyService: ApiKeyService
   ) {
     this.JWT_SECRET = <string>process.env.JWT_SECRET;
     this.CLIENT_ID = <string>process.env.CLIENT_ID;
@@ -78,12 +76,9 @@ export class AuthService {
       .createHash("sha256")
       .update(otpSecret)
       .digest("hex");
+
     await this.authRepository.registerOtp(newUser.id, hashedCode);
-    await this.emailService.sendOtp(
-      newUser.email,
-      otpSecret
-    );
-     await this.apiKeyService.generateApiKeys(<string>newUser?.businessProfile?.id, true);
+    await this.emailService.sendOtp(newUser.email, otpSecret);
 
     return {
       message: "User created successfully - OTP has been send to your mail",
