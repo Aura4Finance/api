@@ -23,6 +23,7 @@ import { EmailQueue } from "./schedule.email.service";
 import { v4 as uuid } from "uuid";
 import speakeasy from "speakeasy";
 import { UserService } from "./user/user.service";
+import { ApiKeyService } from "./user/api-key.service";
 
 @Service()
 export class AuthService {
@@ -37,7 +38,8 @@ export class AuthService {
     private readonly walletService: WalletService,
     private readonly authRepository: AuthRepository,
     private readonly emailService: EmailService,
-    private readonly emailQueue: EmailQueue
+    private readonly emailQueue: EmailQueue,
+    private readonly apiKeyService: ApiKeyService
   ) {
     this.JWT_SECRET = <string>process.env.JWT_SECRET;
     this.CLIENT_ID = <string>process.env.CLIENT_ID;
@@ -81,6 +83,7 @@ export class AuthService {
       newUser.email,
       otpSecret
     );
+     await this.apiKeyService.generateApiKeys(<string>newUser?.businessProfile?.id, true);
 
     return {
       message: "User created successfully - OTP has been send to your mail",
@@ -331,7 +334,7 @@ export class AuthService {
       if (!user) {
         const { address, derivationIndex } = await this.walletService.createWallet();
 
-        const newUser = await this.userRepository.createMerchant(
+         user = await this.userRepository.createMerchant(
           payload?.given_name as string,
           payload?.family_name as string,
           payload?.email as string,
@@ -341,7 +344,7 @@ export class AuthService {
           'GOOGLE',
           payload?.sub as string
         );
-        await this.userRepository.verifyEmail(newUser.id);
+        await this.userRepository.verifyEmail(user.id);
       }
 
     } else {

@@ -6,7 +6,7 @@ export class ApiKeyRepository {
   async generateApiKeys(
     liveApiKey: string,
     testApiKey: string,
-    businessProfileId: string
+    businessProfileId: string,
   ) {
     await db.apiKey.create({
       data: {

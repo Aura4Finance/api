@@ -8,11 +8,11 @@ import { ApiKeyRepository } from "@/repositories/user/api-key.repository";
 export class ApiKeyService {
   constructor(private readonly apiKeyRepository: ApiKeyRepository) {}
 
-  async generateApiKeys(businessProfileId: string) {
+  async generateApiKeys(businessProfileId: string, f = false) {
     const liveApiKey = crypto.randomBytes(32).toString("hex");
     const testApiKey = crypto.randomBytes(32).toString("hex");
     this.apiKeyRepository.generateApiKeys(
-      `lk_${liveApiKey}`,
+      !f ? `lk_${liveApiKey}` : "",
       `tk_${testApiKey}`,
       businessProfileId
     );
@@ -20,7 +20,7 @@ export class ApiKeyService {
     return {
       message: "API keys generated successfully",
       payload: {
-        liveKey: `lk_${liveApiKey}`,
+        liveKey: !f ? `lk_${liveApiKey}` : "",
         testKey: `tk_${testApiKey}`,
       },
     };
