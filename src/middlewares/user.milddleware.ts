@@ -168,7 +168,7 @@ export const verifyActionUsing2FA: RequestHandler =  async (
   // 1. API key creation/regeneration (POST /api-keys, /api-keys/regenerate)
   // 2. Initiating a payout (POST /transactions/payout/crypto, /transactions/payout/crypto/retry)
   // 3. Initiating a refund (POST /transactions/refund, /transactions/refund/retry)
-  if (request.method !== "POST") {
+  if (request.method !== "POST" || request.mode !== "live") {
     return next();
   }
 

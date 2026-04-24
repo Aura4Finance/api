@@ -16,6 +16,12 @@ export class ApiKeyController {
   ) {}
   private MAX_API_KEYS = 1; 
   async generateApiKeys(req: RequestAuth, res: Response) {
+    if(req.mode !== "live") {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: "API key generation is only allowed for live mode.",
+      });
+    }
     const user = await this.userService.getUserById(req.user.id);
 
     const keys = await this.apiKeyService.getApiKeys(
@@ -40,6 +46,12 @@ export class ApiKeyController {
   }
 
   async regenerateApiKeys(req: RequestAuth, res: Response) {
+    if(req.mode !== "live") {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: "API key regeneration is only allowed for live mode.",
+      });
+    }
     const user = await this.userService.getUserById(req.user.id);
     const { value, error} = rotateApiKeySchema(req.body);
 
