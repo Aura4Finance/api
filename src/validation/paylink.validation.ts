@@ -8,8 +8,8 @@ export const createPaylinkValidation = (data: CreatePaylinkDto) => {
       'string.max': 'Title cannot exceed 100 characters',
       'any.required': 'Title is required',
     }),
-    description: Joi.string().max(500).required().messages({
-      'string.max': 'Description cannot exceed 500 characters',
+    description: Joi.string().max(5000).required().messages({
+      'string.max': 'Description cannot exceed 5000 characters',
       'any.required': 'Description is required',
     }),
     amount: Joi.number().positive().min(0.01).max(1000000).required().messages({
@@ -33,8 +33,8 @@ export const editPaylinkValidation = (data: Partial<CreatePaylinkDto>) => {
       'string.min': 'Title must be at least 3 characters',
       'string.max': 'Title cannot exceed 100 characters',
     }),
-    description: Joi.string().max(500).messages({
-      'string.max': 'Description cannot exceed 500 characters',
+    description: Joi.string().max(5000).messages({
+      'string.max': 'Description cannot exceed 5000 characters',
     }),
     amount: Joi.number().positive().min(0.01).max(1000000).messages({
       'number.positive': 'Amount must be greater than 0',
