@@ -44,7 +44,7 @@ export class ApiKeyService {
     const keys = await this.apiKeyRepository.findApiKeyByBusinessProfileId(
       businessProfileId
     );
-    if (!keys) {
+    if (!keys.length) {
       await this.generateApiKeys(businessProfileId, true);
     }
 
