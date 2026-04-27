@@ -3551,3 +3551,6 @@
 {"level":"error","message":"APIError: Customer not found.\n    at CustomerService.getSingleCustomer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\customer.service.ts:83:13)\n    at CustomerController.getCustomer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\customer.controller.ts:76:34)","timestamp":"2026-04-27T09:14:09.943Z"}
 {"error":"CanceledError: canceled","jobId":"<no-id>-w9l21dvh3y9","level":"warn","limiter":"payfrica","message":"Limiter job failed","timestamp":"2026-04-27T09:16:36.910Z"}
 {"level":"error","message":"APIError: Unable to fetch banks. Please try again.\n    at FiatService.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\fiat.service.ts:50:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at FiatController.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\user\\fiat.controller.ts:25:38)","timestamp":"2026-04-27T09:16:37.217Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-04-27T10:54:20.117Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-04-27T10:54:20.798Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-04-27T10:54:40.193Z"}

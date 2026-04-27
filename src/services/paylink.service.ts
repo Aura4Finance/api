@@ -97,36 +97,46 @@ export class PaylinkService {
   }
 
   async generatePaylinkDescriptionWithAi(input: PaylinkAIDescriptionDto) {
+    const guidanceByMode: Record<PaylinkAIDescriptionDto["mode"], { lead: string; highlightsTitle: string }> = {
+      Compact: {
+        lead: "Write a short markdown block with one H4 heading and a tight opening paragraph.",
+        highlightsTitle: "Highlights",
+      },
+      Balanced: {
+        lead: "Write a balanced markdown block with one H4 heading, a short opening paragraph, and a compact list of highlights.",
+        highlightsTitle: "What it covers",
+      },
+      Detailed: {
+        lead: "Write a fuller markdown block with a H4 heading, a short introduction, a who-it-is-for section, and a what-it-covers section.",
+        highlightsTitle: "What it covers",
+      },
+      Persuasive: {
+        lead: "Write a conversion-focused markdown block with a confident H4 heading, a benefit-led introduction, a why-it-stands-out section, and a direct call to action.",
+        highlightsTitle: "Why it stands out",
+      },
+    };
+
+    const guidance = guidanceByMode[input.mode];
+    const topic = input.topic?.trim() || "the payment link";
+    const audience = input.audience?.trim() || "the intended customer";
+    const highlights = input.highlights?.trim() || "key benefits, inclusions, or details";
+    const callToAction = input.callToAction?.trim() || "Proceed to checkout to complete the payment.";
+    const roughNotes = input.roughNotes?.trim() || "none provided";
+
     const promptLines = [
-      "You are a helpful product copywriter for payment links.",
-      "Return markdown only. Do not wrap in code fences.",
+      "You write concise, polished markdown descriptions for payment links.",
+      "Return only markdown. Do not use code fences, JSON, or extra commentary.",
+      "Use only H4, H5, or H6 headings. Never generate H1, H2, or H3 headings.",
+      "The output should be easy to read in a payment form preview.",
+      guidance.lead,
       `Mode: ${input.mode}.`,
       `Tone: ${input.tone?.trim() || "Professional"}.`,
+      `Topic: ${topic}.`,
+      `Audience: ${audience}.`,
+      `Highlights to include (${guidance.highlightsTitle}): ${highlights}.`,
+      `Call to action: ${callToAction}.`,
+      `Rough notes: ${roughNotes}.`,
     ];
-
-    if (input.topic?.trim()) {
-      promptLines.push(`Topic: ${input.topic.trim()}.`);
-    }
-
-    if (input.audience?.trim()) {
-      promptLines.push(`Audience: ${input.audience.trim()}.`);
-    }
-
-    if (input.highlights?.trim()) {
-      promptLines.push(`Highlights: ${input.highlights.trim()}.`);
-    }
-
-    if (input.callToAction?.trim()) {
-      promptLines.push(`Call to action: ${input.callToAction.trim()}.`);
-    }
-
-    if (input.roughNotes?.trim()) {
-      promptLines.push(`Notes: ${input.roughNotes.trim()}.`);
-    }
-
-    promptLines.push(
-      "Keep it concise, structured, and ready to paste into a paylink description."
-    );
 
     try {
       const response = await axios.post(
