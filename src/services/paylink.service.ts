@@ -99,19 +99,19 @@ export class PaylinkService {
   async generatePaylinkDescriptionWithAi(input: PaylinkAIDescriptionDto) {
     const guidanceByMode: Record<PaylinkAIDescriptionDto["mode"], { lead: string; highlightsTitle: string }> = {
       Compact: {
-        lead: "Write a short markdown block with one H4 heading and a tight opening paragraph.",
+        lead: "Write a short markdown block with one #### heading and a tight opening paragraph.",
         highlightsTitle: "Highlights",
       },
       Balanced: {
-        lead: "Write a balanced markdown block with one H4 heading, a short opening paragraph, and a compact list of highlights.",
+        lead: "Write a balanced markdown block with one #### heading, a short opening paragraph, and a compact list of highlights.",
         highlightsTitle: "What it covers",
       },
       Detailed: {
-        lead: "Write a fuller markdown block with a H4 heading, a short introduction, a who-it-is-for section, and a what-it-covers section.",
+        lead: "Write a fuller markdown block with a #### heading, a short introduction, a who-it-is-for section, and a what-it-covers section.",
         highlightsTitle: "What it covers",
       },
       Persuasive: {
-        lead: "Write a conversion-focused markdown block with a confident H4 heading, a benefit-led introduction, a why-it-stands-out section, and a direct call to action.",
+        lead: "Write a conversion-focused markdown block with a confident #### heading, a benefit-led introduction, a why-it-stands-out section, and a direct call to action.",
         highlightsTitle: "Why it stands out",
       },
     };
@@ -126,7 +126,8 @@ export class PaylinkService {
     const promptLines = [
       "You are a payment-link copywriter producing a detailed, structured markdown description.",
       "Return only markdown. Do not use code fences, JSON, or extra commentary.",
-      "Use H6 headings only (prefix with six #). Never generate H1-H5 headings.",
+      "Use only markdown headings with four or more hashes (####, #####, ######).",
+      "Never generate H1, H2, or H3 headings and do not use any heading level below ####.",
       "Make the output clear, scannable, and safe for a payment form preview.",
       "Include more context, helpful detail, and explicit instructions on how to proceed.",
       "Avoid emojis and placeholder text.",
@@ -139,11 +140,11 @@ export class PaylinkService {
       `Call to action: ${callToAction}.`,
       `Rough notes: ${roughNotes}.`,
       "Structure requirements:",
-      "- Start with one H6 heading as the title.",
+      "- Start with one #### heading as the title.",
       "- Add a short overview paragraph with context and purpose.",
-      "- Add a H6 section for who it is for when audience is provided.",
-      "- Add a H6 section for details or coverage and include a short list.",
-      "- End with a H6 next-step section and a direct instruction to complete payment.",
+      "- Add a #### or ##### section for who it is for when audience is provided.",
+      "- Add a #### or ##### section for details or coverage and include a short list.",
+      "- End with a #### or ##### next-step section and a direct instruction to complete payment.",
     ];
 
     try {
