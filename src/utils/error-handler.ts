@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import logger from "./logger";
 import "reflect-metadata"
 import { AxiosError } from "axios";
+import { HttpRequestError } from "./http-client";
 
 export class APIError extends Error {
   public statusCode: number;
@@ -30,6 +31,12 @@ export const globalErrorHandler = (
     return res.status(err.statusCode).json({
       status: "Error",
       message: err.message,
+    });
+  } else if (err instanceof HttpRequestError) {
+    return res.status(err.status || 500).json({
+      status: "error",
+      message: err.message,
+      code: err.code,
     });
   } else if (err instanceof AxiosError) {
     return res.status(err.response?.status || 500).json({

@@ -30,6 +30,7 @@ export class WebhookDeliveryRepository {
 
     async markDeliverySuccess(
         deliveryId: string,
+        responseStatus: string,
     ) {
         return await db.webhookDelivery.update({
             where: {
@@ -38,15 +39,17 @@ export class WebhookDeliveryRepository {
             data: {
                 status: "COMPLETED",
                 lastAttemptAt: new Date(),
-                responseStatus: "200",
-                attemptCount: { increment: 1 }
+                responseStatus,
+                attemptCount: { increment: 1 },
+                nextRetryAt: null,
             }
         });
     }
 
     async markDeliveryFailed(
         deliveryId: string,
-        responseStatus: string,
+        responseStatus: string | undefined,
+        nextRetryAt?: Date,
     ) {
         return await db.webhookDelivery.update({
             where: {
@@ -55,8 +58,9 @@ export class WebhookDeliveryRepository {
             data: {
                 status: "FAILED",
                 lastAttemptAt: new Date(),
-                responseStatus,
+                responseStatus: responseStatus ?? null,
                 attemptCount: { increment: 1 },
+                nextRetryAt: nextRetryAt ?? null,
             }
         });
     }

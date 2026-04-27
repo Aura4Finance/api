@@ -3,6 +3,7 @@ import { FiatRepository } from "@/repositories/user/fiat.repository";
 import { STATUS } from "@/constants/status.constant";
 import payfricaClient from "@/config/payfricaClient-config";
 import { APIError } from "@/utils/error-handler";
+import { toHttpRequestError } from "@/utils/http-client";
 import { UserRepository } from "@/repositories/user/user.repository";
 
 @Service()
@@ -23,7 +24,11 @@ export class FiatService {
                 }
             });
         } catch (err: any) {
-            throw new APIError(`Error fetching rates: ${err.message}`, STATUS.bad);
+            const normalized = toHttpRequestError(err);
+            throw new APIError(
+                `Error fetching rates: ${normalized.message}`,
+                STATUS.bad
+            );
         }
         return {
             message: "Rates retrieved successfully",
@@ -44,7 +49,11 @@ export class FiatService {
                 }
             });
         } catch (err: any) {
-            throw new APIError(`Error fetching banks: ${err.message}`, STATUS.bad);
+            const normalized = toHttpRequestError(err);
+            throw new APIError(
+                `Error fetching banks: ${normalized.message}`,
+                STATUS.bad
+            );
         }
 
         return {
@@ -123,7 +132,11 @@ export class FiatService {
                 },
             });
         } catch (err: any) {
-            throw new APIError(err.response?.data?.message || "Unable to resolve merchant fiat account", STATUS.conflict);
+            const normalized = toHttpRequestError(err);
+            throw new APIError(
+                normalized.message || "Unable to resolve merchant fiat account",
+                STATUS.conflict
+            );
         }
         return {
             message: "Account resolved successfully",
@@ -229,7 +242,11 @@ export class FiatService {
                 status: string;
             };
         }catch(err: any) {
-            throw new APIError(`Payout initiation failed: ${err.response?.data?.message || err.message}`, STATUS.bad);
+            const normalized = toHttpRequestError(err);
+            throw new APIError(
+                `Payout initiation failed: ${normalized.message}`,
+                STATUS.bad
+            );
         }
 
     }
