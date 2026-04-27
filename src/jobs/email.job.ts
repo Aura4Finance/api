@@ -15,9 +15,7 @@ const emailService = Container.get(EmailService);
 
 const checkIfUserSuscribedForEmailNotification = async (email: string) => {
   const customer = await resend.contacts.get({ email });
-
-  if (!customer.data) return false; // customer not found
-
+  if (!customer.data) return false;
   return customer.data.unsubscribed !== true;
 };
 
