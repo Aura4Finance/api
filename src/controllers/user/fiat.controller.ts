@@ -35,7 +35,7 @@ export class FiatController {
         if (!(typeof req.query.currency === "string")) {
             return res.status(STATUS.bad).json({
                 success: false,
-                message: "Invalid currency parameter",
+                message: "Currency query parameter must be a string.",
                 data: null
             })
         }

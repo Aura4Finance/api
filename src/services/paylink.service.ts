@@ -33,7 +33,7 @@ export class PaylinkService {
     const paylink = await this.paylinkRepository.getPaylink(paylinkId);
 
     if (!paylink) {
-      throw new APIError("Paylink not found", STATUS.notFound);
+      throw new APIError("Paylink not found.", STATUS.notFound);
     }
 
     return {
@@ -80,7 +80,7 @@ export class PaylinkService {
     const image = await this.paylinkRepository.getImageById(imageId, <string>profileId);
 
     if (!image) {
-      throw new APIError("Image not found", STATUS.notFound);
+      throw new APIError("Image not found.", STATUS.notFound);
     }
     // Delete from Walrus
     await this.walrusService.deleteImageFromWalrus(image.blobObjectId, mode);

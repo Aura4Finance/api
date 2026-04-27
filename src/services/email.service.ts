@@ -46,7 +46,7 @@ export class EmailService {
       }
     }
   } catch (err) {
-    throw new APIError("Error sending batch email", STATUS.bad);
+    throw new APIError("Unable to send emails. Please try again later.", STATUS.bad);
   }
 }
 

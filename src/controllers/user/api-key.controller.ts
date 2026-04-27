@@ -19,7 +19,7 @@ export class ApiKeyController {
     if(req.mode !== "live") {
       return res.status(STATUS.bad).json({
         success: false,
-        message: "API key generation is only allowed for live mode.",
+        message: "API key generation is only available in live mode.",
       });
     }
     const user = await this.userService.getUserById(req.user.id);
@@ -30,7 +30,7 @@ export class ApiKeyController {
     if(keys.payload.length >= this.MAX_API_KEYS) {
       return res.status(STATUS.bad).json({
         success: false,
-        message: "Maximum of 1 API keys allowed. Please regenerate or delete existing keys.",
+        message: "Only 1 API key is allowed. Regenerate or delete the existing key.",
       });
     }
 
@@ -49,7 +49,7 @@ export class ApiKeyController {
     if(req.mode !== "live") {
       return res.status(STATUS.bad).json({
         success: false,
-        message: "API key regeneration is only allowed for live mode.",
+        message: "API key regeneration is only available in live mode.",
       });
     }
     const user = await this.userService.getUserById(req.user.id);

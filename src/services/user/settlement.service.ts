@@ -16,7 +16,7 @@ export class SettlementService {
   async addSettlementAccount(userId: string, body: AddSettlementAccountDto) {
 
     if(!isValidSuiAddress(body.walletAddress)){
-      throw new APIError("Invalid SUI wallet address", STATUS.bad);
+      throw new APIError("Wallet address is invalid.", STATUS.bad);
     }
     const user = await this.userRepository.findUserById(userId);
     const existingAccount = await this.settlementRepository.findSettlemtAccountByAddress(
@@ -26,7 +26,7 @@ export class SettlementService {
       );
 
     if (existingAccount) {
-      throw new APIError("Wallet address already exists", STATUS.conflict);
+      throw new APIError("Wallet address already exists.", STATUS.conflict);
     }
 
     await this.settlementRepository.addSettlementAccount(
@@ -46,7 +46,7 @@ export class SettlementService {
     const user = await this.userRepository.findUserById(userId);
 
     if (!user) {
-      throw new APIError("User not found", STATUS.notFound);
+      throw new APIError("User account not found.", STATUS.notFound);
     }
 
     const accounts = await this.settlementRepository.getAllSettlementAccounts(
@@ -63,7 +63,7 @@ export class SettlementService {
     const user = await this.userRepository.findUserById(userId);
 
     if (!user) {
-      throw new APIError("User not found", STATUS.notFound);
+      throw new APIError("User account not found.", STATUS.notFound);
     }
 
     const account = await this.settlementRepository.findSettlemtAccountById(
@@ -72,7 +72,7 @@ export class SettlementService {
     );
 
     if (!account) {
-      throw new APIError("Account not found", STATUS.notFound);
+      throw new APIError("Settlement account not found.", STATUS.notFound);
     }
 
     await this.settlementRepository.deleteSettlementAccount(accountId);

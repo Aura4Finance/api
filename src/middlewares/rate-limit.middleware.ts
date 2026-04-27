@@ -24,7 +24,7 @@ export const limiter = rateLimit({
   legacyHeaders: false,
   handler: (_: Request, __: Response, ___: NextFunction, options: any) => {
     throw new APIError(
-      "Too many requests - try again soon",
+      "Too many requests. Please wait a moment and try again.",
       options.statusCode
     );
   },

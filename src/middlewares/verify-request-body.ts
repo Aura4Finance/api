@@ -16,7 +16,7 @@ export const verifyRequestBody = (
 
   // Only validate if body exists and has content
   if (typeof body !== "object") {
-    throw new APIError("Invalid request data", STATUS.bad);
+    throw new APIError("Request body must be a valid JSON object.", STATUS.bad);
   }
 
   next();

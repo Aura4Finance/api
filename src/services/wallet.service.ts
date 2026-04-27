@@ -9,6 +9,14 @@ import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
 import { Mode } from "../../generated/prisma";
 
+type CoinMarketPriceConversionResponse = {
+  status: {
+    error_code: number;
+  };
+  data: {
+    quote: Record<string, { price: number }>;
+  };
+};
 type ConversionDirection = 'to_USDT' | 'from_USDT';
 @Service()
 export class WalletService {
@@ -79,7 +87,7 @@ export class WalletService {
       return createdWallet.objectId;
     }
 
-    throw new APIError("Wallet creation failed", STATUS.serverError);
+    throw new APIError("Unable to create wallet. Please try again.", STATUS.serverError);
   }
 
   private async sponsoredTransaction(
@@ -102,12 +110,12 @@ export class WalletService {
 
     const sponsorCoins = await this.client.getAllCoins({ owner: sponsor_address });
     if (sponsorCoins.data.length === 0) {
-      throw new Error("Sponsor has no SUI coins for gas.");
+      throw new APIError("Service temporarily unavailable. Please try again.", STATUS.serverUnavailable);
     }
 
     const sponsorCoin = sponsorCoins.data[0];
     if (!sponsorCoin) {
-      throw new APIError("Unable to retrieve sponsor coin", STATUS.serverError);
+      throw new APIError("Unable to retrieve sponsor gas coin.", STATUS.serverError);
     }
 
     const sponsoredTx = Transaction.fromKind(kindBytes);
@@ -157,7 +165,7 @@ export class WalletService {
     });
     
     if (!primaryCoin.data) {
-      throw new APIError("Primary coin object not found or not available", STATUS.bad);
+      throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
     }
     
     // Fetch all merge target coins with current versions
@@ -175,7 +183,7 @@ export class WalletService {
       .map((target) => target.data!.objectId);
     
     if (validMergeTargets.length === 0) {
-      throw new APIError("No valid merge target coins found", STATUS.bad);
+      throw new APIError("No additional coin objects available to merge.", STATUS.bad);
     }
     
     const tx = new Transaction();
@@ -210,7 +218,7 @@ export class WalletService {
     });
     
     if (!coinObject.data) {
-      throw new APIError("Coin object not found or not available", STATUS.bad);
+      throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
     
     const tx = new Transaction();
@@ -242,7 +250,7 @@ export class WalletService {
     });
     
     if (!coinObject.data) {
-      throw new APIError("Coin object not found or not available", STATUS.bad);
+      throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
     
     const tx = new Transaction();
@@ -269,7 +277,7 @@ export class WalletService {
     });
     
     if (!coinObject.data) {
-      throw new APIError("Coin object not found or not available", STATUS.bad);
+      throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
     
     const tx = new Transaction();
@@ -308,7 +316,7 @@ export class WalletService {
     direction: ConversionDirection
   ) {
     if (!amount || amount <= 0) {
-      throw new APIError('Invalid amount', STATUS.bad);
+      throw new APIError("Amount must be greater than 0.", STATUS.bad);
     }
 
     // Determine base and convert symbols dynamically
@@ -317,13 +325,17 @@ export class WalletService {
     const symbol = isToUSDT ? currency : 'USDT';
     const convert = isToUSDT ? 'USDT' : currency;
 
-    const res = await coinMarketClient.get("/tools/price-conversion", {
+
+    const res = await coinMarketClient.get<CoinMarketPriceConversionResponse>(
+      "/tools/price-conversion",
+      {
       params: {
         amount,
         symbol,
         convert,
       },
-    });
+    }
+    );
 
     if (
       res.status !== 200 ||
@@ -331,7 +343,7 @@ export class WalletService {
       !res.data?.data?.quote?.[convert]?.price
     ) {
       throw new APIError(
-        'Unable to resolve conversion rate',
+        "Unable to resolve conversion rate. Please try again.",
         STATUS.serverError
       );
     }
@@ -347,7 +359,7 @@ export class WalletService {
     mode: Mode
   ) {
     if(mode == "test"){
-      throw new APIError("Fiat Payout is not available in test environment.", STATUS.bad)
+      throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad)
     }
     const tx = new Transaction();
     const coinType = this.USDC_COIN_TYPE; // or SUI_COIN_TYPE

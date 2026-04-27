@@ -70,7 +70,7 @@ export class CustomerController {
     const customerId: GetACustomerQueryDto = value as GetACustomerQueryDto;
 
     if (!customerId) {
-      throw new APIError("Invalid request", STATUS.bad);
+      throw new APIError("Customer id is required.", STATUS.bad);
     }
 
     const { message, payload } = await this.cusomerService.getSingleCustomer(customerId.customerId, req.mode, userId);
@@ -95,7 +95,7 @@ export class CustomerController {
     const customerId: GetACustomerQueryDto = value as GetACustomerQueryDto;
 
     if (!customerId) {
-      throw new APIError("Invalid request", STATUS.bad);
+      throw new APIError("Customer id is required.", STATUS.bad);
     }
     
     const { message, payload } = await this.cusomerService.deleteCustomer(

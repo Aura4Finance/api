@@ -9,6 +9,20 @@ import Container from "typedi";
 const router = express.Router();
 const fiatController = Container.get(FiatController);
 
+type CoinMarketFiat = {
+  id: number;
+  name: string;
+  symbol: string;
+  sign?: string | null;
+};
+
+type CoinMarketFiatMapResponse = {
+  status: {
+    error_code: number;
+  };
+  data: CoinMarketFiat[];
+};
+
 router.get("/banks",
   asyncHandler((req: Request, res: Response) =>
     fiatController.getBanks(req, res))
@@ -27,7 +41,7 @@ router.get("/rates",
 router.get(
   "/currencies",
   asyncHandler(async (_: Request, res: Response) => {
-    const cmcRes = await coinMarketClient.get("/fiat/map");
+    const cmcRes = await coinMarketClient.get<CoinMarketFiatMapResponse>("/fiat/map");
 
     if (
       cmcRes.status !== 200 ||
@@ -36,11 +50,12 @@ router.get(
       res.status(STATUS.serverError).json({
         status: "error",
         message: "Unable to fetch active currencies"
-      })
+      });
+      return;
     }
 
     // Normalize response
-    const fiats = cmcRes.data.data.map((fiat: any) => ({
+    const fiats = cmcRes.data.data.map((fiat) => ({
       id: fiat.id,
       name: fiat.name,
       symbol: fiat.symbol,

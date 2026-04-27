@@ -53,7 +53,7 @@ export class SettlementController {
     const accountId = req.params.id as string;
 
     if (!accountId || accountId.trim() === "") {
-      throw new APIError("Invalid request", STATUS.bad);
+      throw new APIError("Settlement account id is required.", STATUS.bad);
     }
 
     const { message, payload } =

@@ -55,7 +55,7 @@ export class PaymentService {
       if (customerId) {
         const existingCustomer = await this.customerRepository.findCustomerById(customerId);
         if (!existingCustomer) {
-          throw new APIError("Customer not found!", STATUS.notFound);
+          throw new APIError("Customer not found.", STATUS.notFound);
         }
         customer = existingCustomer;
       } else if (customerDetails) {
@@ -63,7 +63,7 @@ export class PaymentService {
         const [customerFirstname, customerLastname] = fullname.trim().split(" ");
 
         if (!customerFirstname || !customerLastname) {
-          throw new APIError("Invalid customer name format!", STATUS.bad);
+          throw new APIError("Customer name must include first and last name.", STATUS.bad);
         }
 
         const existingCustomer = await this.customerRepository.findCustomer(email);
@@ -79,14 +79,14 @@ export class PaymentService {
           customer = existingCustomer;
         }
       } else {
-        throw new APIError("Customer ID or detail format not found!", STATUS.bad);
+        throw new APIError("Customer id or details are required.", STATUS.bad);
       }
 
       await this.customerRepository.addModeToCustomer(customer.id, mode);
       
       const merchantAddress = user?.businessProfile?.wallet[0]?.address;
       if (!merchantAddress) {
-        throw new APIError("Merchant wallet address not configured", STATUS.bad);
+        throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
       }
 
       const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
@@ -105,14 +105,14 @@ export class PaymentService {
           mode
         );
       }catch(error: any){
-        throw new APIError("Unable to process deposit address creation",  STATUS.serverUnavailable);
+        throw new APIError("Unable to create a deposit address. Please try again.",  STATUS.serverUnavailable);
       }
 
       const transferAddress = await this.walletService.createWallet();
       
       let transaction;
       if (type == "HOSTED_CHECKOUT") {
-        if (!redirectUrl) throw new APIError("Redirect URL is required for the specified payment method", STATUS.bad)
+        if (!redirectUrl) throw new APIError("Redirect URL is required for hosted checkout.", STATUS.bad)
         transaction = await this.paymentRepository.createPayment(
           amount,
           amountToPay,
@@ -172,7 +172,7 @@ export class PaymentService {
       };
     } catch (error: any) {
       throw new APIError(
-        error.message || "Failed to create payment",
+        error.message || "We couldn't create the payment. Please try again.",
         error.status || STATUS.bad
       );
     }
@@ -243,7 +243,7 @@ export class PaymentService {
     const tx = await this.paymentRepository.findPaymentById(paymentId);
 
     if (!tx) {
-      throw new APIError("Payment session not found", STATUS.notFound);
+      throw new APIError("Payment session not found.", STATUS.notFound);
     }
 
     const customer = await this.customerRepository.findCustomerById(
@@ -356,7 +356,7 @@ export class PaymentService {
     const tx = await this.paymentRepository.findPaymentById(paymentId);
 
     if (!tx) {
-      throw new APIError("Payment session not found", STATUS.notFound);
+      throw new APIError("Payment session not found.", STATUS.notFound);
     }
     await this.setActiveNetwork(tx.mode);
 
@@ -386,7 +386,7 @@ export class PaymentService {
     if (receivedTotal < target) {
       // Customer has not sent the required amount yet (or sent nothing at all)
       throw new APIError(
-        `Payment not received`,
+        "Payment not received yet.",
         STATUS.bad
       );
     }
@@ -402,7 +402,7 @@ export class PaymentService {
       // Total balance is sufficient but fragmented across several small coin objects.
       // The job layer must merge them before it can forward a single transfer.
       throw new APIError(
-        "Payment received but split across multiple coin objects — merging required before forwarding",
+        "Payment received but split across multiple coin objects. Please retry shortly.",
         STATUS.bad
       );
     }

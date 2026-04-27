@@ -29,7 +29,7 @@ export const globalErrorHandler = (
 
   if (err instanceof APIError) {
     return res.status(err.statusCode).json({
-      status: "Error",
+      status: "error",
       message: err.message,
     });
   } else if (err instanceof HttpRequestError) {
@@ -41,13 +41,13 @@ export const globalErrorHandler = (
   } else if (err instanceof AxiosError) {
     return res.status(err.response?.status || 500).json({
       status: "error",
-      message: err.response?.data || "An unexpected error occured",
+      message: err.response?.data || "Something went wrong. Please try again.",
     });
   }
   else {
     return res.status(500).json({
       status: "error",
-      message: "An unexpected error occured",
+      message: "Something went wrong. Please try again.",
     });
   }
 };

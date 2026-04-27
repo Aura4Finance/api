@@ -75,7 +75,7 @@ export class WalrusService {
             });
         } catch (error: any) {
             logger.error(error);
-            throw new APIError(`Blob deletion failed: ${error.message}`, STATUS.serverError);
+            throw new APIError("Unable to delete the file. Please try again.", STATUS.serverError);
         }
     }
 
@@ -102,7 +102,7 @@ export class WalrusService {
                     return upload();
                 }
                 throw new APIError(
-                    `Unable to upload to Walrus: ${error?.cause?.toString() ?? error.message}`,
+                    "Unable to upload the file. Please try again.",
                     STATUS.serverError
                 );
             });
@@ -110,7 +110,7 @@ export class WalrusService {
             return { blobId, blobObject };
         } catch (error: any) {
             logger.error(error);
-            throw new APIError(`Blob upload failed: ${error.message}`, STATUS.serverError);
+            throw new APIError("Unable to upload the file. Please try again.", STATUS.serverError);
         }
     }
 }

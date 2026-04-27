@@ -82,7 +82,7 @@ export class TransactionRepository {
     if (paymentMethod) {
       if (type !== "PAYMENT")
         throw new APIError(
-          "Invalid payment method for provided transaction type",
+          "Payment method filter is only valid for payment transactions.",
           STATUS.conflict
         );
       where.payment.paymentMethod = paymentMethod;
@@ -90,7 +90,7 @@ export class TransactionRepository {
     if (paymentMethod) {
       if (type !== "PAYMENT")
         throw new APIError(
-          "Invalid payment method for provided transaction type",
+          "Payment method filter is only valid for payment transactions.",
           STATUS.conflict
         );
       where.payment.paymentLinkId = paymentLinkId;

@@ -126,7 +126,7 @@ export class AdminController {
     if (!profile) {
       return res.status(STATUS.bad).json({
         success: false,
-        message: "Profile not found"
+        message: "Profile not found."
       })
     }
     return res.status(STATUS.ok).json({

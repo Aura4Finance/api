@@ -58,7 +58,7 @@ export class ApiKeyService {
     const apiKey = await this.apiKeyRepository.findByKey(key);
 
     if (!apiKey) {
-      throw new APIError("Invalid API Key", STATUS.unauthorized);
+      throw new APIError("API key is invalid.", STATUS.unauthorized);
     }
 
     await this.apiKeyRepository.updateLastUsed(apiKey.id);

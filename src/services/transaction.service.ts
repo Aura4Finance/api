@@ -40,7 +40,7 @@ export class TransactionService {
         if (userId) {
             const profile = await this.userRepository.findUserById(userId);
             if (!profile) {
-                throw new APIError("Invalid user ID", STATUS.bad);
+                throw new APIError("User account not found.", STATUS.bad);
             }
             transaction = await this.transactionRepository.getTransactionById(txId, mode, profile.businessProfile?.id);
         } else {
@@ -64,7 +64,7 @@ export class TransactionService {
         if (userId) {
             const profile = await this.userRepository.findUserById(userId);
             if (!profile) {
-                throw new APIError("Invalid user ID", STATUS.bad);
+                throw new APIError("User account not found.", STATUS.bad);
             }
             transactions = await this.transactionRepository.getAllTransactions(query, mode, profile?.businessProfile?.id);
         } else {
@@ -72,7 +72,7 @@ export class TransactionService {
         }
 
         if (!transactions) {
-            throw new APIError("No transactions found", STATUS.notFound);
+            throw new APIError("No transactions found for this account.", STATUS.notFound);
         }
         return {
             message: "Transactions retrieved successfully",

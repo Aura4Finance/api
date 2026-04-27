@@ -22,7 +22,7 @@ export class UserService {
     const user = await this.userRepository.findUserById(userId);
 
     if (user?.businessProfile?.onboarded) {
-      throw new APIError("User already onboarded", STATUS.conflict);
+      throw new APIError("Your account is already onboarded.", STATUS.conflict);
     }
 
     await this.userRepository.onboardUser(user!.id, data);
@@ -51,7 +51,7 @@ export class UserService {
 
     if (user!.email === email) {
       throw new APIError(
-        "Email already linked to this account",
+        "That email is already linked to this account.",
         STATUS.conflict
       );
     }
@@ -70,7 +70,7 @@ export class UserService {
     const existingOtp = await this.authRepository.findOtpByEmail(user!.email);
 
     if (existingOtp?.secret != otp || existingOtp.expiresAt < new Date()) {
-      throw new APIError("Invalid OTP", STATUS.bad);
+      throw new APIError("Invalid or expired OTP.", STATUS.bad);
     }
 
     await this.userRepository.changeEmail(user!.id, email);
@@ -81,7 +81,7 @@ export class UserService {
     if(!isLive){
       const user = await this.userRepository.findUserById(userId);
       if(!user?.businessProfile?.onboarded){
-        throw new APIError("Complete onboarding process to switch to live mode", STATUS.bad)
+        throw new APIError("Please complete onboarding before switching to live mode.", STATUS.bad)
       }
     }
     await this.userRepository.changeBusinessMode(userId, isLive);
@@ -112,7 +112,7 @@ export class UserService {
     async verify2FA(userId: string, token: string) {
       const secret = await redisClient.get(userId);
       if (!secret) {
-        throw new APIError("2FA setup expired. Please try again.", STATUS.bad);
+        throw new APIError("2FA setup expired. Please start again.", STATUS.bad);
       }
       const verified = speakeasy.totp.verify({
         secret,
@@ -121,7 +121,7 @@ export class UserService {
         window: 1
       });
       if (!verified) {
-        throw new APIError("Invalid 2FA token", STATUS.bad);
+        throw new APIError("Invalid 2FA token. Please try again.", STATUS.bad);
       }
       await this.userRepository.findUserByIdAndUpdate2FA(userId, secret);
   

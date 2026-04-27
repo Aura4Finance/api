@@ -60,7 +60,7 @@ export class WebhookService {
     const webhook = await this.webhookRepository.findWebhookByProfileId(profileId);
 
     if (!webhook) {
-      throw new APIError("No webhook to subscribe to", STATUS.notFound);
+      throw new APIError("Webhook not found for this profile.", STATUS.notFound);
     }
 
     await this.webhookRepository.addEventToWebhook(event, webhook.id);

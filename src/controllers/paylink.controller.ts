@@ -39,21 +39,21 @@ export class PaylinkController {
 
     if (totalImages === 0) {
       throw new APIError(
-        "At least one image file is required",
+        "Please upload at least one image.",
         STATUS.bad
       );
     }
 
     if (totalImages > 4) {
       throw new APIError(
-        "A maximum of 4 image files are allowed",
+        "You can upload up to 4 images.",
         STATUS.bad
       );
     }
 
     for (const file of files) {
       if (!file.mimetype.startsWith("image/")) {
-        throw new APIError("Only image files are allowed", STATUS.forbidden);
+        throw new APIError("Only image files are supported.", STATUS.forbidden);
       }
     }
 
@@ -70,7 +70,7 @@ export class PaylinkController {
       }
     } catch (error: any) {
       console.log(error)
-      throw new APIError(`Unable to process image files: ${error.message}`, STATUS.serverError);
+      throw new APIError("We couldn't process the uploaded images. Please try again.", STATUS.serverError);
     }
     
     return images;

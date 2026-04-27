@@ -52,7 +52,7 @@ export class AuthService {
 
     if (existingUser) {
       throw new APIError(
-        "User with this email already exists",
+        "An account with this email already exists.",
         STATUS.conflict
       );
     }
@@ -93,7 +93,7 @@ export class AuthService {
 
     if (existingUser) {
       throw new APIError(
-        "User with this email already exists",
+        "An account with this email already exists.",
         STATUS.conflict
       );
     }
@@ -120,7 +120,7 @@ export class AuthService {
 
     if (!user) {
       throw new APIError(
-        "User with this email does not exist",
+        "No account found for this email.",
         STATUS.notFound
       );
     }
@@ -133,7 +133,7 @@ export class AuthService {
       .digest("hex");
 
     if (existingOtp?.secret != hashedOtp || existingOtp.expiresAt < new Date()) {
-      throw new APIError("Invalid OTP", STATUS.bad);
+      throw new APIError("Invalid or expired OTP.", STATUS.bad);
     }
 
     await this.userRepository.verifyEmail(user.id);
@@ -157,7 +157,7 @@ export class AuthService {
     const user = await this.userRepository.findUserByEmail(email);
 
     if (!user) {
-      throw new APIError("User with email does not exist", STATUS.notFound);
+      throw new APIError("No account found for this email.", STATUS.notFound);
     }
 
     const otpSecret = crypto.randomInt(100000, 999999).toString();
@@ -183,21 +183,21 @@ export class AuthService {
     const user = await this.userRepository.findUserByEmail(email);
 
     if (!user) {
-      throw new APIError("User with email does not exist", STATUS.notFound);
+      throw new APIError("No admin account found for this email.", STATUS.notFound);
     }
 
     if (user.provider != "LOCAL") {
-      throw new APIError("Forbidden", STATUS.bad);
+      throw new APIError("This account can only sign in with Google.", STATUS.bad);
     }
 
     const passwordMatch = await argon.verify(user.password, password);
 
     if (!passwordMatch) {
-      throw new APIError("Invalid password", STATUS.unauthorized);
+      throw new APIError("Incorrect password.", STATUS.unauthorized);
     }
 
     if (!user.emailVerified) {
-      throw new APIError("Admin must change password!", STATUS.notAcceptable);
+      throw new APIError("Password reset required. Please change your password.", STATUS.notAcceptable);
     }
     const jwtPayload = {
       id: user?.id,
@@ -220,21 +220,21 @@ export class AuthService {
     const user = await this.userRepository.findUserByEmail(email);
 
     if (!user) {
-      throw new APIError("User with email does not exist", STATUS.notFound);
+      throw new APIError("No account found for this email.", STATUS.notFound);
     }
 
     if (user.provider != "LOCAL") {
-      throw new APIError("User account created with Google. Sign in with Google to cotinue", STATUS.bad)
+      throw new APIError("This account was created with Google. Please sign in with Google.", STATUS.bad)
     }
 
     if (!user.emailVerified) {
-      throw new APIError("Email not verified", STATUS.forbidden);
+      throw new APIError("Email not verified. Please verify your email first.", STATUS.forbidden);
     }
 
     const passwordMatch = await argon.verify(user.password, password);
 
     if (!passwordMatch) {
-      throw new APIError("Invalid password", STATUS.unauthorized);
+      throw new APIError("Incorrect password.", STATUS.unauthorized);
     }
 
     let payload: any;
@@ -271,7 +271,7 @@ export class AuthService {
   async verify2FAAndGenerateSecret(userId: string, token: string) {
     const user = await this.userRepository.findUserById(userId);
     if (!user) {
-      throw new APIError("User not found", STATUS.notFound);
+      throw new APIError("User account not found.", STATUS.notFound);
     }
     if (!user?.twoFactorEnabled) {
       await this.userService.verify2FA(userId, token);
@@ -284,7 +284,7 @@ export class AuthService {
       });
 
       if (!verified) {
-        throw new APIError("Invalid 2FA token", STATUS.bad);
+        throw new APIError("Invalid 2FA token. Please try again.", STATUS.bad);
       }
     }
 
@@ -309,7 +309,7 @@ export class AuthService {
         const { tokens } = await client.getToken(otp); 
 
         if (!tokens.id_token) {
-          throw new APIError("No ID token returned", STATUS.bad);
+          throw new APIError("Google sign-in failed. No ID token returned.", STATUS.bad);
         }
         client.setCredentials(tokens);
         ticket = await client.verifyIdToken({
@@ -319,11 +319,11 @@ export class AuthService {
 
       } catch (err: any) {
         console.log(err)
-        throw new APIError("Google authentication failed: User account not found!", STATUS.bad);
+        throw new APIError("Google sign-in failed. Please try again.", STATUS.bad);
       }
       const payload = ticket.getPayload();
       if (!payload?.email) {
-        throw new APIError("Could not retrieve user info from Google", STATUS.bad);
+        throw new APIError("Google sign-in failed. We couldn't retrieve your email.", STATUS.bad);
       }
       user = await this.userRepository.findUserByEmail(payload?.email as string);
       if (!user) {
@@ -349,7 +349,7 @@ export class AuthService {
         .digest("hex");
       const existingOtp = await this.authRepository.findDtoByCode(hashedCode);
       if (!existingOtp || existingOtp.expiresAt < new Date()) {
-        throw new APIError("Invalid Otp", STATUS.bad);
+        throw new APIError("Invalid or expired OTP.", STATUS.bad);
       }
       user = await this.userRepository.findUserById(existingOtp?.userId);
       await this.authRepository.deleteOtp(existingOtp.id);
@@ -375,7 +375,7 @@ export class AuthService {
     const user = await this.userRepository.findUserByEmail(email);
 
     if (!user) {
-      throw new APIError("User with email does not exist", STATUS.notFound);
+      throw new APIError("No account found for this email.", STATUS.notFound);
     }
 
     const otpSecret = crypto.randomInt(100000, 999999).toString();
@@ -402,7 +402,7 @@ export class AuthService {
     const user = await this.userRepository.findUserByEmail(email);
 
     if (!user) {
-      throw new APIError("User with email does not exist", STATUS.notFound);
+      throw new APIError("No account found for this email.", STATUS.notFound);
     }
 
     const existingOtp = await this.authRepository.findOtpByEmail(email);
@@ -413,7 +413,7 @@ export class AuthService {
       .digest("hex");
 
     if (existingOtp?.secret != hashedOtp || existingOtp.expiresAt < new Date()) {
-      throw new APIError("Invalid OTP", STATUS.bad);
+      throw new APIError("Invalid or expired OTP.", STATUS.bad);
     }
 
     const hashedPassword = await argon.hash(password);
@@ -431,16 +431,16 @@ export class AuthService {
 
     const user = await this.userRepository.findUserByEmail(email);
     if (!user) {
-      throw new APIError("User with email does not exist", STATUS.notFound);
+      throw new APIError("No admin account found for this email.", STATUS.notFound);
     }
 
     if (user.emailVerified) {
-      throw new APIError("Admin has already changed password", STATUS.bad);
+      throw new APIError("Password has already been updated.", STATUS.bad);
     }
 
     const passwordMatch = await argon.verify(user.password, oldPassword);
     if (!passwordMatch) {
-      throw new APIError("Invalid password", STATUS.unauthorized);
+      throw new APIError("Incorrect password.", STATUS.unauthorized);
     }
     const hashedPassword = await argon.hash(newPassword);
 

@@ -6,7 +6,7 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 export async function withRequestTimeout<T>(
   operation: () => Promise<T>,
   timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
-  message = "Request timed out"
+  message = "Request timed out. Please try again."
 ): Promise<T> {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
 

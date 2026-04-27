@@ -69,7 +69,7 @@ export class PayoutService {
             return { coinObjects, totalBalance };
         } catch (error: any) {
             console.error("fetchCoins error:", error);
-            throw new APIError("Unable to fetch balances from on-chain network", STATUS.serverUnavailable);
+            throw new APIError("Unable to fetch on-chain balances. Please try again.", STATUS.serverUnavailable);
         }
     }
 
@@ -82,12 +82,12 @@ export class PayoutService {
             .then((user) => user?.businessProfile);
 
         if (!profile) {
-            throw new Error("Merchant or business profile not found");
+            throw new APIError("Merchant profile not found.", STATUS.notFound);
         }
 
         const walletAddress = profile.wallet[0]?.address;
         if (!walletAddress) {
-            throw new Error("Wallet address not found");
+            throw new APIError("Merchant wallet address not found.", STATUS.bad);
         }
         await this.setActiveNetwork(mode);
         const cache: any = await this.fetchCoins(walletAddress);
@@ -110,7 +110,7 @@ export class PayoutService {
         await this.setActiveNetwork(mode);
         const cache: any = await this.fetchCoins(keys.address);
         if (cache?.coinObjects.length == 0) {
-            throw new APIError("No balance to withdrawl", STATUS.bad);
+            throw new APIError("No balance available for payout.", STATUS.bad);
         }
         const primaryCoin = cache?.coinObjects[0];
         const mergeTargets = cache?.coinObjects.slice(1);
@@ -126,7 +126,7 @@ export class PayoutService {
             )
             const isSuccess = result?.effects?.status?.status === "success"
             if (!isSuccess) {
-                throw new APIError("Unable to process payout: On-chain service unavailable", STATUS.serverUnavailable)
+                throw new APIError("Payout failed because the on-chain service is unavailable.", STATUS.serverUnavailable)
             }
         }
         return primaryCoin;
@@ -158,11 +158,11 @@ export class PayoutService {
             );
             const errorCode = result.effects?.abortError?.error_code;
             throw new APIError(
-                `Unable to process payout: ${errorCode !== "0"
-                    ? "Insufficient Balance"
+                `Payout failed: ${errorCode !== "0"
+                    ? "insufficient balance"
                     : errorCode != null
-                        ? "Unknown error occurred"
-                        : "Transaction failed"
+                        ? "an unknown error occurred"
+                        : "the transaction failed"
                 }`,
                 STATUS.serverUnavailable
             );
@@ -201,7 +201,7 @@ export class PayoutService {
             payoutTransaction?.payout?.method!== "CRYPTO" ||
             payoutTransaction.type !== TransactionType.PAYOUT
         ) {
-            throw new APIError("Invalid payout transaction ID", STATUS.bad);
+            throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
         }
         const keys = await this.userRepository.findUserById(userId);
         this.primaryCoin = await this.getPrimaryCoin(<Wallet>keys?.businessProfile?.wallet[0], mode);
@@ -235,7 +235,7 @@ export class PayoutService {
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
             if (!settlementAccount) {
-                throw new APIError("Invalid settlement account ID", STATUS.bad);
+                throw new APIError("Settlement account not found.", STATUS.bad);
             }
             to = settlementAccount.walletAddress;
             network = settlementAccount.network;
@@ -245,11 +245,11 @@ export class PayoutService {
                 to = body.walletAddress;
                 network = body.network;
                 if (body.save) {
-                    if (!body.alias) throw new APIError("Alias to save wallet address not found!", STATUS.bad);
+                    if (!body.alias) throw new APIError("Alias is required to save this wallet address.", STATUS.bad);
                     cryptoAccountId = (await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id)).id;
                 }
             } else {
-                throw new APIError("Settlemtment account or wallet address and network is required", STATUS.bad);
+                throw new APIError("Provide a settlement account or a wallet address and network.", STATUS.bad);
             }
         this.primaryCoin = await this.getPrimaryCoin(<Wallet>keys?.businessProfile?.wallet[0], mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
@@ -291,7 +291,7 @@ export class PayoutService {
             );
         
         } catch (err: any) {
-            throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
+            throw new APIError("Payout failed. Please try again.", STATUS.bad);
         }
 
         if (!tx.effects || tx.effects.status.status !== "success") {
@@ -299,7 +299,7 @@ export class PayoutService {
                 payoutId,
                 tx.digest
             );
-            throw new APIError(`Payout failed: On-chain transaction failed${tx.digest ? `( ${tx.digest})` : ''}`, STATUS.bad);
+            throw new APIError(`Payout failed. On-chain transaction failed${tx.digest ? ` (${tx.digest})` : ""}.`, STATUS.bad);
         }
 
         let result: {
@@ -316,7 +316,7 @@ export class PayoutService {
 
             if(result.id !== "COMPLETED"){
                 logger.info(`Payout initiation returned non-completed status: ${result.status} (Ramp order ID: ${result.id})`);
-                throw new APIError("Payout initiation failed, on-chain transaction succeeded but off-chain payout failed", STATUS.bad);
+                throw new APIError("Payout failed after on-chain success. Off-chain payout did not complete.", STATUS.bad);
             }
 
         } catch (err: any) {
@@ -324,7 +324,7 @@ export class PayoutService {
                 payoutId,
                 tx.digest
             );
-            throw new APIError(`Payout failed: ${err.message}`, STATUS.bad);
+            throw new APIError("Payout failed. Please try again.", STATUS.bad);
         }
 
         await this.payoutRepository.confirmPayout(
@@ -365,7 +365,7 @@ export class PayoutService {
             payoutTransaction?.payout?.method!== "FIAT" ||
             payoutTransaction.type !== TransactionType.PAYOUT
         ) {
-            throw new APIError("Invalid payout transaction ID", STATUS.bad);
+            throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
         }
 
         let accountIdentifier: string;
@@ -381,7 +381,7 @@ export class PayoutService {
                 bankCode = fiatAccount.bankCode;
                 accountName = fiatAccount.accountName;
             } else {
-                throw new APIError("Fiat account associated with this payout not found!", STATUS.notFound);
+                throw new APIError("Fiat account for this payout was not found.", STATUS.notFound);
             }
         } else {
             // Fallback to user's primary fiat account
@@ -426,7 +426,7 @@ export class PayoutService {
         if (accountId) {
             const account = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, accountId);
             if (!account) {
-                throw new APIError("Account not found", STATUS.notFound);
+                throw new APIError("Fiat account not found.", STATUS.notFound);
             }
             accountIdentifier = account.accountNumber;
             bankCode = account.bankCode;
@@ -435,7 +435,7 @@ export class PayoutService {
         } else if (accountIdentifier && bankCode) {
             const resolvedAccount = await this.fiatService.resolveAccountName(accountIdentifier, bankCode);
             if (!resolvedAccount.payload.accountName) {
-                throw new APIError("Provided account cannot be resolved!", STATUS.bad);
+                throw new APIError("Unable to resolve the provided account details.", STATUS.bad);
             }
             accountName = resolvedAccount.payload.accountName;
             if (save) {
@@ -445,7 +445,7 @@ export class PayoutService {
             }  
         } else {
             const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id);
-            if (!primaryFiatAccount) throw new APIError("Either accountId or both accountIdentifier and bankCode must be provided", STATUS.bad);
+            if (!primaryFiatAccount) throw new APIError("Provide accountId or accountIdentifier and bankCode.", STATUS.bad);
         
             accountIdentifier = primaryFiatAccount.accountNumber;
             bankCode = primaryFiatAccount.bankCode;

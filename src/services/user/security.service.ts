@@ -16,7 +16,7 @@ export class SecurityService {
     const passwordMatch = await argon.verify(user?.password!, password);
 
     if (!passwordMatch) {
-      throw new APIError("Invalid password", STATUS.bad);
+      throw new APIError("Incorrect password.", STATUS.bad);
     }
 
     return {

@@ -8,14 +8,14 @@ export class NotificationService {
     async toggleEmailNotification(email: string){
         const customer = await resend.contacts.get({email});
         if(!customer.data){
-            throw new APIError("Complete onboarding to subscribe for email notification", STATUS.conflict);
+            throw new APIError("Please complete onboarding to manage email notifications.", STATUS.conflict);
         }
         const {error} = await resend.contacts.update({
             email,
             unsubscribed: !customer.data?.unsubscribed
         })
         if(error){
-            throw new APIError("Unable to subscribe for email notifications. Try again later", STATUS.bad);
+            throw new APIError("Unable to update email notifications. Please try again later.", STATUS.bad);
         }
         return {
             message: !customer.data?.unsubscribed == true? "Unsubscription successful": "Subscription successfully",

@@ -22,7 +22,7 @@ export const verifyAccessToken = async (
 ) => {
   const token = req.cookies?.access_token;
   if (!token) {
-    throw new APIError("Access token missing", STATUS.unauthorized);
+    throw new APIError("Access token is missing. Please sign in.", STATUS.unauthorized);
   }
   try {
     // console.log(token);
@@ -36,11 +36,11 @@ export const verifyAccessToken = async (
     const isBlacklisted = await redisClient.exists(`bl:${decoded.jti}`);
 
     if (isBlacklisted) {
-      throw new APIError("Access token revoked", STATUS.unauthorized);
+      throw new APIError("Access token has been revoked. Please sign in again.", STATUS.unauthorized);
     }
     const user = await userRepository.findUserByEmail(decoded.email);
     if (!user) {
-      throw new APIError("User not authorized", STATUS.unauthorized);
+      throw new APIError("User account is not authorized for this request.", STATUS.unauthorized);
     }
 
     (req as any).user = user;
@@ -49,7 +49,7 @@ export const verifyAccessToken = async (
     (req as any).mode = user.businessProfile?.isLive ? "live" : "test";
     next();
   } catch (err) {
-    throw new APIError("Invalid access token", STATUS.unauthorized);
+    throw new APIError("Access token is invalid or expired. Please sign in again.", STATUS.unauthorized);
   }
 };
 
@@ -58,10 +58,10 @@ export const checkUserRole =
     (req: Request, _: Response, next: NextFunction) => {
       const request = req as RequestAuth;
       if (!request.user) {
-        throw new APIError("User not found", STATUS.notFound);
+        throw new APIError("User account not found.", STATUS.notFound);
       }
       if (request.user.role !== role) {
-        throw new APIError("Forbidden: Access Denied", STATUS.forbidden);
+        throw new APIError("You do not have permission to perform this action.", STATUS.forbidden);
       }
       next();
     };
@@ -73,11 +73,11 @@ export const checkIfUserIsDisabled: RequestHandler = (
 ) => {
   const request = req as RequestAuth;
   if (!request.user) {
-    throw new APIError("User not found", STATUS.notFound);
+    throw new APIError("User account not found.", STATUS.notFound);
   }
 
   if (request.user.disabled) {
-    throw new APIError("Merchant account is disabled!", STATUS.forbidden);
+    throw new APIError("Merchant account is disabled. Contact support.", STATUS.forbidden);
   }
   next();
 };
@@ -106,21 +106,21 @@ export const verifyApiKey = async (
 
   if (!apiKeyHeader) {
     logger.warn(`API key missing from ${req.ip}`);
-    throw new APIError("API key missing", STATUS.unauthorized);
+    throw new APIError("API key is missing.", STATUS.unauthorized);
   }
 
   const apiKey = await apiKeyService.validateApiKey(apiKeyHeader);
   if (!apiKey) {
     logger?.warn(`Invalid API key attempt from ${req.ip}`);
-    throw new APIError("Invalid API key", STATUS.unauthorized);
+    throw new APIError("API key is invalid.", STATUS.unauthorized);
   }
   if (!apiKey.profile.onboarded && apiKey.mode === "live") {
-    throw new APIError("Live Api key cannot be used until merchant is onboarded!", STATUS.bad);
+    throw new APIError("Live API key can only be used after onboarding is complete.", STATUS.bad);
   }
   const user = await userRepository.findUserById(apiKey.profile.userId);
   if (!user) {
     logger?.warn(`User associated with API key not found from ${req.ip}`);
-    throw new APIError("User not found", STATUS.notFound);
+    throw new APIError("User associated with this API key was not found.", STATUS.notFound);
   }
   (req as any).user = user;
   (req as any).mode = apiKey.mode;
@@ -138,15 +138,15 @@ export const verifyPaylink = async (
 
   if (!paylinkId) {
     logger?.warn("Missing header for paylink");
-    throw new APIError("Missing header for paylink", STATUS.unauthorized);
+    throw new APIError("Payment link id header is required.", STATUS.unauthorized);
   }
   if (!(typeof paylinkId === "string")) {
-    throw new APIError("Invalid paylink ID format", STATUS.unauthorized);
+    throw new APIError("Payment link id must be a string.", STATUS.unauthorized);
   }
   const paylink = await paylinkRepository.getPaylink(paylinkId);
   if (!paylink) {
     logger?.warn("Payment Link not found");
-    throw new APIError("Payment Link not found!", STATUS.notFound);
+    throw new APIError("Payment link was not found.", STATUS.notFound);
   }
 
   const profile = await userRepository.findUserById(paylink.profile.userId);
@@ -176,13 +176,13 @@ export const verifyActionUsing2FA: RequestHandler =  async (
     ? request.headers["2-fa-key"][0]
     : request.headers["2-fa-key"];
   if(!token){
-    throw new APIError("2FA token not found!", STATUS.bad);
+    throw new APIError("2FA token is required.", STATUS.bad);
   }
   const userId = request.user?.id;
   const user = await userRepository.findUserById(<string>userId);
 
   if(!user?.twoFactorSecret && !user?.twoFactorEnabled){
-    throw new APIError("2FA not enabled for this user!", STATUS.bad);
+    throw new APIError("Two-factor authentication is not enabled for this account.", STATUS.bad);
    }
   const verified = speakeasy.totp.verify({
     secret: user?.twoFactorSecret,
@@ -191,7 +191,7 @@ export const verifyActionUsing2FA: RequestHandler =  async (
     window: 1
   });
   if (!verified) {
-    throw new APIError("Invalid 2FA token", STATUS.bad);
+    throw new APIError("Invalid 2FA token. Please try again.", STATUS.bad);
   }
   next();
 }

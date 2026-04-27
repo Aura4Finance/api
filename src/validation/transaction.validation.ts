@@ -10,7 +10,7 @@ export const transactionQuerySchemaValidation = (raw: any) => {
         try {
             data.date = JSON.parse(data.date);
         } catch (e) {
-            throw new APIError("Invalid JSON format for 'date' parameter. Please provide a valid JSON object", STATUS.bad);
+          throw new APIError("Invalid date filter. Expected a JSON object.", STATUS.bad);
         }
     }
 

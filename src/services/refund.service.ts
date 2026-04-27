@@ -47,7 +47,7 @@ export class RefundServices {
         } catch (error: any) {
             console.error("Refund processing error:", error);
             this.refundRepository.failRefund(refundTxId, result?.digest as string);
-            throw new APIError(`Unable to process refund: ${error.message}`, STATUS.serverUnavailable);
+            throw new APIError("Refund failed. Please try again.", STATUS.serverUnavailable);
         }
 
         const status = result.effects?.status?.status;
@@ -60,13 +60,13 @@ export class RefundServices {
 
             if (chainError?.includes("InsufficientCoinBalance")) {
                 throw new APIError(
-                    "Refund failed: insufficient balance",
+                    "Refund failed due to insufficient balance.",
                     STATUS.conflict
                 );
             }
 
             throw new APIError(
-                "Refund failed: on-chain execution error",
+                "Refund failed due to an on-chain error.",
                 STATUS.bad
             );
         }
@@ -103,11 +103,11 @@ export class RefundServices {
             refundTransaction.confirmedAt ||
             refundTransaction.status !== TransactionStatus.FAILED ||
             refundTransaction.type !== TransactionType.REFUND) {
-            throw new APIError("Invalid refund transaction ID", STATUS.bad);
+            throw new APIError("Refund transaction is not eligible for retry.", STATUS.bad);
         }
         const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, userId);
         if(paymentTx?.payment?.refunded){
-            throw new APIError("Payment transaction already refunded", STATUS.bad);
+            throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
         this.profile = await this.userRepository
             .findUserById(userId)
@@ -131,16 +131,16 @@ export class RefundServices {
     ) {
         const paymentTx = await this.paymentRepository.findPaymentById(txId, userId);
         if (!paymentTx) {
-            throw new APIError("Original transaction not found", STATUS.notFound);
+            throw new APIError("Original transaction not found.", STATUS.notFound);
         }
         if (paymentTx.status !== "COMPLETED") {
-            throw new APIError("Only completed transactions can be refunded", STATUS.bad);
+            throw new APIError("Only completed transactions can be refunded.", STATUS.bad);
         }
         if (paymentTx.type != "PAYMENT") {
-            throw new APIError("Invalid transaction ID", STATUS.bad);
+            throw new APIError("Transaction id is invalid for refunds.", STATUS.bad);
         }
         if(paymentTx.payment?.refunded){
-            throw new APIError("Payment transaction already refunded.", STATUS.bad);
+            throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
 
         this.profile = await this.userRepository

@@ -3,7 +3,6 @@ import { FiatRepository } from "@/repositories/user/fiat.repository";
 import { STATUS } from "@/constants/status.constant";
 import payfricaClient from "@/config/payfricaClient-config";
 import { APIError } from "@/utils/error-handler";
-import { toHttpRequestError } from "@/utils/http-client";
 import { UserRepository } from "@/repositories/user/user.repository";
 
 @Service()
@@ -24,9 +23,8 @@ export class FiatService {
                 }
             });
         } catch (err: any) {
-            const normalized = toHttpRequestError(err);
             throw new APIError(
-                `Error fetching rates: ${normalized.message}`,
+                "Unable to fetch rates. Please try again.",
                 STATUS.bad
             );
         }
@@ -49,9 +47,8 @@ export class FiatService {
                 }
             });
         } catch (err: any) {
-            const normalized = toHttpRequestError(err);
             throw new APIError(
-                `Error fetching banks: ${normalized.message}`,
+                "Unable to fetch banks. Please try again.",
                 STATUS.bad
             );
         }
@@ -74,7 +71,7 @@ export class FiatService {
 
         const resolvedAccount = await this.resolveAccountName(accountNumber, bankCode);
         if (!resolvedAccount.payload) {
-            throw new APIError("Unable to resolve account name", STATUS.bad);
+            throw new APIError("Unable to resolve account name. Please check the account details.", STATUS.bad);
         }
 
         const { payload: banks } = await this.getBanks();
@@ -87,7 +84,7 @@ export class FiatService {
         const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(<string>accountNumber, bankCode, <string>profileId);
 
         if (existingAccount) {
-            throw new APIError("Bank account already exists", STATUS.conflict);
+            throw new APIError("Bank account already exists.", STATUS.conflict);
         }
 
         const [existingAccounts, primaryAccount] = await Promise.all([
@@ -132,9 +129,8 @@ export class FiatService {
                 },
             });
         } catch (err: any) {
-            const normalized = toHttpRequestError(err);
             throw new APIError(
-                normalized.message || "Unable to resolve merchant fiat account",
+                "Unable to resolve account details. Please check the account number and bank code.",
                 STATUS.conflict
             );
         }
@@ -171,10 +167,10 @@ export class FiatService {
 
         const account = await this.fiatRepository.findAccountById(<string>profileId, id);
         if (!account) {
-            throw new APIError("Fiat account not found!", STATUS.notFound);
+            throw new APIError("Fiat account not found.", STATUS.notFound);
         }
         if (account.isPrimary) {
-            throw new APIError("Cannot delete primary account. Please set another account as primary before deleting this account.", STATUS.conflict);
+            throw new APIError("You cannot delete the primary account. Set another account as primary first.", STATUS.conflict);
         }
         await this.fiatRepository.deleteAccount(id, profileId as string);
     }
@@ -189,17 +185,17 @@ export class FiatService {
             .then((user) => user?.businessProfile?.id);
 
         if (!profileId) {
-            throw new APIError("Business profile not found", STATUS.notFound);
+            throw new APIError("Business profile not found.", STATUS.notFound);
         }
 
         const account = await this.fiatRepository.findAccountById(<string>profileId, id);
         if (!account) {
-            throw new APIError("Fiat account not found!", STATUS.notFound);
+            throw new APIError("Fiat account not found.", STATUS.notFound);
         }
 
         if (account.isPrimary === isPrimary) {
             throw new APIError(
-                `Account is already set to isPrimary = ${isPrimary}`,
+                "Account already has the requested primary status.",
                 STATUS.conflict
             );
         }
@@ -211,7 +207,7 @@ export class FiatService {
             isPrimary === false
         ) {
             throw new APIError(
-                "You cannot unset the primary account when only one account exists",
+                "You cannot unset the primary account while only one account exists.",
                 STATUS.bad
             );
         }
@@ -242,9 +238,8 @@ export class FiatService {
                 status: string;
             };
         }catch(err: any) {
-            const normalized = toHttpRequestError(err);
             throw new APIError(
-                `Payout initiation failed: ${normalized.message}`,
+                "Payout initiation failed. Please try again.",
                 STATUS.bad
             );
         }

@@ -24,7 +24,7 @@ export class CustomerService {
       await this.customerRepository.findCustomer(email);
 
     if (existingCustomer) {
-      throw new APIError("Customer already exists", STATUS.conflict);
+      throw new APIError("A customer with this email already exists.", STATUS.conflict);
     }
 
     const customer = await this.customerRepository.createCustomer(
@@ -50,7 +50,7 @@ export class CustomerService {
     if (userId) {
       const profile = await this.userRepository.findUserById(userId)
       if(!profile){
-        throw new APIError("Invalid user ID!", STATUS.bad);
+        throw new APIError("User account not found.", STATUS.bad);
       }
       customers = await this.customerRepository.getAllCustomers(query, mode, profile?.businessProfile?.id);
     }else {
@@ -72,7 +72,7 @@ export class CustomerService {
     if(userId){
       const profile = await this.userRepository.findUserById(userId);
       if(!profile){
-        throw new APIError("Invalid user ID!", STATUS.bad);
+        throw new APIError("User account not found.", STATUS.bad);
       }
        customer = await this.customerRepository.findCustomerbyEmailorId(customerId, mode, profile.businessProfile?.id);
     }else {
@@ -80,7 +80,7 @@ export class CustomerService {
     }
 
     if (!customer) {
-      throw new APIError("Customer not found", STATUS.notFound);
+      throw new APIError("Customer not found.", STATUS.notFound);
     }
 
     return {
@@ -97,7 +97,7 @@ export class CustomerService {
       await this.customerRepository.findAllCustomerRecords(customerId);
 
     if (customerRecords.length <= 0) {
-      throw new APIError("Customer not found", STATUS.notFound);
+      throw new APIError("Customer not found.", STATUS.notFound);
     }
 
     if (customerRecords.length > 1) {

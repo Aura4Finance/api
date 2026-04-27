@@ -102,7 +102,7 @@ export class PaymentController {
     if (!tx) {
       return res.status(STATUS.requestTimeout).json({
         success: false,
-        message: "Payment Session Expired!"
+        message: "Payment session expired. Please start a new payment."
       })
     }
     tx.redirectUrl = `${tx.redirectUrl}?oratx=${payment.paymentId}`
