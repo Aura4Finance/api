@@ -1,11 +1,13 @@
 import { STATUS } from "@/constants/status.constant";
-import { CreatePaylinkDto } from "@/dto/paylink.dto";
+import { CreatePaylinkDto, PaylinkAIDescriptionDto } from "@/dto/paylink.dto";
 import { PaylinkRepository } from "@/repositories/paylink.repository";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { APIError } from "@/utils/error-handler";
 import { WalrusService } from "./walrus.service";
 import { Service } from "typedi";
 import { Mode } from "../../generated/prisma";
+import { OLLAMA_BASE_URL, OLLAMA_MODEL } from "@/config/ollama-config";
+import axios from "axios";
 
 @Service()
 export class PaylinkService {
@@ -92,5 +94,69 @@ export class PaylinkService {
       message: "Image deleted successfully",
       payload: null
     };
+  }
+
+  async generatePaylinkDescriptionWithAi(input: PaylinkAIDescriptionDto) {
+    const promptLines = [
+      "You are a helpful product copywriter for payment links.",
+      "Return markdown only. Do not wrap in code fences.",
+      `Mode: ${input.mode}.`,
+      `Tone: ${input.tone?.trim() || "Professional"}.`,
+    ];
+
+    if (input.topic?.trim()) {
+      promptLines.push(`Topic: ${input.topic.trim()}.`);
+    }
+
+    if (input.audience?.trim()) {
+      promptLines.push(`Audience: ${input.audience.trim()}.`);
+    }
+
+    if (input.highlights?.trim()) {
+      promptLines.push(`Highlights: ${input.highlights.trim()}.`);
+    }
+
+    if (input.callToAction?.trim()) {
+      promptLines.push(`Call to action: ${input.callToAction.trim()}.`);
+    }
+
+    if (input.roughNotes?.trim()) {
+      promptLines.push(`Notes: ${input.roughNotes.trim()}.`);
+    }
+
+    promptLines.push(
+      "Keep it concise, structured, and ready to paste into a paylink description."
+    );
+
+    try {
+      const response = await axios.post(
+        `${OLLAMA_BASE_URL}/api/generate`,
+        {
+          model: OLLAMA_MODEL,
+          prompt: promptLines.join("\n"),
+          stream: false,
+        },
+        {
+          timeout: 30000,
+        }
+      );
+
+      const content = response.data?.response?.trim();
+
+      if (!content) {
+        throw new APIError("AI response was empty.", STATUS.serverError);
+      }
+
+      return {
+        message: "AI description generated successfully",
+        payload: content,
+      };
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.error ||
+        error?.message ||
+        "Unable to generate the description right now.";
+      throw new APIError(message, STATUS.serverError);
+    }
   }
 }

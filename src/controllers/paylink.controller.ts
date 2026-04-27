@@ -1,6 +1,6 @@
 import { RequestAuth } from "@/@types/request";
 import { STATUS } from "@/constants/status.constant";
-import { CreatePaylinkDto } from "@/dto/paylink.dto";
+import { CreatePaylinkDto, PaylinkAIDescriptionDto } from "@/dto/paylink.dto";
 import { PaylinkService } from "@/services/paylink.service";
 import { WalrusService } from "@/services/walrus.service";
 import { APIError } from "@/utils/error-handler";
@@ -9,7 +9,8 @@ import {
   createPaylinkValidation,
   editPaylinkValidation,
   paymentLinkReferenceValidation,
-  editPaymentLinkImageValidation
+  editPaymentLinkImageValidation,
+  paylinkAIDescriptionValidation
 } from "@/validation/paylink.validation";
 import { Response } from "express";
 import { Service } from "typedi";
@@ -215,6 +216,26 @@ export class PaylinkController {
         refValue.paylinkId,
         body
       );
+
+    return res.status(STATUS.ok).json({
+      success: true,
+      message,
+      data: payload,
+    });
+  }
+
+  async generatePaylinkDescription(req: RequestAuth, res: Response) {
+    const { error, value } = paylinkAIDescriptionValidation(req.body as PaylinkAIDescriptionDto);
+
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error),
+      });
+    }
+
+    const { message, payload } =
+      await this.paylinkService.generatePaylinkDescriptionWithAi(value as PaylinkAIDescriptionDto);
 
     return res.status(STATUS.ok).json({
       success: true,

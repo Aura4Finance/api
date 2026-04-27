@@ -12,6 +12,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 router.post(
+  "/ai-description",
+  checkIfUserIsDisabled,
+  asyncHandler((req: RequestAuth, res: Response) =>
+    paylinkController.generatePaylinkDescription(req, res)
+  )
+);
+
+router.post(
   "/",
   checkIfUserIsDisabled,
   upload.array("images", 10),

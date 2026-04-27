@@ -15,3 +15,17 @@ export interface PaylinkReferenceDto {
   paylinkId: string;
 }
 
+export interface PaylinkAIDescriptionDto {
+  mode: "Compact" | "Balanced" | "Detailed" | "Persuasive";
+  topic?: string;
+  audience?: string;
+  tone?: string;
+  highlights?: string;
+  callToAction?: string;
+  roughNotes?: string;
+}
+
+export interface PaylinkAIDescriptionResponseDto {
+  content: string;
+}
+

@@ -10,9 +10,6 @@ import { redisConnection } from "@/config/redis-config";
 import { resend } from "@/config/resend-config";
 
 const emailService = Container.get(EmailService);
-
-
-
 const checkIfUserSuscribedForEmailNotification = async (email: string) => {
   const customer = await resend.contacts.get({ email });
   if (!customer.data) return false;

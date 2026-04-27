@@ -1,4 +1,4 @@
-import { CreatePaylinkDto, PaylinkReferenceDto  } from "@/dto/paylink.dto";
+import { CreatePaylinkDto, PaylinkAIDescriptionDto, PaylinkReferenceDto } from "@/dto/paylink.dto";
 import Joi from "joi";
 
 export const createPaylinkValidation = (data: CreatePaylinkDto) => {
@@ -65,4 +65,44 @@ export const paymentLinkReferenceValidation = (data: PaylinkReferenceDto) => {
     }),
   });
   return  schema.validate(data);
+}
+
+export const paylinkAIDescriptionValidation = (data: PaylinkAIDescriptionDto) => {
+  const schema = Joi.object({
+    mode: Joi.string().valid("Compact", "Balanced", "Detailed", "Persuasive").required().messages({
+      'any.only': 'Mode must be Compact, Balanced, Detailed, or Persuasive',
+      'any.required': 'Mode is required',
+    }),
+    topic: Joi.string().allow("").max(160).messages({
+      'string.max': 'Topic cannot exceed 160 characters',
+    }),
+    audience: Joi.string().allow("").max(160).messages({
+      'string.max': 'Audience cannot exceed 160 characters',
+    }),
+    tone: Joi.string().allow("").max(60).messages({
+      'string.max': 'Tone cannot exceed 60 characters',
+    }),
+    highlights: Joi.string().allow("").max(2000).messages({
+      'string.max': 'Highlights cannot exceed 2000 characters',
+    }),
+    callToAction: Joi.string().allow("").max(280).messages({
+      'string.max': 'Call to action cannot exceed 280 characters',
+    }),
+    roughNotes: Joi.string().allow("").max(5000).messages({
+      'string.max': 'Notes cannot exceed 5000 characters',
+    }),
+  })
+    .custom((value, helpers) => {
+      const hasTopic = value.topic && value.topic.trim().length > 0;
+      const hasNotes = value.roughNotes && value.roughNotes.trim().length > 0;
+      if (!hasTopic && !hasNotes) {
+        return helpers.error('any.custom');
+      }
+      return value;
+    })
+    .messages({
+      'any.custom': 'Provide a topic or rough notes to generate a description',
+    });
+
+  return schema.validate(data);
 }
