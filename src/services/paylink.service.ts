@@ -124,10 +124,12 @@ export class PaylinkService {
     const roughNotes = input.roughNotes?.trim() || "none provided";
 
     const promptLines = [
-      "You write concise, polished markdown descriptions for payment links.",
+      "You are a payment-link copywriter producing a detailed, structured markdown description.",
       "Return only markdown. Do not use code fences, JSON, or extra commentary.",
-      "Use only H4, H5, or H6 headings. Never generate H1, H2, or H3 headings.",
-      "The output should be easy to read in a payment form preview.",
+      "Use H6 headings only (prefix with six #). Never generate H1-H5 headings.",
+      "Make the output clear, scannable, and safe for a payment form preview.",
+      "Include more context, helpful detail, and explicit instructions on how to proceed.",
+      "Avoid emojis and placeholder text.",
       guidance.lead,
       `Mode: ${input.mode}.`,
       `Tone: ${input.tone?.trim() || "Professional"}.`,
@@ -136,22 +138,42 @@ export class PaylinkService {
       `Highlights to include (${guidance.highlightsTitle}): ${highlights}.`,
       `Call to action: ${callToAction}.`,
       `Rough notes: ${roughNotes}.`,
+      "Structure requirements:",
+      "- Start with one H6 heading as the title.",
+      "- Add a short overview paragraph with context and purpose.",
+      "- Add a H6 section for who it is for when audience is provided.",
+      "- Add a H6 section for details or coverage and include a short list.",
+      "- End with a H6 next-step section and a direct instruction to complete payment.",
     ];
 
     try {
       const response = await axios.post(
-        `${OLLAMA_BASE_URL}/api/generate`,
+        `${OLLAMA_BASE_URL}/api/chat`,
         {
           model: OLLAMA_MODEL,
-          prompt: promptLines.join("\n"),
           stream: false,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a payment-link copywriter. Follow the user instructions precisely.",
+            },
+            {
+              role: "user",
+              content: promptLines.join("\n"),
+            },
+          ],
+          options: {
+            temperature: 0.6,
+            top_p: 0.9,
+          },
         },
         {
           timeout: 30000,
         }
       );
 
-      const content = response.data?.response?.trim();
+      const content = response.data?.message?.content?.trim();
 
       if (!content) {
         throw new APIError("AI response was empty.", STATUS.serverError);
