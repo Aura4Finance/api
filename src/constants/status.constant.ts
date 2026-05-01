@@ -15,6 +15,7 @@ export const STATUS = {
   notAcceptable: 406,
   requestTimeout: 408,
   conflict: 409,
+  unprocessableEntity: 422,
   gone: 410,
   tooLarge: 413,
   unsupportedMediaType: 415,

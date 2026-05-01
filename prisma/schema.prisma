@@ -247,7 +247,7 @@ model Payment {
   depositAddress  String
   walletId        String        @unique
   wallet          Wallet        @relation("PaymentWallets", fields: [walletId], references: [id])
-  txRef           String        @default("")
+  txRef           String        @unique
   paymentMethod   PaymentMethod
   redirectUrl     String?       @default("")
   paylinkId       String?

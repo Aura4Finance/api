@@ -55,7 +55,7 @@ export const retryRefundSchemaValidation = (data: RetryRefundDto) => {
     const schema = Joi.object({
         transactionId: Joi.string().required().messages({
           'any.required': 'Transaction ID is required for refund retry',
-        })
+        }),
     })
     return schema.validate(data)
 }

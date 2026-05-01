@@ -10,7 +10,7 @@ export interface CryptoPayOutDto {
 }
 
 export interface RetryCryptoPayoutDto {
-    transactionId: string
+    transactionId: string,
 }
 
 export interface PayoutQueryDto {

@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Customer, Mode } from "../../generated/prisma";
+import { Customer, Mode, PaymentMethod } from "../../generated/prisma";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
@@ -34,146 +34,253 @@ export class PaymentService {
     this.client = new SuiClient({ url: getFullnodeUrl(`${mode === "live"? "mainnet": "testnet"}`) });
   }
 
-  async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
+  private async resolveCustomer(
+    userId: string,
+    mode: Mode,
+    customerId: string | undefined,
+    customerDetails: CreatePaymentDto["customer"]
+  ): Promise<Customer> {
     const user = await this.userRepository.findUserById(userId);
-    await this.setActiveNetwork(mode);
+
+    if (customerId) {
+      const existingCustomer = await this.customerRepository.findCustomerById(customerId);
+      if (!existingCustomer) {
+        throw new APIError("Customer not found.", STATUS.notFound);
+      }
+
+      return existingCustomer;
+    }
+
+    if (customerDetails) {
+      const { fullname, email } = customerDetails;
+      const [customerFirstname, customerLastname] = fullname.trim().split(" ");
+
+      if (!customerFirstname || !customerLastname) {
+        throw new APIError("Customer name must include first and last name.", STATUS.bad);
+      }
+
+      const existingCustomer = await this.customerRepository.findCustomer(email);
+      if (existingCustomer) {
+        return existingCustomer;
+      }
+
+      return this.customerRepository.createCustomer(
+        customerFirstname,
+        customerLastname,
+        email,
+        <string>user?.businessProfile?.id,
+        mode
+      );
+    }
+
+    throw new APIError("Customer id or details are required.", STATUS.bad);
+  }
+
+  private async finalizePaymentCreation({
+    userId,
+    mode,
+    customer,
+    amount,
+    amountToPay,
+    currency,
+    network,
+    txRef,
+    depositAddress,
+    transferAddress,
+    transferDerivationIndex,
+    paymentMethod,
+    redirectUrl,
+    paylinkId,
+  }: {
+    userId: string;
+    mode: Mode;
+    customer: Customer;
+    amount: number;
+    amountToPay: number;
+    currency: string;
+    network: CreatePaymentDto["network"];
+    txRef: string;
+    depositAddress: string;
+    transferAddress: string;
+    transferDerivationIndex: number;
+    paymentMethod: PaymentMethod;
+    redirectUrl?: string;
+    paylinkId?: string;
+  }) {
+    const user = await this.userRepository.findUserById(userId);
+    const transaction = await this.paymentRepository.createPayment(
+      amount,
+      amountToPay,
+      currency,
+      network,
+      customer,
+      txRef,
+      depositAddress,
+      transferAddress,
+      transferDerivationIndex,
+      <string>user?.businessProfile?.id,
+      mode,
+      paymentMethod === "HOSTED_CHECKOUT"
+        ? {
+            paymentMethod,
+            redirectUrl: redirectUrl as string,
+          }
+        : {
+            paymentMethod,
+            paylinkId: paylinkId as string,
+          }
+    );
+
+    await redisClient.set(
+      transaction.id,
+      JSON.stringify({
+        amount: transaction.amount,
+        amountInUSDC: transaction.amountInUSDC,
+        businessName: transaction.profile.businessName,
+        depositAddress: transaction.payment?.depositAddress,
+        transferAddress,
+        redirectUrl: transaction.payment?.redirectUrl,
+        mode: transaction.mode,
+        currency: transaction.currency,
+        network: transaction.network,
+      }),
+      "EX",
+      6000
+    );
+
+    return {
+      message: "Payment created successfully",
+      payload: {
+        transaction,
+        checkoutUrl: `${process.env.ORAFI_CHECHOUT_URL}/${transaction.id}`,
+      },
+    };
+  }
+
+  private async initializeHostedCheckoutPayment(
+    data: CreatePaymentDto,
+    userId: string,
+    mode: Mode
+  ) {
+    const user = await this.userRepository.findUserById(userId);
+    const customer = await this.resolveCustomer(userId, mode, data.customerId, data.customer);
+
+    await this.customerRepository.addModeToCustomer(customer.id, mode);
+
+    const merchantAddress = user?.businessProfile?.wallet[0]?.address;
+    if (!merchantAddress) {
+      throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
+    }
+
+    if (!data.redirectUrl) {
+      throw new APIError("Redirect URL is required for hosted checkout.", STATUS.bad);
+    }
+
+    const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
+      data.amount,
+      data.currency,
+      "to_USDT"
+    );
+
+    let depositAddress: string;
     try {
-      const {
-        amount,
-        customer: customerDetails,
-        currency,
-        network,
-        customerId,
-        txRef,
-        type,
-        redirectUrl,
-        payLink
-      } = data;
+      depositAddress = await this.walletService.generatePaymentWallet(
+        merchantAddress,
+        amountToPay,
+        mode
+      );
+    } catch {
+      throw new APIError("Unable to create a deposit address. Please try again.", STATUS.serverUnavailable);
+    }
 
-      let customer: Customer;
+    const transferAddress = await this.walletService.createWallet();
 
-      if (customerId) {
-        const existingCustomer = await this.customerRepository.findCustomerById(customerId);
-        if (!existingCustomer) {
-          throw new APIError("Customer not found.", STATUS.notFound);
-        }
-        customer = existingCustomer;
-      } else if (customerDetails) {
-        const { fullname, email } = customerDetails;
-        const [customerFirstname, customerLastname] = fullname.trim().split(" ");
+    return this.finalizePaymentCreation({
+      userId,
+      mode,
+      customer,
+      amount: data.amount,
+      amountToPay,
+      currency: data.currency,
+      network: data.network,
+      txRef: data.txRef,
+      depositAddress,
+      transferAddress: transferAddress.address,
+      transferDerivationIndex: transferAddress.derivationIndex,
+      paymentMethod: "HOSTED_CHECKOUT",
+      redirectUrl: data.redirectUrl,
+    });
+  }
 
-        if (!customerFirstname || !customerLastname) {
-          throw new APIError("Customer name must include first and last name.", STATUS.bad);
-        }
+  private async initializePaymentLinkPayment(
+    data: CreatePaymentDto,
+    userId: string,
+    mode: Mode
+  ) {
+    const user = await this.userRepository.findUserById(userId);
+    const customer = await this.resolveCustomer(userId, mode, data.customerId, data.customer);
 
-        const existingCustomer = await this.customerRepository.findCustomer(email);
-        if (!existingCustomer) {
-          customer = await this.customerRepository.createCustomer(
-            customerFirstname,
-            customerLastname,
-            email,
-            <string>user?.businessProfile?.id,
-            mode
-          );
-        } else {
-          customer = existingCustomer;
-        }
-      } else {
-        throw new APIError("Customer id or details are required.", STATUS.bad);
+    if (!data.payLink) {
+      throw new APIError("Payment link details are required.", STATUS.bad);
+    }
+
+    await this.customerRepository.addModeToCustomer(customer.id, mode);
+
+    const merchantAddress = user?.businessProfile?.wallet[0]?.address;
+    if (!merchantAddress) {
+      throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
+    }
+
+    const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
+      data.payLink.amount,
+      data.currency,
+      "to_USDT"
+    );
+
+    let depositAddress: string;
+    try {
+      depositAddress = await this.walletService.generatePaymentWallet(
+        merchantAddress,
+        amountToPay,
+        mode
+      );
+    } catch {
+      throw new APIError("Unable to create a deposit address. Please try again.", STATUS.serverUnavailable);
+    }
+
+    const transferAddress = await this.walletService.createWallet();
+
+    return this.finalizePaymentCreation({
+      userId,
+      mode,
+      customer,
+      amount: data.payLink.amount,
+      amountToPay,
+      currency: data.currency,
+      network: data.network,
+      txRef: data.txRef,
+      depositAddress,
+      transferAddress: transferAddress.address,
+      transferDerivationIndex: transferAddress.derivationIndex,
+      paymentMethod: "PAYMENT_LINK",
+      paylinkId: data.payLink.id,
+    });
+  }
+
+  async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
+    await this.setActiveNetwork(mode);
+
+    try {
+      if (data.type === "HOSTED_CHECKOUT") {
+        return await this.initializeHostedCheckoutPayment(data, userId, mode);
       }
 
-      await this.customerRepository.addModeToCustomer(customer.id, mode);
-      
-      const merchantAddress = user?.businessProfile?.wallet[0]?.address;
-      if (!merchantAddress) {
-        throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
-      }
-
-      const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
-        ((payLink && type == "PAYMENT_LINK")
-          ? payLink.amount
-          : amount
-        ),
-        currency,
-        "to_USDT");
-
-      let depositAddress: string;
-      try{
-        depositAddress = await this.walletService.generatePaymentWallet(
-          merchantAddress,
-          amountToPay,
-          mode
-        );
-      }catch(error: any){
-        throw new APIError("Unable to create a deposit address. Please try again.",  STATUS.serverUnavailable);
-      }
-
-      const transferAddress = await this.walletService.createWallet();
-      
-      let transaction;
-      if (type == "HOSTED_CHECKOUT") {
-        if (!redirectUrl) throw new APIError("Redirect URL is required for hosted checkout.", STATUS.bad)
-        transaction = await this.paymentRepository.createPayment(
-          amount,
-          amountToPay,
-          currency,
-          network,
-          customer,
-          txRef,
-          depositAddress,
-          transferAddress.address,
-          transferAddress.derivationIndex,
-          <string>user?.businessProfile?.id,
-          mode,
-          {
-            paymentMethod: "HOSTED_CHECKOUT",
-            redirectUrl,
-          }
-        );
-      } else {
-        transaction = await this.paymentRepository.createPayment(
-          <number>payLink?.amount,
-          amountToPay,
-          currency,
-          network,
-          customer,
-          txRef,
-          depositAddress,
-          transferAddress.address,
-          transferAddress.derivationIndex,
-          <string>user?.businessProfile?.id,
-          mode,
-          {
-            paymentMethod: "PAYMENT_LINK",
-            paylinkId: <string>payLink?.id,
-          }
-        );
-      }
-
-      await redisClient.set(transaction.id, JSON.stringify(
-        {
-          amount: transaction.amount,
-          amountInUSDC: transaction.amountInUSDC,
-          businessName: transaction.profile.businessName,
-          depositAddress: transaction.payment?.depositAddress,
-          transferAddress: transferAddress.address,
-          redirectUrl: transaction.payment?.redirectUrl,
-          mode: transaction.mode,
-          currency: transaction.currency,
-          network: transaction.network
-        }
-      ), "EX", 6000);
-      return {
-        message: "Payment created successfully",
-        payload: {
-          transaction,
-          checkoutUrl: `${process.env.ORAFI_CHECHOUT_URL}/${transaction.id}`
-        },
-      };
-    } catch (error: any) {
+      return await this.initializePaymentLinkPayment(data, userId, mode);
+    } catch (error: unknown) {
+      const typedError = error as { message?: string; status?: number };
       throw new APIError(
-        error.message || "We couldn't create the payment. Please try again.",
-        error.status || STATUS.bad
+        typedError.message || "We couldn't create the payment. Please try again.",
+        typedError.status || STATUS.bad
       );
     }
   }
@@ -184,14 +291,11 @@ export class PaymentService {
     send: () => Promise<void>
   ) {
     const key = `payment:email:${type}:${paymentId}`;
-
     // atomic guarantee
     const ok = await redisClient.set(key, "true", "NX");
-
     if (!ok) {
       return;
     }
-
     await send();
   }
 

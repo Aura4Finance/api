@@ -5,7 +5,7 @@ export interface RefundDto {
 }
 
 export interface RetryRefundDto {
-    transactionId: string
+    transactionId: string,
 }
 
 export interface RefundQueryDto {

@@ -29,7 +29,7 @@ export const retryCryptoPayoutValidation = (data: RetryCryptoPayoutDto) => {
     const schema = Joi.object({
       transactionId: Joi.string().required().messages({
         'any.required': 'Transaction ID is required for retry',
-      })
+        }),
     });
 
     return schema.validate(data)
