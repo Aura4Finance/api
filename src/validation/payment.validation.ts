@@ -37,6 +37,7 @@ export const createPaymentValidation = (data: CreatePaymentDto) => {
   return schema.validate(data);
 };
 
+
 export const verifyPaymentValidation = (data: VerifyPaymentDto) => {
   const schema = Joi.object({
     paymentId: Joi.string().required().messages({

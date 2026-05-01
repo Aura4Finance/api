@@ -42,6 +42,8 @@ export class PaymentController {
     });
   }
 
+  async 
+
   async verifyTransfer(req: RequestAuth, res: Response) {
     const { error, value } = verifyPaymentValidation(req.body);
 

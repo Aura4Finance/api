@@ -246,9 +246,17 @@ export class PaymentService {
     const profile = (await this.userRepository.findUserById(userId))?.businessProfile;
     const tx = await this.paymentRepository.findPaymentById(transactionId, profile?.id);
 
-    if(!tx){
+    if(!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING"){
       throw new APIError("Payment transaction not found!", STATUS.notFound);
     }
+
+    if(tx.payment?.depositAddress){
+      return  {
+      message: "Deposit address created successfully!",
+      payload: tx.payment.depositAddress,
+      }
+    }
+    
     const depositAddress = await this.walletService.generatePaymentWallet(
       <string>tx.profile.wallet[0]?.address,
       tx.amountInUSDC,
@@ -262,8 +270,8 @@ export class PaymentService {
     )
 
     return {
-      data: depositAddress,
-      message: "Deposit address created successfully!"
+      message: "Deposit address created successfully!",
+      payload: depositAddress,
     }
   }
 
@@ -274,8 +282,15 @@ export class PaymentService {
     const profile = (await this.userRepository.findUserById(userId))?.businessProfile;
     const tx = await this.paymentRepository.findPaymentById(transactionId, profile?.id);
 
-    if(!tx){
+    if(!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING"){
       throw new APIError("Payment transaction not found!", STATUS.notFound);
+    }
+
+    if(tx.payment?.wallet){
+      return {
+      message: "Transfer address created successfully!",
+      data: tx.payment.wallet.address,
+    }
     }
 
     const wallet = await this.walletService.createWallet();
@@ -287,8 +302,8 @@ export class PaymentService {
     )
 
     return {
+      message: "Transfer address created successfully!",
       data: wallet.address,
-      message: "Transfer address created successfully!"
     }
   }
 
