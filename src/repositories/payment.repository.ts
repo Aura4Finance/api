@@ -22,9 +22,6 @@ export class PaymentRepository {
     network: Network,
     customer: Customer,
     txRef: string,
-    depositAddress: string,
-    transferAddress: string,
-    transferDerivationIndex: number,
     userId: string,
     mode: Mode,
     options: PaymentOptions
@@ -46,14 +43,7 @@ export class PaymentRepository {
       paymentMethod: options.paymentMethod,
       token: Token.USDC,
       txRef,
-      depositAddress,
       redirectUrl,
-      wallet: {
-        create: {
-          address: transferAddress,
-          derivationIndex: transferDerivationIndex,
-        },
-      },
     };
 
     if (paylinkConnect) {
@@ -114,11 +104,11 @@ export class PaymentRepository {
   return tx;
 }
 
-  async findPaymentById(id: string, userId?: string) {
+  async findPaymentById(id: string, profileId?: string) {
     
     const where: any = { id };
-    if (userId) {
-      where.profile = { userId };
+    if (profileId) {
+      where.profile = { profileId };
     }
     const result = await db.transaction.findFirst({
       where,
@@ -140,6 +130,52 @@ export class PaymentRepository {
     });
 
     return result;
+  }
+
+  async addTransferAddressToPayment(
+    profileId: string,
+    txId: string,
+    address: string,
+    derivationIndex: number
+  ){
+    await db.transaction.update({
+      where: {
+        profileId,
+        id: txId
+      },
+      data: {
+        payment: {
+          update: {
+            wallet: {
+              create: {
+                address,
+                derivationIndex
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+
+  async addDepositAddressToPayment(
+    profileId: string,
+    txId: string,
+    depositAddress: string
+  ){
+    await db.transaction.update({
+      where: {
+        profileId,
+        id: txId
+      },
+      data: {
+        payment: {
+          update: {
+            depositAddress
+          }
+        }
+      }
+    })
   }
 
   async confirmPaymentStatus(txId: string) {

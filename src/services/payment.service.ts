@@ -31,7 +31,7 @@ export class PaymentService {
   ) { }
 
   private async setActiveNetwork(mode: Mode) {
-    this.client = new SuiClient({ url: getFullnodeUrl(`${mode === "live"? "mainnet": "testnet"}`) });
+    this.client = new SuiClient({ url: getFullnodeUrl(`${mode === "live" ? "mainnet" : "testnet"}`) });
   }
 
   private async resolveCustomer(
@@ -85,9 +85,6 @@ export class PaymentService {
     currency,
     network,
     txRef,
-    depositAddress,
-    transferAddress,
-    transferDerivationIndex,
     paymentMethod,
     redirectUrl,
     paylinkId,
@@ -100,9 +97,6 @@ export class PaymentService {
     currency: string;
     network: CreatePaymentDto["network"];
     txRef: string;
-    depositAddress: string;
-    transferAddress: string;
-    transferDerivationIndex: number;
     paymentMethod: PaymentMethod;
     redirectUrl?: string;
     paylinkId?: string;
@@ -115,38 +109,30 @@ export class PaymentService {
       network,
       customer,
       txRef,
-      depositAddress,
-      transferAddress,
-      transferDerivationIndex,
       <string>user?.businessProfile?.id,
       mode,
       paymentMethod === "HOSTED_CHECKOUT"
         ? {
-            paymentMethod,
-            redirectUrl: redirectUrl as string,
-          }
+          paymentMethod,
+          redirectUrl: redirectUrl as string,
+        }
         : {
-            paymentMethod,
-            paylinkId: paylinkId as string,
-          }
+          paymentMethod,
+          paylinkId: paylinkId as string,
+        }
     );
 
-    await redisClient.set(
-      transaction.id,
-      JSON.stringify({
+    await redisClient.set(transaction.id, JSON.stringify(
+      {
         amount: transaction.amount,
         amountInUSDC: transaction.amountInUSDC,
         businessName: transaction.profile.businessName,
-        depositAddress: transaction.payment?.depositAddress,
-        transferAddress,
         redirectUrl: transaction.payment?.redirectUrl,
         mode: transaction.mode,
         currency: transaction.currency,
-        network: transaction.network,
-      }),
-      "EX",
-      6000
-    );
+        network: transaction.network
+      }
+    ), "EX", 6000);
 
     return {
       message: "Payment created successfully",
@@ -182,19 +168,6 @@ export class PaymentService {
       "to_USDT"
     );
 
-    let depositAddress: string;
-    try {
-      depositAddress = await this.walletService.generatePaymentWallet(
-        merchantAddress,
-        amountToPay,
-        mode
-      );
-    } catch {
-      throw new APIError("Unable to create a deposit address. Please try again.", STATUS.serverUnavailable);
-    }
-
-    const transferAddress = await this.walletService.createWallet();
-
     return this.finalizePaymentCreation({
       userId,
       mode,
@@ -204,9 +177,6 @@ export class PaymentService {
       currency: data.currency,
       network: data.network,
       txRef: data.txRef,
-      depositAddress,
-      transferAddress: transferAddress.address,
-      transferDerivationIndex: transferAddress.derivationIndex,
       paymentMethod: "HOSTED_CHECKOUT",
       redirectUrl: data.redirectUrl,
     });
@@ -237,19 +207,6 @@ export class PaymentService {
       "to_USDT"
     );
 
-    let depositAddress: string;
-    try {
-      depositAddress = await this.walletService.generatePaymentWallet(
-        merchantAddress,
-        amountToPay,
-        mode
-      );
-    } catch {
-      throw new APIError("Unable to create a deposit address. Please try again.", STATUS.serverUnavailable);
-    }
-
-    const transferAddress = await this.walletService.createWallet();
-
     return this.finalizePaymentCreation({
       userId,
       mode,
@@ -259,9 +216,6 @@ export class PaymentService {
       currency: data.currency,
       network: data.network,
       txRef: data.txRef,
-      depositAddress,
-      transferAddress: transferAddress.address,
-      transferDerivationIndex: transferAddress.derivationIndex,
       paymentMethod: "PAYMENT_LINK",
       paylinkId: data.payLink.id,
     });
@@ -282,6 +236,59 @@ export class PaymentService {
         typedError.message || "We couldn't create the payment. Please try again.",
         typedError.status || STATUS.bad
       );
+    }
+  }
+
+  async generateDepositAddressForPaymentCompletion(
+    userId: string,
+    transactionId: string
+  ){
+    const profile = (await this.userRepository.findUserById(userId))?.businessProfile;
+    const tx = await this.paymentRepository.findPaymentById(transactionId, profile?.id);
+
+    if(!tx){
+      throw new APIError("Payment transaction not found!", STATUS.notFound);
+    }
+    const depositAddress = await this.walletService.generatePaymentWallet(
+      <string>tx.profile.wallet[0]?.address,
+      tx.amountInUSDC,
+      tx.mode
+    );
+
+    await this.paymentRepository.addDepositAddressToPayment(
+      <string>profile?.id,
+      tx.id,
+      depositAddress
+    )
+
+    return {
+      data: depositAddress,
+      message: "Deposit address created successfully!"
+    }
+  }
+
+  async generateTranaferAddressForPaymentCompletiion(
+    userId: string,
+    transactionId: string
+  ){
+    const profile = (await this.userRepository.findUserById(userId))?.businessProfile;
+    const tx = await this.paymentRepository.findPaymentById(transactionId, profile?.id);
+
+    if(!tx){
+      throw new APIError("Payment transaction not found!", STATUS.notFound);
+    }
+
+    const wallet = await this.walletService.createWallet();
+    await this.paymentRepository.addTransferAddressToPayment(
+      <string>profile?.id,
+      tx.id,
+      wallet.address,
+      wallet.derivationIndex
+    )
+
+    return {
+      data: wallet.address,
+      message: "Transfer address created successfully!"
     }
   }
 
@@ -313,7 +320,7 @@ export class PaymentService {
     mode: Mode
   ) {
     await this.paymentRepository.confirmPaymentStatus(paymentId);
-    if(mode == "live") await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
+    if (mode == "live") await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
 
     await this.sendEmailIfNotSent(paymentId, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
