@@ -34,12 +34,21 @@ router.post(
 
 router.post(
   "/paylink",
+  paymentCreationRateLimitMiddleware,
+  paymentIdempotencyMiddleware,
   verifyRequestBody,
   verifyPaylink,
   asyncHandler((req: RequestAuth, res: Response) => 
     paymentController.createPayment(req, res)
   )
 );
+
+router.patch(
+  "/:paymentId",
+  asyncHandler((req: RequestAuth, res: Response) => 
+    paymentController.updatePaymentIntent(req, res)
+  )
+)
 
 router.post(
   "/verify",

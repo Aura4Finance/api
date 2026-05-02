@@ -289,7 +289,7 @@ export class PaymentService {
     if(tx.payment?.wallet){
       return {
       message: "Transfer address created successfully!",
-      data: tx.payment.wallet.address,
+      payload: tx.payment.wallet.address,
     }
     }
 

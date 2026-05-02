@@ -1,9 +1,18 @@
 import { RequestAuth } from "@/@types/request";
 import { STATUS } from "@/constants/status.constant";
-import { CreatePaymentDto, RetrievePaymentInformationDto, VerifyPaymentDto } from "@/dto/payment.dto";
+import {
+  CreatePaymentDto,
+  RetrievePaymentInformationDto,
+  VerifyPaymentDto
+} from "@/dto/payment.dto";
 import { PaymentService } from "@/services/payment.service";
 import { formatErrorValidation } from "@/utils/format-validation-error";
-import { createPaymentValidation, verifyPaymentValidation, verifyPaymentInformationRetrievalValidation } from "@/validation/payment.validation";
+import {
+  createPaymentValidation,
+  verifyPaymentValidation,
+  verifyPaymentInformationRetrievalValidation,
+  updatePaymentIntentValidation
+} from "@/validation/payment.validation";
 import { Response } from "express";
 import { Service } from "typedi";
 import { Paylink, PaymentMethod } from "../../generated/prisma";
@@ -42,7 +51,40 @@ export class PaymentController {
     });
   }
 
-  async 
+  async updatePaymentIntent(req: RequestAuth, res: Response) {
+    const userId = req.user.id as string;
+    const { error, value } = verifyPaymentValidation(req.params as any);
+
+    if (error) {
+      return res.status(STATUS.bad).json({
+        success: false,
+        message: formatErrorValidation(error),
+      });
+    }
+    const { paymentId } = value as { paymentId: string };
+    const { value: intentValue } = updatePaymentIntentValidation(req.query);
+
+    let intent: "transfer_address" | "deposit_address" = intentValue.intent;
+    if (!intent) intent = "transfer_address";
+
+    if (intent == "deposit_address") {
+      const { message, payload } = await this.paymentService.generateDepositAddressForPaymentCompletion(userId, paymentId);
+      return res.status(STATUS.ok).json({
+        success: true,
+        message,
+        data: payload,
+      });
+    } else {
+      const { message, payload } = await this.paymentService.generateTranaferAddressForPaymentCompletiion(userId, paymentId);
+      return res.status(STATUS.ok).json({
+        success: true,
+        message,
+        data: payload,
+      });
+    }
+
+
+  }
 
   async verifyTransfer(req: RequestAuth, res: Response) {
     const { error, value } = verifyPaymentValidation(req.body);

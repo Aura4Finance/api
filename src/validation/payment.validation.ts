@@ -37,6 +37,15 @@ export const createPaymentValidation = (data: CreatePaymentDto) => {
   return schema.validate(data);
 };
 
+export const updatePaymentIntentValidation = (data: any) =>  {
+  const schema = Joi.object({
+    intent: Joi.string().valid("transfer_address", "deposit_address").optional().messages({
+      'any.only': 'Intent must be transfer_address or deposit_address',
+      'any.required': 'Intent is required for updating payment intent',
+    })
+  });
+  return schema.validate(data);
+}
 
 export const verifyPaymentValidation = (data: VerifyPaymentDto) => {
   const schema = Joi.object({
