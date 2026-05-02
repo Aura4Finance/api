@@ -240,11 +240,9 @@ export class PaymentService {
   }
 
   async generateDepositAddressForPaymentCompletion(
-    userId: string,
     transactionId: string
   ){
-    const profile = (await this.userRepository.findUserById(userId))?.businessProfile;
-    const tx = await this.paymentRepository.findPaymentById(transactionId, profile?.id);
+    const tx = await this.paymentRepository.findPaymentById(transactionId);
 
     if(!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING"){
       throw new APIError("Payment transaction not found!", STATUS.notFound);
@@ -264,7 +262,6 @@ export class PaymentService {
     );
 
     await this.paymentRepository.addDepositAddressToPayment(
-      <string>profile?.id,
       tx.id,
       depositAddress
     )
@@ -276,11 +273,9 @@ export class PaymentService {
   }
 
   async generateTranaferAddressForPaymentCompletiion(
-    userId: string,
     transactionId: string
   ){
-    const profile = (await this.userRepository.findUserById(userId))?.businessProfile;
-    const tx = await this.paymentRepository.findPaymentById(transactionId, profile?.id);
+    const tx = await this.paymentRepository.findPaymentById(transactionId);
 
     if(!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING"){
       throw new APIError("Payment transaction not found!", STATUS.notFound);
@@ -295,7 +290,6 @@ export class PaymentService {
 
     const wallet = await this.walletService.createWallet();
     await this.paymentRepository.addTransferAddressToPayment(
-      <string>profile?.id,
       tx.id,
       wallet.address,
       wallet.derivationIndex

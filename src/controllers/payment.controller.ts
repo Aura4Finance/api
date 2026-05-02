@@ -52,7 +52,6 @@ export class PaymentController {
   }
 
   async updatePaymentIntent(req: RequestAuth, res: Response) {
-    const userId = req.user.id as string;
     const { error, value } = verifyPaymentValidation(req.params as any);
 
     if (error) {
@@ -68,14 +67,14 @@ export class PaymentController {
     if (!intent) intent = "transfer_address";
 
     if (intent == "deposit_address") {
-      const { message, payload } = await this.paymentService.generateDepositAddressForPaymentCompletion(userId, paymentId);
+      const { message, payload } = await this.paymentService.generateDepositAddressForPaymentCompletion(paymentId);
       return res.status(STATUS.ok).json({
         success: true,
         message,
         data: payload,
       });
     } else {
-      const { message, payload } = await this.paymentService.generateTranaferAddressForPaymentCompletiion(userId, paymentId);
+      const { message, payload } = await this.paymentService.generateTranaferAddressForPaymentCompletiion(paymentId);
       return res.status(STATUS.ok).json({
         success: true,
         message,

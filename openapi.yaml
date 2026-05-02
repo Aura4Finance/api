@@ -310,6 +310,7 @@ paths:
                 customerId:
                   type: string
                   description: Existing customer ID (optional)
+                  example: cmxsds23...
                 currency:
                   type: string
                   description: Payment currency
@@ -322,13 +323,11 @@ paths:
                 txRef:
                   type: string
                   description: Unique transaction reference (optional)
-                type:
-                  type: string
-                  description: Payment type (auto-set based on endpoint)
-                  enum: [PAYMENT_LINK, HOSTED_CHECKOUT]
+                  example: cmxsds...
                 redirectUrl:
                   type: string
-                  description: URL to redirect after payment (optional)
+                  description: URL to redirect after payment
+                  example: www.example.com
       responses:
         '201':
           description: Payment created successfully
@@ -850,6 +849,61 @@ paths:
         - Transactions
       summary: Get all transactions
       description: Retrieve all transactions for the authenticated merchant
+      parameters:
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum: [test, live]
+          description: Filter by transaction mode 
+        - name: type
+          in: query
+          schema: 
+            type: string
+            enum: [PAYMENT, REFUND, PAYOUT]
+          description: Filter by transaction type
+        - name: status
+          in: query
+          schema: 
+            type: string
+            enum: [completed, pending, failed]
+          description: Filter by transaction status
+        - name: customerId
+          in: query
+          schema:
+            type: string
+          description: Filter by customer ID
+        - name: paymentMethod
+          in: query
+          schema:
+            type: string
+            enum: [HOSTED_CHECKOUT, PAYMENT_LINK]
+          description: Filter by payment method used
+        - name: currency
+          in: query
+          schema: 
+            type: string
+          description: Filter by currency used to intiate transaction
+        - name: network
+          in: query
+          schema: 
+            type: string
+          description: Filter by network used to initiate transaction
+        - name: paymentLinkId
+          in: query
+          schema: 
+            type: string
+          description: Filter by payment link ID(used only when status is set to PAYMENT)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Number of records to return
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Pagination cursor
       security:
         - apiKey: []
       responses:
@@ -935,6 +989,9 @@ paths:
                       crypto:
                         type: object
                         description: Cryptocurrency balances
+                      fiat:
+                        type: object
+                        description: Fiat balances
         '401':
           $ref: '#/components/responses/Unauthorized'
   /transactions/payout/crypto:
@@ -1312,6 +1369,30 @@ paths:
                         example: John Doe
         '400':
           $ref: '#/components/responses/BadRequest'
+  /networks:
+    get:
+      tags:
+        - Fiat
+      summary: Get supported networks
+      description: Retrieve list of supported blockchain networks. Public endpoint - no authentication required.
+      responses:
+        '200':
+          description: Supported networks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Supported networks retrieved successfully!
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Network'
   /rates:
     get:
       tags:
@@ -1344,7 +1425,7 @@ paths:
                     type: object
         '400':
           $ref: '#/components/responses/BadRequest'
-  /currency:
+  /currencies:
     get:
       tags:
         - Fiat
@@ -1395,30 +1476,6 @@ paths:
                   message:
                     type: string
                     example: Unable to fetch active currencies
-  /networks:
-    get:
-      tags:
-        - Fiat
-      summary: Get supported networks
-      description: Retrieve list of supported blockchain networks. Public endpoint - no authentication required.
-      responses:
-        '200':
-          description: Supported networks retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  message:
-                    type: string
-                    example: Supported networks retrieved successfully!
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Network'
   /settlement/fiat:
     get:
       tags:
@@ -2144,45 +2201,6 @@ components:
           type: string
           format: date-time
           description: Creation timestamp
-    Network:
-      type: object
-      properties:
-        code:
-          type: string
-          description: Network code identifier
-          example: '00001'
-        name:
-          type: string
-          description: Network name
-          example: Sui
-        symbol:
-          type: string
-          description: Network symbol
-          example: SUI
-        isActive:
-          type: boolean
-          description: Whether network is active
-          example: true
-        supportedTokens:
-          type: array
-          items:
-            type: string
-          description: List of supported tokens on this network
-          example: [USDC]
-        smartContractPackageId:
-          type: string
-          description: Smart contract package ID
-          example: '0x...'
-        explorerUrl:
-          type: string
-          format: uri
-          description: Block explorer URL
-          example: https://suiexplorer.com
-        logoUrl:
-          type: string
-          format: uri
-          description: Network logo URL
-          example: https://res.cloudinary.com/dlhnwgcbe/image/upload/v1772482383/sui_jigntr.jpg
 
   responses:
     BadRequest:

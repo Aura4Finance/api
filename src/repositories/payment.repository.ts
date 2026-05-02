@@ -133,14 +133,12 @@ export class PaymentRepository {
   }
 
   async addTransferAddressToPayment(
-    profileId: string,
     txId: string,
     address: string,
     derivationIndex: number
   ){
     await db.transaction.update({
       where: {
-        profileId,
         id: txId
       },
       data: {
@@ -159,13 +157,11 @@ export class PaymentRepository {
   }
 
   async addDepositAddressToPayment(
-    profileId: string,
     txId: string,
     depositAddress: string
   ){
     await db.transaction.update({
       where: {
-        profileId,
         id: txId
       },
       data: {

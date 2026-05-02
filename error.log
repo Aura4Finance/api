@@ -3217,3 +3217,259 @@
 {"level":"error","message":"APIError: Customer not found.\n    at CustomerService.getSingleCustomer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\customer.service.ts:83:13)\n    at CustomerController.getCustomer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\customer.controller.ts:76:34)","timestamp":"2026-04-27T09:14:01.183Z"}
 {"level":"error","message":"APIError: Customer not found.\n    at CustomerService.getSingleCustomer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\customer.service.ts:83:13)\n    at CustomerController.getCustomer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\customer.controller.ts:76:34)","timestamp":"2026-04-27T09:14:09.943Z"}
 {"level":"error","message":"APIError: Unable to fetch banks. Please try again.\n    at FiatService.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\fiat.service.ts:50:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at FiatController.getBanks (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\user\\fiat.controller.ts:25:38)","timestamp":"2026-04-27T09:16:37.217Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:51.755Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:52.006Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:54.467Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:54.493Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:55.370Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:55.376Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:55.976Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:55.987Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:56.808Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:56.825Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:58.250Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:58.255Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:07:58.276Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:59.388Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:59.390Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:07:59.391Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:00.121Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:00.998Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:02.398Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:03.452Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:03.457Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:04.591Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:04.594Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:05.520Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:06.864Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:07.773Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:08.157Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:08.160Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:09.483Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:09.489Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:10.670Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:11.912Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:13.103Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:13.234Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:14.423Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:14.429Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:16.158Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:17.093Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:18.642Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:18.646Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:19.555Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:19.560Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:21.254Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:22.089Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:22.528Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:22.998Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:24.543Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:24.547Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:25.462Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:25.465Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:27.252Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:28.202Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:28.235Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:29.742Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:29.756Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:30.687Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:32.507Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:33.469Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:33.500Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:35.007Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:35.018Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:35.496Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:36.908Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:42.177Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:42.182Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:42.408Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:42.634Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:42.639Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:45.099Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:45.560Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:45.655Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:46.867Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:46.934Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:47.392Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:48.870Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:51.012Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:51.030Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:51.359Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:52.345Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:52.441Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:57.034Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:08:57.042Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:57.048Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:57.077Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:08:58.895Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:00.162Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:01.880Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:01.919Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:02.277Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:03.793Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:03.815Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:06.273Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:06.924Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:06.927Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:06.941Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:10.012Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:10.226Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:10.244Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:10.616Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:10.813Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:13.974Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:14.138Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:14.169Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:14.325Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:14.635Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:20.763Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:22.125Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:23.587Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:25.203Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:29.709Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:30.920Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:30.934Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:33.248Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:36.191Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:37.107Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:39.234Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:42.438Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:42.878Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:42.880Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:42.889Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:42.891Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:42.893Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:45.581Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:45.921Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:46.359Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:48.589Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:48.955Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:48.962Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:49.430Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:49.686Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:50.215Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:51.538Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:53.854Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:53.967Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:54.113Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:54.539Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:54.545Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:56.491Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:09:57.045Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:57.510Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:09:57.653Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:00.012Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:00.297Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:00.310Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:01.576Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:04.004Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:04.068Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:04.264Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:04.296Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:04.541Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:06.932Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:07.333Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:07.374Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:09.498Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:09.558Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:09.838Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:13.216Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:13.263Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:13.344Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:13.609Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:13.655Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:14.063Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:17.780Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:19.069Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:21.189Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:21.959Z"}
+{"error":"MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:23.783Z"}
+{"error":"MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:27.076Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:30.915Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:32.071Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:32.286Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:35.664Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:38.480Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:39.982Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:41.423Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:42.248Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:42.942Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:43.275Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:43.693Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:44.157Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:45.764Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:45.907Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:51.988Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:53.655Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:10:58.718Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:10:58.967Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:02.386Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:02.517Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:07.507Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:07.558Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:12.499Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:12.637Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:17.526Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:17.725Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:22.480Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:22.642Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:27.547Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:27.736Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:32.746Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:33.213Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:37.580Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:38.186Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:42.588Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:43.297Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:47.586Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:48.829Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:52.831Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:11:54.367Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:11:57.846Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:12:00.167Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:12:02.865Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:12:05.571Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:12:08.032Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:12:10.623Z"}
+{"error":"ReplyError: ERR UNKNOWN_CLIENT","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:12:13.262Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:12:36.151Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:12:40.788Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:12:45.121Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:12:52.281Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:12:56.338Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:11.303Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:15.284Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:23.517Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:26.017Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:30.751Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:32.506Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:36.841Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:39.138Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:41.891Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:42.966Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:46.815Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:47.610Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:50.780Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:52.531Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:55.290Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:13:57.182Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:13:59.898Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:01.233Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:04.171Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:07.016Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:07.783Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:09.975Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:13.045Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:14.344Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:17.345Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:19.447Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:22.117Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:24.561Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:28.950Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:32.059Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:33.851Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:35.536Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:38.173Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:39.500Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:41.885Z"}
+{"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:42.763Z"}
