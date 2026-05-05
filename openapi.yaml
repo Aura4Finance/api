@@ -235,9 +235,9 @@ paths:
       tags:
         - Payments
       summary: Retrieve payment information
-      description: Get information about a payment using payment_id query parameter
+      description: Get information about a payment using paymentId query parameter
       parameters:
-        - name: payment_id
+        - name: paymentId
           in: query
           required: true
           schema:
@@ -322,7 +322,7 @@ paths:
                   example: SUI
                 txRef:
                   type: string
-                  description: Unique transaction reference (optional)
+                  description: Unique transaction reference
                   example: cmxsds...
                 redirectUrl:
                   type: string
@@ -1055,7 +1055,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/payout/crypto/retry:
+  /transactions/payout/crypto/{txId}/retry:
     post:
       tags:
         - Transactions
@@ -1063,19 +1063,13 @@ paths:
       description: Retry a failed crypto payout
       security:
         - apiKey: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - transactionId
-              properties:
-                transactionId:
-                  type: string
-                  description: ID of the failed transaction to retry
-                  example: tx_123
+      parameters:
+        - name: txId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the failed transaction to retry
       responses:
         '200':
           description: Crypto payout retry initiated successfully
@@ -1094,7 +1088,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/refund:
+  /transactions/{txId}/refund:
     post:
       tags:
         - Refunds
@@ -1102,6 +1096,13 @@ paths:
       description: Initiate a refund for a transaction
       security:
         - apiKey: []
+      parameters:
+        - name: txId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the original transaction to refund
       requestBody:
         required: true
         content:
@@ -1109,13 +1110,8 @@ paths:
             schema:
               type: object
               required:
-                - originalTxId
                 - to
               properties:
-                originalTxId:
-                  type: string
-                  description: ID of the original transaction to refund
-                  example: tx_123
                 to:
                   type: string
                   description: Recipient wallet address or account
@@ -1144,7 +1140,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/refund/retry:
+  /transactions/refunds/{refundId}/retry:
     post:
       tags:
         - Refunds
@@ -1152,19 +1148,13 @@ paths:
       description: Retry a failed refund
       security:
         - apiKey: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - transactionId
-              properties:
-                transactionId:
-                  type: string
-                  description: ID of the failed refund transaction to retry
-                  example: refund_123
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the failed refund transaction to retry
       responses:
         '200':
           description: Refund retry initiated successfully
