@@ -3813,3 +3813,411 @@
 {"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:39.500Z"}
 {"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:14:41.885Z"}
 {"error":"Error: getaddrinfo ENOTFOUND redis-17841.crce262.us-east-1-1.ec2.cloud.redislabs.com","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:14:42.763Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:24:33.469Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:24:34.258Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:24:36.207Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:24:38.781Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:24:38.783Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:24:38.801Z"}
+{"level":"error","message":"APIError: Payment transaction not found!\n    at PaymentService.generateTranaferAddressForPaymentCompletiion (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payment.service.ts:281:13)\n    at PaymentController.updatePaymentIntent (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payment.controller.ts:77:36)","timestamp":"2026-05-02T16:29:24.300Z"}
+{"level":"error","message":"APIError: API key is invalid.\n    at ApiKeyService.validateApiKey (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\user\\api-key.service.ts:61:13)\n    at verifyApiKey (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\middlewares\\user.milddleware.ts:112:18)","timestamp":"2026-05-02T16:30:48.016Z"}
+{"level":"error","message":"APIError: \nInvalid `db.transaction.create()` invocation in\nC:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\repositories\\payment.repository.ts:53:35\n\n  50     paymentData.paylink = paylinkConnect;\n  51   }\n  52 \n→ 53 const tx = await db.transaction.create({\n       data: {\n         type: \"PAYMENT\",\n         status: \"PENDING\",\n         amount: 5000,\n         currency: \"NGN\",\n         network: \"SUI\",\n         amountInUSDC: 3.63468425,\n         mode: \"test\",\n         token: \"USDC\",\n         profile: {\n           connect: {\n             id: \"0b6bcef6-b7d6-45f1-bcaf-c8932bcc79bf\"\n           }\n         },\n         customer: {\n           connect: {\n             id: \"cmnfgo06w0001pj01bam4hidc\"\n           }\n         },\n         payment: {\n           create: {\n             paymentMethod: \"HOSTED_CHECKOUT\",\n             token: \"USDC\",\n             txRef: \"xxxx\",\n             redirectUrl: \"https://mystore.com/purchase/xxxxx\",\n     +       depositAddress: String\n           }\n         }\n       },\n       select: {\n         id: true,\n         amount: true,\n         amountInUSDC: true,\n         currency: true,\n         network: true,\n         mode: true,\n         profile: {\n           select: {\n             id: true,\n             businessName: true,\n             user: {\n               select: {\n                 email: true\n               }\n             }\n           }\n         },\n         payment: {\n           select: {\n             id: true,\n             depositAddress: true,\n             wallet: {\n               select: {\n                 address: true\n               }\n             },\n             redirectUrl: true\n           }\n         }\n       }\n     })\n\nArgument `depositAddress` is missing.\n    at PaymentService.createPayment (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payment.service.ts:235:13)\n    at PaymentController.createPayment (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payment.controller.ts:45:34)","timestamp":"2026-05-02T16:32:03.901Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:34:24.325Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:34:26.562Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:26.803Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:27.483Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:34:28.420Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:28.532Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:29.733Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:34:30.997Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:34:31.004Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:34:31.025Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:31.294Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:32.894Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:34.655Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:36.814Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:38.873Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:41.215Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:44.052Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:46.534Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:49.147Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:51.598Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:54.393Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:56.854Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:34:59.728Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:02.515Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:02.906Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:06.065Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:08.533Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:11.213Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:13.834Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:14.100Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:17.155Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:19.615Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:22.254Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:24.744Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:25.236Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:28.151Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:35:28.455Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:38:20.617Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:38:21.571Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:38:23.195Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:40:43.251Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:40:44.227Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:40:45.684Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:40:48.364Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:40:48.368Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:40:48.385Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:44:27.964Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:44:29.086Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:29.334Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:30.043Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:44:30.692Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:30.954Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:32.001Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:44:33.275Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:44:33.276Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:44:33.284Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:33.398Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:35.041Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:36.927Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:38.852Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:40.980Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:43.624Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:44.733Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:47.937Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:51.198Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:51.629Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:54.647Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:44:57.117Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:00.137Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:02.610Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:05.366Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:08.026Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:10.661Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:13.533Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:15.971Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:18.430Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:21.180Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:23.782Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:26.350Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:28.801Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:31.769Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:34.210Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:37.131Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:37.370Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:39.800Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:42.419Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:44.871Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:47.475Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:49.940Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:52.610Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:55.049Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:45:57.664Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:00.096Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:02.591Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:05.158Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:07.616Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:10.380Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:12.850Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:15.511Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:17.940Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:20.390Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:23.085Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:25.572Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:28.341Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:46:46.792Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:46:47.996Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:48.199Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:48.414Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:49.473Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:46:50.241Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:50.691Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:51.727Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:46:53.054Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:46:53.055Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:46:53.069Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:53.476Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:53.747Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:55.221Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:56.866Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:46:58.926Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:00.972Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:03.313Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:07.870Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:10.627Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:10.943Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:13.546Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:16.012Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:18.477Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:21.241Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:23.727Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:26.580Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:29.018Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:31.535Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:34.759Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:37.189Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:41.638Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:44.088Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:47.089Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:51.329Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:55.000Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:47:55.239Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:00.415Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:03.060Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:05.958Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:08.729Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:13.018Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:14.300Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:17.722Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:21.074Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:23.544Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:26.759Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:27.020Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:30.351Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:30.712Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:35.148Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:35.511Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:38.493Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:41.453Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:43.973Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:46.772Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:49.333Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:52.364Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:54.963Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:55.202Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:48:58.304Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:00.802Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:03.416Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:05.927Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:08.725Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:11.165Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:14.316Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:16.791Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:19.582Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:22.064Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:24.763Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:27.462Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:30.716Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:33.572Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:38.264Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:42.168Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:44.807Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:47.559Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:50.325Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:53.287Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:55.759Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:49:58.416Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:00.991Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:03.905Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:06.358Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:09.016Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:11.486Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:14.140Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:16.734Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:19.165Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:21.988Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:22.349Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:24.910Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:27.569Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:30.244Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:33.105Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:35.544Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:38.281Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:40.736Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:43.471Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:45.939Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:48.617Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:51.155Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:53.886Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:56.328Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:50:58.854Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:01.342Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:04.222Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:06.692Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:09.186Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:11.909Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:14.567Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:17.030Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:19.467Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:22.319Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:24.914Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:25.258Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:28.023Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:30.481Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:33.066Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:35.815Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:38.274Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:41.220Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:43.794Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:46.526Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:48.987Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:51.426Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:54.038Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:56.618Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:59.430Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:51:59.693Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:02.668Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:05.365Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:07.815Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:08.049Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:10.674Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:13.127Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:15.715Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:18.150Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:20.624Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:23.390Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:25.856Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:28.476Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:30.939Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:33.757Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:36.205Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:39.039Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:41.496Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:44.223Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:46.803Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:47.007Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:51.108Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:53.554Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:56.244Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:52:58.872Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:01.883Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:04.579Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:07.211Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:09.645Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:12.333Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:14.770Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:17.377Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:19.892Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:22.513Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:24.952Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:27.398Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:30.123Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:32.571Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:35.407Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:37.855Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:41.527Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:43.966Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:46.930Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:49.617Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:52.057Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:54.576Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:57.237Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:53:59.700Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:02.636Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:05.095Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:07.596Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:10.256Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:12.728Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:15.427Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:17.887Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:20.710Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:23.320Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:26.088Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:28.635Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:31.345Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:33.807Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:36.705Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:39.160Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:42.172Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:44.620Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:47.432Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:50.151Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:53.821Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:56.567Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:54:59.092Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:01.572Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:04.421Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:06.881Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:09.658Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:12.122Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:14.801Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:17.282Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:19.881Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:22.343Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"payfrica","message":"Limiter error","timestamp":"2026-05-02T16:55:25.352Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:55:56.782Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:55:58.492Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:56:00.125Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:56:04.752Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:56:04.754Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:56:04.770Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-02T16:56:38.183Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-02T16:56:39.188Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:39.418Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:40.071Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-02T16:56:40.510Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:40.938Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:41.986Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-02T16:56:43.051Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-02T16:56:43.053Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-02T16:56:43.069Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:43.210Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:44.852Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:46.503Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:47.090Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:49.331Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:51.562Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:53.813Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:56:57.785Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:00.800Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:03.239Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:05.884Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:08.350Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:10.981Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:13.411Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:16.465Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:16.941Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:19.689Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:19.932Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:22.750Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:25.370Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:27.990Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:30.612Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:33.337Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:35.860Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:38.480Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:40.919Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:44.019Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:46.470Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:49.180Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:51.650Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:54.331Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:56.831Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:57:59.443Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:01.919Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:05.185Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:07.640Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:10.269Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:12.722Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:15.330Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:19.676Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:24.855Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:28.163Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:30.977Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:33.446Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:35.904Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:38.975Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:41.430Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:44.214Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:46.694Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:54.614Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:55.164Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:58:58.744Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:01.444Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:02.339Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:05.374Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:07.950Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:10.541Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:12.995Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:16.141Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:18.575Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:21.238Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:23.696Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:29.484Z"}
+{"error":"Error: read ECONNRESET","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:33.463Z"}
+{"error":"MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20). Refer to \"maxRetriesPerRequest\" option for details.","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:33.467Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:36.142Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:38.763Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:41.242Z"}
+{"error":"ReplyError: ERR max number of clients reached","level":"error","limiter":"coinmarketcap","message":"Limiter error","timestamp":"2026-05-02T16:59:43.920Z"}

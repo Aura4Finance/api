@@ -86,18 +86,12 @@ export class PaymentRepository {
           },
         },
       },
-      payment: {
-        select: {
-          id: true,
-          depositAddress: true,
-          wallet: {
-            select: {
-              address: true,
-            },
-          },
-          redirectUrl: true,
-        },
-      },
+        payment: {
+          select: {
+            id: true,
+            redirectUrl: true
+          }
+        }
     },
   });
 
