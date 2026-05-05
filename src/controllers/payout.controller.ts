@@ -47,7 +47,7 @@ export class PayoutController {
 
     async retryCryptoPayout(req: RequestAuth, res: Response) {
         const userId = req.user?.id as string;
-        const { error, value } = retryCryptoPayoutValidation(req.body);
+        const { error, value } = retryCryptoPayoutValidation(req.params as any);
 
         if (error) {
             return res.status(STATUS.bad).json({

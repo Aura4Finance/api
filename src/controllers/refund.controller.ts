@@ -15,7 +15,10 @@ export class RefundController {
 
     async initiateRefund(req: RequestAuth, res: Response) {
         const userId = req.user?.id as string;
-        const { error, value } = refundQuerySchemaValidation(req.body);
+        const { error, value } = refundQuerySchemaValidation({
+            ...req.body,
+            ...req.params,
+        });
         if (error) {
             return res.status(STATUS.bad).json({
                 success: false,
@@ -40,7 +43,7 @@ export class RefundController {
     async retryRefund(req: RequestAuth, res: Response) {
         const userId = req.user?.id as string;
 
-        const { error, value } = retryRefundSchemaValidation(req.body);
+        const { error, value } = retryRefundSchemaValidation(req.params as any);
         if (error) {
             return res.status(STATUS.bad).json({
                 success: false,

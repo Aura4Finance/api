@@ -23,7 +23,7 @@ router.post(
 );
 
 router.post(
-    "/crypto/retry",
+    "/crypto/:transactionId/retry",
     checkIfUserIsDisabled,
     asyncHandler((req: RequestAuth, res: Response) => 
         payOutController.retryCryptoPayout(req, res)

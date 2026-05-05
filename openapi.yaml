@@ -1055,7 +1055,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/payout/crypto/{txId}/retry:
+  /transactions/payout/crypto/{transactionId}/retry:
     post:
       tags:
         - Transactions
@@ -1064,7 +1064,7 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - name: txId
+        - name: transactionId
           in: path
           required: true
           schema:
@@ -1088,7 +1088,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/{txId}/refund:
+  /transactions/refund/{originalTxId}:
     post:
       tags:
         - Refunds
@@ -1097,7 +1097,7 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - name: txId
+        - name: originalTxId
           in: path
           required: true
           schema:
@@ -1140,7 +1140,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/refunds/{refundId}/retry:
+  /transactions/refund/{transactionId}/retry:
     post:
       tags:
         - Refunds
@@ -1149,7 +1149,7 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - name: refundId
+        - name: transactionId
           in: path
           required: true
           schema:

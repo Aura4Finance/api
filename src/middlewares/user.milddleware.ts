@@ -166,8 +166,8 @@ export const verifyActionUsing2FA: RequestHandler =  async (
   const request = req as RequestAuth;
   // Only enforce 2FA for high-risk POST actions:
   // 1. API key creation/regeneration (POST /api-keys, /api-keys/regenerate)
-  // 2. Initiating a payout (POST /transactions/payout/crypto, /transactions/payout/crypto/retry)
-  // 3. Initiating a refund (POST /transactions/refund, /transactions/refund/retry)
+  // 2. Initiating a payout (POST /transactions/payout/crypto, /transactions/payout/crypto/:transactionId/retry)
+  // 3. Initiating a refund (POST /transactions/refund/:originalTxId, /transactions/refund/:transactionId/retry)
   if (request.method !== "POST" || request.mode !== "live") {
     return next();
   }

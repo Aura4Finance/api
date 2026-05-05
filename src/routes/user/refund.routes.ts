@@ -14,15 +14,16 @@ router.use(
     verifyRequestBody,
     checkIfUserIsDisabled
 );
-router.post("/", 
-    asyncHandler((req: RequestAuth, res: Response) => 
-    refundController.initiateRefund(req, res))
+router.post(
+    "/:originalTxId",
+    asyncHandler((req: RequestAuth, res: Response) =>
+        refundController.initiateRefund(req, res))
 )
 
 router.post(
-    "/retry",
-    asyncHandler((req: RequestAuth, res: Response) => 
-    refundController.retryRefund(req, res))
+    "/:transactionId/retry",
+    asyncHandler((req: RequestAuth, res: Response) =>
+        refundController.retryRefund(req, res))
 )
 
 
