@@ -35,6 +35,16 @@ export const retryCryptoPayoutValidation = (data: RetryCryptoPayoutDto) => {
     return schema.validate(data)
 }
 
+export const retryFiatPayoutValidation = (data: RetryCryptoPayoutDto) => {
+    const schema = Joi.object({
+      transactionId: Joi.string().required().messages({
+        'any.required': 'Transaction ID is required for retry',
+        }),
+    });
+
+    return schema.validate(data)
+}
+
 export const createFiatPayoutValidation = (data: InitiatePayoutDto) => {
     const schema = Joi.object({
         amount: Joi.number().positive().min(0.01).max(1000000).required().messages({

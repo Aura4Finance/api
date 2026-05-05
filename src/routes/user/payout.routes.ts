@@ -39,7 +39,7 @@ router.post(
 )
 
 router.post(
-    "/fiat/retry",
+    "/fiat/:transactionId/retry",
     checkIfUserIsDisabled,
     asyncHandler((req: RequestAuth, res: Response) =>
         payOutController.retryFiatPayout(req, res)
