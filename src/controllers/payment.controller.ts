@@ -74,7 +74,7 @@ export class PaymentController {
         data: payload,
       });
     } else {
-      const { message, payload } = await this.paymentService.generateTranaferAddressForPaymentCompletiion(paymentId);
+      const { message, payload } = await this.paymentService.generateTransferAddressForPaymentCompletiion(paymentId);
       return res.status(STATUS.ok).json({
         success: true,
         message,

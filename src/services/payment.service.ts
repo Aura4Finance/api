@@ -272,7 +272,7 @@ export class PaymentService {
     }
   }
 
-  async generateTranaferAddressForPaymentCompletiion(
+  async generateTransferAddressForPaymentCompletiion(
     transactionId: string
   ){
     const tx = await this.paymentRepository.findPaymentById(transactionId);
@@ -297,7 +297,7 @@ export class PaymentService {
 
     return {
       message: "Transfer address created successfully!",
-      data: wallet.address,
+      payload: wallet.address,
     }
   }
 
