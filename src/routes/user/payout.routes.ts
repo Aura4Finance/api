@@ -22,28 +22,20 @@ router.post(
         payOutController.cryptoPayout(req, res))
 );
 
-router.post(
-    "/crypto/:transactionId/retry",
-    checkIfUserIsDisabled,
-    asyncHandler((req: RequestAuth, res: Response) => 
-        payOutController.retryCryptoPayout(req, res)
-    )
-)
 
 router.post(
     "/fiat",
     checkIfUserIsDisabled,
     asyncHandler((req: RequestAuth, res: Response) =>
         payOutController.createFiatPayout(req, res)
-    )
+)
 )
 
 router.post(
-    "/fiat/:transactionId/retry",
+    "/:transactionId/retry",
     checkIfUserIsDisabled,
-    asyncHandler((req: RequestAuth, res: Response) =>
-        payOutController.retryFiatPayout(req, res)
+    asyncHandler((req: RequestAuth, res: Response) => 
+        payOutController.retryCryptoPayout(req, res)
     )
 )
-
 export default router;

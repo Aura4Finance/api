@@ -7,12 +7,16 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType, Network, Mode, Wallet } from "../../generated/prisma";
+import { TransactionStatus, TransactionType, Network, Mode, Wallet, Prisma } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "./user/fiat.service";
 import { FiatRepository } from "@/repositories/user/fiat.repository";
 import logger from "@/utils/logger";
+
+type UserWithProfile = Prisma.UserGetPayload<{
+  include: { businessProfile: { include: { wallet: true } } }
+}>;
 
 @Service()
 export class PayoutService {
@@ -202,9 +206,6 @@ export class PayoutService {
         );
     }
 
-    /**
-     * Merges all user-owned coins into one (preparing for payout).
-     */
     async initiateCryptoPayout(
         body: CryptoPayOutDto,
         userId: string,
@@ -337,7 +338,7 @@ export class PayoutService {
     }
 
     private async retryFiatPayout(
-        user: any,
+        user: UserWithProfile,
         transactionId: string,
         mode: Mode,
         amount: number,
@@ -479,7 +480,7 @@ export class PayoutService {
             );
         }else {
             return await this.retryFiatPayout(
-                user?.businessProfile,
+                <UserWithProfile>user,
                 transactionId,
                 mode,
                 payoutTransaction.amountInUSDC,
