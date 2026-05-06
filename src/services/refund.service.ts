@@ -104,7 +104,8 @@ export class RefundServices {
         userId: string,
         mode: Mode
     ) {
-        const refundTransaction = await this.refundRepository.getRefundById(txId, userId);
+        const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
+        const refundTransaction = await this.refundRepository.getRefundById(txId, <string>user.businessProfile?.id);
         if (
             !refundTransaction ||
             refundTransaction.confirmedAt ||
@@ -112,11 +113,10 @@ export class RefundServices {
             refundTransaction.type !== TransactionType.REFUND) {
             throw new APIError("Refund transaction is not eligible for retry.", STATUS.bad);
         }
-        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, userId);
+        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, <string>user.businessProfile?.id);
         if(paymentTx?.payment?.refunded){
             throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
-        const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
         if (!user) {
             throw new APIError("User not found.", STATUS.notFound);
         }
@@ -138,7 +138,8 @@ export class RefundServices {
         userId: string,
         mode: Mode
     ) {
-        const paymentTx = await this.paymentRepository.findPaymentById(txId, userId);
+        const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
+        const paymentTx = await this.paymentRepository.findPaymentById(txId, <string>user.businessProfile?.id);
         if (!paymentTx) {
             throw new APIError("Original transaction not found.", STATUS.notFound);
         }
@@ -152,7 +153,6 @@ export class RefundServices {
             throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
 
-        const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
         if (!user) {
             throw new APIError("User not found.", STATUS.notFound);
         }

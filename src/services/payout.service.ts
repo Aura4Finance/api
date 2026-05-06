@@ -470,7 +470,7 @@ export class PayoutService {
 
         const wallet = <Wallet>user?.businessProfile?.wallet[0];
 
-        if(payoutTransaction?.payout?.method!== "CRYPTO" ){
+        if(payoutTransaction?.payout?.method === "CRYPTO" ){
             return await this.retryCryptoPayout(
                 wallet,
                 transactionId,

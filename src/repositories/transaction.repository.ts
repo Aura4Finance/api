@@ -16,7 +16,7 @@ export class TransactionRepository {
       ...(profileId && {
         where: {
           id: txId,
-          profileId: profileId,
+          profileId,
         }
       }),
       include: {

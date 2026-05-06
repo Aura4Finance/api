@@ -156,12 +156,12 @@ export class RefundRepository {
         }
     }
 
-    async getRefundById(txId: string, userId: string) {
+    async getRefundById(txId: string, profileId: string) {
         const refund = await db.transaction.findUnique({
             where: {
                 id: txId,
                 profile: {
-                    userId
+                    id: profileId
                 }
             },
             include: {

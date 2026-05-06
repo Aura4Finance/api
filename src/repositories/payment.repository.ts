@@ -102,7 +102,7 @@ export class PaymentRepository {
     
     const where: any = { id };
     if (profileId) {
-      where.profile = { profileId };
+      where.profileId = profileId;
     }
     const result = await db.transaction.findFirst({
       where,

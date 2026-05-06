@@ -41,7 +41,7 @@ export class SettlementController {
     const { message, payload } =
       await this.settlementService.getAllSettlementAccount(userId);
 
-    return res.status(STATUS.created).json({
+    return res.status(STATUS.ok).json({
       success: true,
       message,
       data: payload,
