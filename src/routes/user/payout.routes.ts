@@ -35,7 +35,7 @@ router.post(
     "/:transactionId/retry",
     checkIfUserIsDisabled,
     asyncHandler((req: RequestAuth, res: Response) => 
-        payOutController.retryCryptoPayout(req, res)
+        payOutController.retryPayout(req, res)
     )
 )
 export default router;
