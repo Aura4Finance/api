@@ -481,6 +481,9 @@ export class PaymentService {
     if (!tx) {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
+    if(!tx.payment?.wallet?.address){
+      throw new APIError("No transfer address found for this payment", STATUS.notFound);
+    }
     await this.setActiveNetwork(tx.mode);
 
     const { amountInUSDC, payment } = tx;
@@ -491,7 +494,7 @@ export class PaymentService {
     let cursor: string | null | undefined = undefined;
     do {
       const page = await this.client.getCoins({
-        owner: tx.payment?.wallet?.address as string,
+        owner: <string>tx?.payment?.wallet?.address,
         coinType: this.payoutService.cointype,
         cursor,
       });
@@ -507,10 +510,11 @@ export class PaymentService {
     );
 
     if (receivedTotal < target) {
+
       // Customer has not sent the required amount yet (or sent nothing at all)
       throw new APIError(
         "Payment not received yet.",
-        STATUS.bad
+        STATUS.paymentRequired
       );
     }
 
@@ -526,7 +530,7 @@ export class PaymentService {
       // The job layer must merge them before it can forward a single transfer.
       throw new APIError(
         "Payment received but split across multiple coin objects. Please retry shortly.",
-        STATUS.bad
+        STATUS.paymentRequired
       );
     }
 

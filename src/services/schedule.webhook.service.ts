@@ -17,7 +17,7 @@ export class WebhookQueue {
           type: "webhook",
           delay: 2000,
         },
-        jobId: `webhook:${profileId}:${payload.event}:${payload.data.transactionId}`,
+        jobId: `webhook-${profileId}-${payload.event}-${payload.data.transactionId}`,
         removeOnComplete: true,
         removeOnFail: true,
       }

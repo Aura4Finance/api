@@ -86,7 +86,7 @@ export class PaymentController {
   }
 
   async verifyTransfer(req: RequestAuth, res: Response) {
-    const { error, value } = verifyPaymentValidation(req.body);
+    const { error, value } = verifyPaymentValidation(req.params as any);
 
     if (error) {
       return res.status(STATUS.bad).json({
@@ -106,7 +106,7 @@ export class PaymentController {
   }
 
   async verifyPayment(req: RequestAuth, res: Response) {
-    const { error, value } = verifyPaymentValidation(req.body);
+    const { error, value } = verifyPaymentValidation(req.params as any);
 
     if (error) {
       return res.status(STATUS.bad).json({
@@ -128,7 +128,7 @@ export class PaymentController {
   }
 
   async retrievePaymentInformation(req: RequestAuth, res: Response) {
-    const { error, value } = verifyPaymentInformationRetrievalValidation(req.query);
+    const { error, value } = verifyPaymentInformationRetrievalValidation(req.params as any);
 
     if (error) {
       return res.status(STATUS.bad).json({

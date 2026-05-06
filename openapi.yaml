@@ -399,25 +399,20 @@ paths:
                     $ref: '#/components/schemas/Payment'
         '400':
           $ref: '#/components/responses/BadRequest'
-  /transactions/payment/verify:
+  /transactions/payment/{paymentId}/verify:
     post:
       tags:
         - Payments
       summary: Verify payment
       description: Verify a payment transaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - paymentId
-              properties:
-                paymentId:
-                  type: string
-                  description: The payment ID to verify
-                  example: payment_123
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The payment ID to verify
+          example: payment_123
       responses:
         '200':
           description: Payment verified successfully
@@ -436,25 +431,20 @@ paths:
                     $ref: '#/components/schemas/Payment'
         '400':
           $ref: '#/components/responses/BadRequest'
-  /transactions/payment/verify-transfer:
+  /transactions/payment/{paymentId}/verify-transfer:
     post:
       tags:
         - Payments
       summary: Verify payment transfer
       description: Verify a payment transfer transaction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - paymentId
-              properties:
-                paymentId:
-                  type: string
-                  description: The payment ID to verify
-                  example: payment_123
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The payment ID to verify
+          example: payment_123
       responses:
         '200':
           description: Payment transfer verified successfully

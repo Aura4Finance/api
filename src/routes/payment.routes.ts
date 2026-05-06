@@ -14,7 +14,7 @@ const router = express.Router();
 const paymentController = Container.get(PaymentController);
 
 router.get(
-  "/",
+  "/:paymentId",
   asyncHandler((req: RequestAuth, res: Response) => 
     paymentController.retrievePaymentInformation(req, res)
 )
@@ -51,16 +51,14 @@ router.patch(
 )
 
 router.post(
-  "/verify",
-  verifyRequestBody,
+  "/:paymentId/verify",
   asyncHandler((req: RequestAuth, res: Response) =>
     paymentController.verifyPayment(req, res)
   )
 );
 
 router.post(
-  "/verify-transfer",
-  verifyRequestBody,
+  "/:paymentId/verify-transfer",
   asyncHandler((req: RequestAuth, res: Response) =>
     paymentController.verifyTransfer(req, res)
   )
