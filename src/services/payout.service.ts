@@ -77,9 +77,8 @@ export class PayoutService {
      * Gets total balance for a user.
      */
     async getBalances(userId: string, mode: Mode) {
-        const profile = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile);
+        const user = await this.userRepository.findUserById(userId);
+        const profile = user?.businessProfile;
 
         if (!profile) {
             throw new APIError("Merchant profile not found.", STATUS.notFound);
@@ -133,14 +132,12 @@ export class PayoutService {
     }
 
     private async finalizeCryptoPayout(
-        userId: string,
+        wallet: Wallet,
         amount: number,
         to: string,
         payoutId: string,
         mode: Mode
     ) {
-        const user = await this.userRepository.findUserById(userId);
-        const wallet = user?.businessProfile?.wallet[0];
         const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         const result = await this.walletService.withdrawlToMerchant(
@@ -187,30 +184,20 @@ export class PayoutService {
         };
     }
 
-    async retryCryptoPayout(
+    private async retryCryptoPayout(
+        wallet: Wallet,
         transactionId: string,
-        userId: string,
+        amount: number,
+        walletAddress: string,
         mode: Mode
     ) {
-        await this.setActiveNetwork(mode);
-        const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, userId);
-        if (
-            !payoutTransaction ||
-            payoutTransaction.confirmedAt ||
-            payoutTransaction.status !== TransactionStatus.FAILED ||
-            payoutTransaction?.payout?.method!== "CRYPTO" ||
-            payoutTransaction.type !== TransactionType.PAYOUT
-        ) {
-            throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
-        }
-        const keys = await this.userRepository.findUserById(userId);
-        this.primaryCoin = await this.getPrimaryCoin(<Wallet>keys?.businessProfile?.wallet[0], mode);
+        this.primaryCoin = await this.getPrimaryCoin(wallet, mode);
 
         return await this.finalizeCryptoPayout(
-            userId,
-            payoutTransaction.amount,
-            <string>payoutTransaction.payout?.walletAddress,
-            payoutTransaction.id,
+            wallet,
+            amount,
+            walletAddress,
+            transactionId,
             mode
         );
     }
@@ -263,11 +250,11 @@ export class PayoutService {
             mode,
             cryptoAccountId
         );
-        return this.finalizeCryptoPayout(userId, body.amount, to, payout.id, mode);
+        return this.finalizeCryptoPayout(<Wallet>keys?.businessProfile?.wallet[0], body.amount, to, payout.id, mode);
     }
 
     private async finalizeFiatPayout(
-        userId: string,
+        user: any,
         amount: number,
         accountIdentifier: string,
         bankCode: string,
@@ -275,7 +262,6 @@ export class PayoutService {
         payoutId: string,
         mode: Mode
     ) {
-        const user = await this.userRepository.findUserById(userId);
         const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
         const wallet = await deriveWallet(<number>walletIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(wallet);
@@ -350,30 +336,18 @@ export class PayoutService {
         };
     }
 
-    async retryFiatPayout(
+    private async retryFiatPayout(
+        user: any,
         transactionId: string,
-        userId: string,
-        mode: Mode
+        mode: Mode,
+        amount: number,
+        fiatAccountId?: string | null
     ) {
-        const user = await this.userRepository.findUserById(userId);
-        await this.setActiveNetwork(mode);
-        const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, <string>user?.businessProfile?.id);
-        if (
-            !payoutTransaction ||
-            payoutTransaction.confirmedAt ||
-            payoutTransaction.status !== TransactionStatus.FAILED ||
-            payoutTransaction?.payout?.method!== "FIAT" ||
-            payoutTransaction.type !== TransactionType.PAYOUT
-        ) {
-            throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
-        }
-
         let accountIdentifier: string;
         let bankCode: string;
         let accountName: string;
 
         // Try to get fiat account from payout transaction
-        const fiatAccountId = payoutTransaction.payout.fiatAccountId;
         if (fiatAccountId) {
             const fiatAccount = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, fiatAccountId);
             if (fiatAccount) {
@@ -396,12 +370,12 @@ export class PayoutService {
         }
 
         return await this.finalizeFiatPayout(
-            userId,
-            payoutTransaction.amount,
+            user,
+            amount,
             accountIdentifier,
             bankCode,
             accountName,
-            payoutTransaction.id,
+            transactionId,
             mode
         );
     }
@@ -466,7 +440,7 @@ export class PayoutService {
         );
 
         return this.finalizeFiatPayout(
-            userId,
+            user,
             amount,
             accountIdentifier,
             bankCode,
@@ -474,5 +448,44 @@ export class PayoutService {
             payout.id,
             mode
         );
+    }
+
+    async retryPayout(
+        transactionId: string,
+        userId: string,
+        mode: Mode
+    ){
+        await this.setActiveNetwork(mode);
+        const user = await this.userRepository.findUserById(userId);
+        const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, <string>user?.businessProfile?.id);
+        if (
+            !payoutTransaction ||
+            payoutTransaction.confirmedAt ||
+            payoutTransaction.status !== TransactionStatus.FAILED ||
+            payoutTransaction.type !== TransactionType.PAYOUT
+        ) {
+            throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
+        }
+
+        const wallet = <Wallet>user?.businessProfile?.wallet[0];
+
+        if(payoutTransaction?.payout?.method!== "CRYPTO" ){
+            return await this.retryCryptoPayout(
+                wallet,
+                transactionId,
+                payoutTransaction.amountInUSDC,
+                <string>payoutTransaction?.payout?.walletAddress,
+                mode
+            );
+        }else {
+            return await this.retryFiatPayout(
+                user?.businessProfile,
+                transactionId,
+                mode,
+                payoutTransaction.amountInUSDC,
+                payoutTransaction?.payout?.fiatAccountId
+            )
+        }
+
     }
 }

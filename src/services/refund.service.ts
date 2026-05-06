@@ -8,12 +8,15 @@ import { PayoutService } from "@/services/payout.service";
 import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
-import { Mode, TransactionStatus, TransactionType, Wallet } from "../../generated/prisma";
+import { Mode, TransactionStatus, TransactionType, Wallet, Prisma } from "../../generated/prisma";
+
+type UserWithProfile = Prisma.UserGetPayload<{
+  include: { businessProfile: { include: { wallet: true } } }
+}>;
 
 
 @Service()
 export class RefundServices {
-    private profile: any;
     constructor(
         private readonly refundRepository: RefundRepository,
         private readonly walletService: WalletService,
@@ -24,6 +27,7 @@ export class RefundServices {
     ) { }
 
     private async finalizeRefund(
+        user: UserWithProfile | null,
         amount: number,
         amountInUSDC: number,
         reciever: string,
@@ -31,7 +35,10 @@ export class RefundServices {
         paymentTxId: string,
         mode: Mode
     ) {
-        const wallet = (await this.userRepository.findUserById(this.profile.userId))?.businessProfile?.wallet[0];
+        if (!user) {
+            throw new APIError("User not found.", STATUS.notFound);
+        }
+        const wallet = user?.businessProfile?.wallet[0];
         const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         let result;
@@ -45,7 +52,7 @@ export class RefundServices {
                 mode
             )
         } catch (error: any) {
-            console.error("Refund processing error:", error);
+            console.error("Refund processing error:", error.message);
             this.refundRepository.failRefund(refundTxId, result?.digest as string);
             throw new APIError("Refund failed. Please try again.", STATUS.serverUnavailable);
         }
@@ -109,10 +116,12 @@ export class RefundServices {
         if(paymentTx?.payment?.refunded){
             throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
-        this.profile = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile);
+        const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
+        if (!user) {
+            throw new APIError("User not found.", STATUS.notFound);
+        }
         return await this.finalizeRefund(
+            user,
             refundTransaction.amount, 
             <number>paymentTx?.amountInUSDC, 
             <string>refundTransaction.refund?.walletAddress, 
@@ -143,9 +152,10 @@ export class RefundServices {
             throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
 
-        this.profile = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile);
+        const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
+        if (!user) {
+            throw new APIError("User not found.", STATUS.notFound);
+        }
 
         const refundTx = await this.refundRepository.createRefund(
             paymentTx.amount,
@@ -156,10 +166,11 @@ export class RefundServices {
             paymentTx.id,
             to,
             paymentTx?.customerId as string,
-            this.profile.id,
+            <string>user?.businessProfile?.id,
             mode
         );
         return await this.finalizeRefund(
+            user,
             paymentTx.amount, 
             <number>paymentTx?.amountInUSDC, 
             to, 

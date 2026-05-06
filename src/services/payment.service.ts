@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Customer, Mode, PaymentMethod } from "../../generated/prisma";
+import { Customer, Mode, PaymentMethod, Prisma } from "../../generated/prisma";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
@@ -15,6 +15,10 @@ import { EmailQueue } from "./schedule.email.service";
 import { PayoutService } from "./payout.service";
 import { transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
+
+type UserWithProfile = Prisma.UserGetPayload<{
+  include: { businessProfile: { include: { wallet: true } } }
+}>;
 
 @Service()
 export class PaymentService {
@@ -35,13 +39,11 @@ export class PaymentService {
   }
 
   private async resolveCustomer(
-    userId: string,
+    businessProfileId: string,
     mode: Mode,
     customerId: string | undefined,
     customerDetails: CreatePaymentDto["customer"]
   ): Promise<Customer> {
-    const user = await this.userRepository.findUserById(userId);
-
     if (customerId) {
       const existingCustomer = await this.customerRepository.findCustomerById(customerId);
       if (!existingCustomer) {
@@ -68,7 +70,7 @@ export class PaymentService {
         customerFirstname,
         customerLastname,
         email,
-        <string>user?.businessProfile?.id,
+        businessProfileId,
         mode
       );
     }
@@ -77,7 +79,7 @@ export class PaymentService {
   }
 
   private async finalizePaymentCreation({
-    userId,
+    user,
     mode,
     customer,
     amount,
@@ -89,7 +91,7 @@ export class PaymentService {
     redirectUrl,
     paylinkId,
   }: {
-    userId: string;
+    user: UserWithProfile;
     mode: Mode;
     customer: Customer;
     amount: number;
@@ -101,7 +103,6 @@ export class PaymentService {
     redirectUrl?: string;
     paylinkId?: string;
   }) {
-    const user = await this.userRepository.findUserById(userId);
     const transaction = await this.paymentRepository.createPayment(
       amount,
       amountToPay,
@@ -145,11 +146,10 @@ export class PaymentService {
 
   private async initializeHostedCheckoutPayment(
     data: CreatePaymentDto,
-    userId: string,
+    user: UserWithProfile,
     mode: Mode
   ) {
-    const user = await this.userRepository.findUserById(userId);
-    const customer = await this.resolveCustomer(userId, mode, data.customerId, data.customer);
+    const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
 
     await this.customerRepository.addModeToCustomer(customer.id, mode);
 
@@ -169,7 +169,7 @@ export class PaymentService {
     );
 
     return this.finalizePaymentCreation({
-      userId,
+      user,
       mode,
       customer,
       amount: data.amount,
@@ -184,11 +184,10 @@ export class PaymentService {
 
   private async initializePaymentLinkPayment(
     data: CreatePaymentDto,
-    userId: string,
+    user: UserWithProfile,
     mode: Mode
   ) {
-    const user = await this.userRepository.findUserById(userId);
-    const customer = await this.resolveCustomer(userId, mode, data.customerId, data.customer);
+    const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
 
     if (!data.payLink) {
       throw new APIError("Payment link details are required.", STATUS.bad);
@@ -208,7 +207,7 @@ export class PaymentService {
     );
 
     return this.finalizePaymentCreation({
-      userId,
+      user,
       mode,
       customer,
       amount: data.payLink.amount,
@@ -223,13 +222,17 @@ export class PaymentService {
 
   async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
     await this.setActiveNetwork(mode);
+    const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
+    if (!user) {
+      throw new APIError("User not found.", STATUS.notFound);
+    }
 
     try {
       if (data.type === "HOSTED_CHECKOUT") {
-        return await this.initializeHostedCheckoutPayment(data, userId, mode);
+        return await this.initializeHostedCheckoutPayment(data, user, mode);
       }
 
-      return await this.initializePaymentLinkPayment(data, userId, mode);
+      return await this.initializePaymentLinkPayment(data, user, mode);
     } catch (error: unknown) {
       const typedError = error as { message?: string; status?: number };
       throw new APIError(
@@ -345,9 +348,10 @@ export class PaymentService {
   }
 
   private async markPaymentFailed(
-    tx: any,
-    customer: any
+    tx: Awaited<ReturnType<typeof this.paymentRepository.findPaymentById>> | null,
+    customer: Customer | null
   ) {
+    if (!tx || !customer) return;
     await this.sendEmailIfNotSent(tx.id, "failed", async () => {
       await this.emailQueue.addPaymentFailedScheduler(
         String(customer?.email),
@@ -370,9 +374,7 @@ export class PaymentService {
       String(tx.customerId)
     );
 
-    const merchantEmail = (
-      await this.userRepository.findUserById(String(tx.profile.userId))
-    )?.email;
+    const merchantEmail = tx.profile?.user?.email;
 
     await this.setActiveNetwork(tx.mode);
 
@@ -424,10 +426,11 @@ export class PaymentService {
           await this.markPaymentFailed(tx, customer);
           event = "payment.failed";
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const typedError = error as { message?: string };
         if (
-          error.message?.includes("not find") ||
-          error.message?.includes("deleted")
+          typedError.message?.includes("not find") ||
+          typedError.message?.includes("deleted")
         ) {
           await this.confirmPayment(
             tx.id,
