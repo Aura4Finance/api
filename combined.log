@@ -4383,3 +4383,11 @@
 {"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-05T14:50:43.330Z"}
 {"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-05T14:50:43.548Z"}
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-05T14:50:43.644Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T07:41:54.600Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T07:41:54.819Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T07:41:57.496Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T07:41:57.559Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T07:41:57.560Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T07:41:57.575Z"}
+{"level":"error","message":"APIError: Refund transaction is not eligible for retry.\n    at RefundServices.retryRefund (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\refund.service.ts:113:19)\n    at RefundController.retryRefund (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\refund.controller.ts:54:38)","timestamp":"2026-05-06T07:43:11.148Z"}
+{"level":"error","message":"APIError: Transaction not found\n    at TransactionService.getTransactionById (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\transaction.service.ts:50:19)\n    at TransactionController.getTransactionById (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\transaction.controller.ts:27:38)","timestamp":"2026-05-06T07:44:25.644Z"}
