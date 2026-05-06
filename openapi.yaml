@@ -1094,12 +1094,12 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/payout/crypto/{transactionId}/retry:
+  /transactions/payout/{transactionId}/retry:
     post:
       tags:
         - Transactions
-      summary: Retry crypto payout
-      description: Retry a failed crypto payout
+      summary: Retry payout
+      description: Retry a failed payout (crypto or fiat). The system automatically detects the payout type and retries accordingly.
       security:
         - apiKey: []
       parameters:
@@ -1108,10 +1108,10 @@ paths:
           required: true
           schema:
             type: string
-          description: ID of the failed transaction to retry
+          description: ID of the failed payout transaction to retry
       responses:
         '200':
-          description: Crypto payout retry initiated successfully
+          description: Payout retry initiated successfully
           content:
             application/json:
               schema:
@@ -1122,7 +1122,10 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: Crypto payout retry initiated successfully
+                    example: Payout retry initiated successfully
+                  data:
+                    type: object
+                    description: Payout retry result details
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1184,39 +1187,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /transactions/payout/fiat/{transactionId}/retry:
-    post:
-      tags:
-        - Transactions
-      summary: Retry fiat payout
-      description: Retry a failed fiat payout
-      security:
-        - apiKey: []
-      parameters:
-        - name: transactionId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the failed fiat payout transaction to retry
-      responses:
-        '200':
-          description: Fiat payout retry initiated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Fiat payout retry initiated successfully
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+
   /transactions/refund/{originalTxId}:
     post:
       tags:
