@@ -230,19 +230,20 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-  /transactions/payment:
+  /transactions/payment/{paymentId}:
     get:
       tags:
         - Payments
       summary: Retrieve payment information
-      description: Get information about a payment using paymentId query parameter
+      description: Get information about a payment using the payment ID as a path parameter
       parameters:
         - name: paymentId
-          in: query
+          in: path
           required: true
           schema:
             type: string
           description: The payment ID
+          example: payment_123
       responses:
         '200':
           description: Payment information retrieved successfully
@@ -274,6 +275,45 @@ paths:
                   message:
                     type: string
                     example: Payment Session Expired!
+    patch:
+      tags:
+        - Payments
+      summary: Update payment intent
+      description: Update payment intent to generate either deposit or transfer address for payment completion
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The payment ID to update
+        - name: intent
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [transfer_address, deposit_address]
+            default: transfer_address
+          description: The payment intent type. Default is transfer_address
+      responses:
+        '200':
+          description: Payment intent updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Payment intent updated successfully
+                  data:
+                    $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /transactions/payment:
     post:
       tags:
         - Payments
