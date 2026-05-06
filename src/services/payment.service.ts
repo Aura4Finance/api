@@ -501,7 +501,6 @@ export class PaymentService {
       allCoins.push(...page.data);
       cursor = page.hasNextPage ? page.nextCursor : undefined;
     } while (cursor);
-
     //verify the payment was actually received
     // Sum every coin object in the deposit wallet to get the true received total.
     const receivedTotal = allCoins.reduce(

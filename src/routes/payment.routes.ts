@@ -38,6 +38,7 @@ router.post(
   paymentIdempotencyMiddleware,
   verifyRequestBody,
   verifyPaylink,
+  checkIfUserIsDisabled,
   asyncHandler((req: RequestAuth, res: Response) => 
     paymentController.createPayment(req, res)
   )

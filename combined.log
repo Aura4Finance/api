@@ -4460,3 +4460,23 @@
 {"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T09:52:18.457Z"}
 {"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T09:52:18.523Z"}
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T09:52:18.553Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T10:29:09.831Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T10:29:11.166Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T10:29:14.897Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T10:29:15.825Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T10:29:15.905Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T10:29:16.164Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T10:48:18.136Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T10:48:19.176Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T10:48:23.983Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T10:48:24.679Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T10:48:24.683Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T10:48:24.706Z"}
+{"level":"error","message":"APIError: Payment not received yet.\n    at PaymentService.verifyTransfer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payment.service.ts:516:13)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PaymentController.verifyTransfer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payment.controller.ts:99:34)","timestamp":"2026-05-06T10:50:06.478Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T10:57:59.993Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T10:58:00.857Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T10:58:03.674Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T10:58:03.956Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T10:58:03.983Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T10:58:04.005Z"}
+{"level":"error","message":"APIError: Payment not received yet.\n    at PaymentService.verifyTransfer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payment.service.ts:516:13)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PaymentController.verifyTransfer (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payment.controller.ts:99:34)","timestamp":"2026-05-06T10:58:16.657Z"}
