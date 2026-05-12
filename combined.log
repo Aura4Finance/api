@@ -4553,3 +4553,23 @@
 {"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T11:43:09.665Z"}
 {"level":"error","message":"APIError: Payout failed: insufficient balance\n    at PayoutService.finalizeCryptoPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:161:19)\n    at PayoutController.cryptoPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:39:38)","timestamp":"2026-05-06T11:44:29.764Z"}
 {"level":"error","message":"APIError: Payout failed. Please try again.\n    at PayoutService.finalizeFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:281:19)\n    at processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at PayoutService.retryFiatPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:373:16)\n    at PayoutService.retryPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payout.service.ts:482:20)\n    at PayoutController.retryPayout (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payout.controller.ts:60:38)","timestamp":"2026-05-06T11:49:27.430Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T18:38:55.353Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T18:38:57.095Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T18:39:31.872Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T18:39:32.192Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T18:39:32.194Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T18:39:32.213Z"}
+{"level":"error","message":"APIError: \nInvalid `db.transaction.create()` invocation in\nC:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\repositories\\payment.repository.ts:53:35\n\n  50     paymentData.paylink = paylinkConnect;\n  51   }\n  52 \n→ 53 const tx = await db.transaction.create(\nUnique constraint failed on the constraint: `Payment_walletId_key`\n    at PaymentService.createPayment (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payment.service.ts:238:13)\n    at PaymentController.createPayment (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payment.controller.ts:45:34)","timestamp":"2026-05-06T18:40:22.504Z"}
+{"level":"error","message":"APIError: \nInvalid `db.transaction.create()` invocation in\nC:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\repositories\\payment.repository.ts:53:35\n\n  50     paymentData.paylink = paylinkConnect;\n  51   }\n  52 \n→ 53 const tx = await db.transaction.create(\nUnique constraint failed on the constraint: `Payment_walletId_key`\n    at PaymentService.createPayment (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\services\\payment.service.ts:238:13)\n    at PaymentController.createPayment (C:\\Users\\Emmanuel\\codes\\OraFi\\api\\src\\controllers\\payment.controller.ts:45:34)","timestamp":"2026-05-06T18:43:27.938Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T18:46:42.295Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T18:46:43.085Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T18:47:14.592Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T18:47:14.793Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T18:47:14.795Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T18:47:14.807Z"}
+{"level":"info","message":"🚀 Starting server...","timestamp":"2026-05-06T18:53:37.326Z"}
+{"level":"info","message":"Connected to Redis successfully","timestamp":"2026-05-06T18:53:37.636Z"}
+{"level":"info","message":"Master seed already exists","timestamp":"2026-05-06T18:54:09.620Z"}
+{"level":"info","message":"Transaction expiry scheduler initialized!","timestamp":"2026-05-06T18:54:09.681Z"}
+{"level":"info","message":"Email onboard scheduler initialized!","timestamp":"2026-05-06T18:54:09.683Z"}
+{"level":"info","message":"Server is running on Port: 3000","timestamp":"2026-05-06T18:54:09.696Z"}

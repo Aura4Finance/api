@@ -144,99 +144,58 @@ export class PaymentService {
     };
   }
 
-  private async initializeHostedCheckoutPayment(
-    data: CreatePaymentDto,
-    user: UserWithProfile,
-    mode: Mode
-  ) {
-    const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
-
-    await this.customerRepository.addModeToCustomer(customer.id, mode);
-
-    const merchantAddress = user?.businessProfile?.wallet[0]?.address;
-    if (!merchantAddress) {
-      throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
-    }
-
-    if (!data.redirectUrl) {
-      throw new APIError("Redirect URL is required for hosted checkout.", STATUS.bad);
-    }
-
-    const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
-      data.amount,
-      data.currency,
-      "to_USDT"
-    );
-
-    return this.finalizePaymentCreation({
-      user,
-      mode,
-      customer,
-      amount: data.amount,
-      amountToPay,
-      currency: data.currency,
-      network: data.network,
-      txRef: data.txRef,
-      paymentMethod: "HOSTED_CHECKOUT",
-      redirectUrl: data.redirectUrl,
-    });
-  }
-
-  private async initializePaymentLinkPayment(
-    data: CreatePaymentDto,
-    user: UserWithProfile,
-    mode: Mode
-  ) {
-    const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
-
-    if (!data.payLink) {
-      throw new APIError("Payment link details are required.", STATUS.bad);
-    }
-
-    await this.customerRepository.addModeToCustomer(customer.id, mode);
-
-    const merchantAddress = user?.businessProfile?.wallet[0]?.address;
-    if (!merchantAddress) {
-      throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
-    }
-
-    const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
-      data.payLink.amount,
-      data.currency,
-      "to_USDT"
-    );
-
-    return this.finalizePaymentCreation({
-      user,
-      mode,
-      customer,
-      amount: data.payLink.amount,
-      amountToPay,
-      currency: data.currency,
-      network: data.network,
-      txRef: data.txRef,
-      paymentMethod: "PAYMENT_LINK",
-      paylinkId: data.payLink.id,
-    });
-  }
-
   async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
     await this.setActiveNetwork(mode);
     const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
     if (!user) {
       throw new APIError("User not found.", STATUS.notFound);
     }
+        const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
 
-    try {
-      if (data.type === "HOSTED_CHECKOUT") {
-        return await this.initializeHostedCheckoutPayment(data, user, mode);
-      }
+        
+        await this.customerRepository.addModeToCustomer(customer.id, mode);
+        
+        const merchantAddress = user?.businessProfile?.wallet[0]?.address;
+        if (!merchantAddress) {
+          throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
+        }
 
-      return await this.initializePaymentLinkPayment(data, user, mode);
+        let amount: number;
+        let paymentMethod: PaymentMethod; 
+        let currency: string;
+        
+        try {
+          if (data.type === PaymentMethod.HOSTED_CHECKOUT) {
+            amount = data.amount;
+            paymentMethod = PaymentMethod.HOSTED_CHECKOUT;
+            currency = data.currency;
+          }else{
+            paymentMethod = PaymentMethod.PAYMENT_LINK;
+            amount = <number>data.payLink?.amount
+            currency = <string>data.payLink?.currency
+          }
+          const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
+            amount,
+            currency,
+            "to_USDT"
+          );
+
+          return this.finalizePaymentCreation({
+            user,
+            mode,
+            customer,
+            amount,
+            amountToPay,
+            currency,
+            network: data.network,
+            txRef: data.txRef,
+            paymentMethod,
+          })
+
     } catch (error: unknown) {
       const typedError = error as { message?: string; status?: number };
       throw new APIError(
-        typedError.message || "We couldn't create the payment. Please try again.",
+        "We couldn't create the payment. Please try again.",
         typedError.status || STATUS.bad
       );
     }
