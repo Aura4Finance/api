@@ -35,9 +35,9 @@ router.post(
 router.post(
   "/paylink",
   paymentCreationRateLimitMiddleware,
+  verifyPaylink,
   paymentIdempotencyMiddleware,
   verifyRequestBody,
-  verifyPaylink,
   checkIfUserIsDisabled,
   asyncHandler((req: RequestAuth, res: Response) => 
     paymentController.createPayment(req, res)

@@ -151,8 +151,6 @@ export class PaymentService {
       throw new APIError("User not found.", STATUS.notFound);
     }
         const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
-
-        
         await this.customerRepository.addModeToCustomer(customer.id, mode);
         
         const merchantAddress = user?.businessProfile?.wallet[0]?.address;
@@ -163,16 +161,19 @@ export class PaymentService {
         let amount: number;
         let paymentMethod: PaymentMethod; 
         let currency: string;
-        
+        let redirectUrl: string | undefined = undefined;
+        let paylinkId: string | undefined = undefined;
         try {
           if (data.type === PaymentMethod.HOSTED_CHECKOUT) {
             amount = data.amount;
             paymentMethod = PaymentMethod.HOSTED_CHECKOUT;
             currency = data.currency;
+            redirectUrl = data.redirectUrl
           }else{
             paymentMethod = PaymentMethod.PAYMENT_LINK;
             amount = <number>data.payLink?.amount
             currency = <string>data.payLink?.currency
+            paylinkId = data.payLink?.id
           }
           const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
             amount,
@@ -180,7 +181,7 @@ export class PaymentService {
             "to_USDT"
           );
 
-          return this.finalizePaymentCreation({
+          const finalizeArgs = {
             user,
             mode,
             customer,
@@ -190,9 +191,13 @@ export class PaymentService {
             network: data.network,
             txRef: data.txRef,
             paymentMethod,
-          })
+            ...(redirectUrl ? { redirectUrl } : {}),
+            ...(paylinkId ? { paylinkId } : {}),
+          };
+          return this.finalizePaymentCreation(finalizeArgs)
 
     } catch (error: unknown) {
+      console.log(error)
       const typedError = error as { message?: string; status?: number };
       throw new APIError(
         "We couldn't create the payment. Please try again.",
@@ -243,10 +248,11 @@ export class PaymentService {
       throw new APIError("Payment transaction not found!", STATUS.notFound);
     }
 
-    if(tx.payment?.wallet){
+    const existingPaymentWallet = tx.payment?.wallet?.[0];
+    if (existingPaymentWallet) {
       return {
       message: "Transfer address created successfully!",
-      payload: tx.payment.wallet.address,
+      payload: existingPaymentWallet.address,
     }
     }
 
@@ -440,20 +446,21 @@ export class PaymentService {
     if (!tx) {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
-    if(!tx.payment?.wallet?.address){
+    const paymentWallet = tx.payment?.wallet?.[0];
+    if(!paymentWallet?.address){
       throw new APIError("No transfer address found for this payment", STATUS.notFound);
     }
     await this.setActiveNetwork(tx.mode);
 
-    const { amountInUSDC, payment } = tx;
+    const { amountInUSDC } = tx;
     const target = BigInt(Math.floor(Number(amountInUSDC) * 1_000_000));
 
     // Fetch every coin object in the deposit wallet across all pages
-    const allCoins: Awaited<ReturnType<typeof this.client.getCoins>>["data"] = [];
+    const allCoins: Awaited<ReturnType<SuiClient["getCoins"]>>["data"] = [];
     let cursor: string | null | undefined = undefined;
     do {
       const page = await this.client.getCoins({
-        owner: <string>tx?.payment?.wallet?.address,
+        owner: paymentWallet.address,
         coinType: this.payoutService.cointype,
         cursor,
       });
@@ -492,7 +499,7 @@ export class PaymentService {
       );
     }
 
-    const derivedWalletBuffer = await deriveWallet(payment?.wallet?.derivationIndex as number);
+    const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex as number);
     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
     await transactionQueue.add("transfer-usdt", {
       walletPrivateKey: secretKey,

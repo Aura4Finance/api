@@ -88,13 +88,13 @@ model OTP {
 }
 
 model Wallet {
-  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  id                String  @id @default(cuid()) @map("_id")
   address           String
   derivationIndex   Int
   profile           BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
   profileId         String?
   paymentId         String?
-  payment           Payment? @relation("PaymentWallets")
+  payment           Payment? @relation("PaymentWallets", fields: [paymentId], references: [id])
   createdAt         DateTime @default(now())
 }
 
@@ -245,8 +245,7 @@ model Payment {
   token           String
   refunded        Boolean       @default(false)
   depositAddress  String?       
-  walletId        String?       @unique
-  wallet          Wallet?       @relation("PaymentWallets", fields: [walletId], references: [id])
+  wallet          Wallet[]      @relation("PaymentWallets")
   txRef           String        @unique @default(cuid())
   paymentMethod   PaymentMethod
   redirectUrl     String?       

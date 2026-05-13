@@ -10,6 +10,8 @@ export type HttpRequestOptions = {
   timeoutMs?: number;
   signal?: AbortSignal;
   limiter?: Bottleneck;
+  retries?: number;
+  retryDelayMs?: number;
 };
 
 export type HttpResponse<T> = {
@@ -141,33 +143,87 @@ export async function sendHttpRequest<T>(
   options: HttpRequestOptions = {}
 ): Promise<HttpResponse<T>> {
   const timeoutMs = config.timeout ?? options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const controller = options.signal ? null : new AbortController();
-  const signal = options.signal ?? controller?.signal;
+  const retries = Number.isFinite(options.retries ?? NaN) ? (options.retries as number) : 2;
+  const baseDelay = options.retryDelayMs ?? 200;
+
   const start = Date.now();
 
-  let timeoutId: NodeJS.Timeout | undefined;
-  if (controller) {
-    timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  }
+  const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-  const requestConfig: AxiosRequestConfig = {
-    ...config,
-    timeout: timeoutMs,
-    ...(signal ? { signal } : {}),
-  };
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    // If an external signal was already aborted, stop retrying.
+    if (options.signal?.aborted) {
+      throw new HttpRequestError({
+        message: "Request aborted",
+        retryable: false,
+        status: undefined,
+        code: "ERR_CANCELED",
+        retryAfterMs: undefined,
+        responseHeaders: undefined,
+        responseData: undefined,
+        context: undefined,
+      });
+    }
 
-  try {
-    const execute = () => client.request<T>(requestConfig);
-    const response = options.limiter ? await options.limiter.schedule(execute) : await execute();
-    return {
-      response,
-      latencyMs: Date.now() - start,
+    // Only create an AbortController when there's no external signal and no limiter.
+    const shouldUseAbortController = !options.signal && !options.limiter;
+    const controller = shouldUseAbortController ? new AbortController() : null;
+    const signal = options.signal ?? controller?.signal;
+
+    let timeoutId: NodeJS.Timeout | undefined;
+    if (controller) {
+      timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    }
+
+    const requestConfig: AxiosRequestConfig = {
+      ...config,
+      timeout: timeoutMs,
+      ...(signal ? { signal } : {}),
     };
-  } catch (error) {
-    throw toHttpRequestError(error);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+
+    try {
+      const execute = () => client.request<T>(requestConfig);
+      const response = options.limiter ? await options.limiter.schedule(execute) : await execute();
+      return {
+        response,
+        latencyMs: Date.now() - start,
+      };
+    } catch (rawError) {
+      const error = toHttpRequestError(rawError);
+
+      // If not retryable or we've exhausted attempts, throw the error.
+      const isLastAttempt = attempt === retries;
+      if (!error.retryable || isLastAttempt) {
+        throw error;
+      }
+
+      // Otherwise wait with exponential backoff + jitter and retry.
+      const backoff = baseDelay * Math.pow(2, attempt);
+      const jitter = Math.floor(Math.random() * 100);
+      const wait = backoff + jitter;
+
+      if (timeoutId) clearTimeout(timeoutId);
+      await sleep(wait);
+      // continue to next attempt
+    } finally {
+      // ensure we clear timeout for this attempt
+      // (if it's already cleared above, clearTimeout is a no-op)
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      undefined;
+    }
   }
+
+  // Should never reach here, but satisfy TS return expectation.
+  throw new HttpRequestError({
+    message: "Unexpected error",
+    retryable: false,
+    status: undefined,
+    code: undefined,
+    retryAfterMs: undefined,
+    responseHeaders: undefined,
+    responseData: undefined,
+    context: undefined,
+  });
 }
 
 export function createHttpClient(

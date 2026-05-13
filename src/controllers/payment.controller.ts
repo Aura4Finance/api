@@ -41,10 +41,9 @@ export class PaymentController {
       body.payLink = req.payLink as Paylink;
     }
     const userId = req.user.id as string;
-
     const { message, payload } = await this.paymentService.createPayment(body, userId, req.mode);
 
-    return res.status(STATUS.ok).json({
+    return res.status(STATUS.created).json({
       success: true,
       message,
       data: payload,
@@ -68,14 +67,14 @@ export class PaymentController {
 
     if (intent == "deposit_address") {
       const { message, payload } = await this.paymentService.generateDepositAddressForPaymentCompletion(paymentId);
-      return res.status(STATUS.ok).json({
+      return res.status(STATUS.created).json({
         success: true,
         message,
         data: payload,
       });
     } else {
       const { message, payload } = await this.paymentService.generateTransferAddressForPaymentCompletiion(paymentId);
-      return res.status(STATUS.ok).json({
+      return res.status(STATUS.created).json({
         success: true,
         message,
         data: payload,
