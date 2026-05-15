@@ -340,7 +340,7 @@ export class WalletService {
 
     // Send remaining balance to merchant
     tx.transferObjects(
-      [tx.object(coinObject.data.objectId)],
+      [coinOut],
       tx.pure.address(to)
     );
 
