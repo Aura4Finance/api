@@ -9,7 +9,7 @@ COPY . .
 
 # Force prisma generate to always re-run
 ARG CACHEBUST=1
-RUN npx prisma generate
+RUN npx prisma generate && date > generated/.buildstamp
 RUN npm run build
 RUN npx tsc-alias
 
@@ -61,8 +61,7 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit
 # Copy built output and generated prisma client
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/generated ./generated
-
-# Overwrite the generated prisma client inside node_modules with the builder's version
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
