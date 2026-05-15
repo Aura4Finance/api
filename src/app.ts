@@ -40,8 +40,17 @@ app.get("/", (_: Request, res: Response) => {
 
 app.use(globalErrorHandler);
 
-app.use((_: Request, res: Response) => {
-  res.status(404).json({ message: "Requested resource does not exist" });
+// Fallback 404 handler for undefined endpoints
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    status: "error",
+    code: 404,
+    message: "Endpoint not found",
+    path: req.path,
+    method: req.method,
+    details: "The requested endpoint is not available in this API. Please check the API documentation for available endpoints.",
+    timestamp: new Date().toISOString(),
+  });
 });
 
 process.on("unhandledRejection", (reason, promise) => {

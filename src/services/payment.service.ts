@@ -7,14 +7,15 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Customer, Mode, PaymentMethod, Prisma } from "../../generated/prisma";
+import { Customer, Mode, PaymentMethod, Prisma, Token } from "../../generated/prisma";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "./schedule.email.service";
-import { PayoutService } from "./payout.service";
 import { transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
+import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
+import { getTokenPrice } from "@7kprotocol/sdk-ts";
 
 type UserWithProfile = Prisma.UserGetPayload<{
   include: { businessProfile: { include: { wallet: true } } }
@@ -30,8 +31,7 @@ export class PaymentService {
     private readonly customerRepository: CustomerRepository,
     private readonly userRepository: UserRepository,
     private readonly webhookQueue: WebhookQueue,
-    private readonly emailQueue: EmailQueue,
-    private readonly payoutService: PayoutService
+    private readonly emailQueue: EmailQueue
   ) { }
 
   private async setActiveNetwork(mode: Mode) {
@@ -197,7 +197,6 @@ export class PaymentService {
           return this.finalizePaymentCreation(finalizeArgs)
 
     } catch (error: unknown) {
-      console.log(error)
       const typedError = error as { message?: string; status?: number };
       throw new APIError(
         "We couldn't create the payment. Please try again.",
@@ -207,7 +206,8 @@ export class PaymentService {
   }
 
   async generateDepositAddressForPaymentCompletion(
-    transactionId: string
+    transactionId: string,
+    token: Token=Token.USDC
   ){
     const tx = await this.paymentRepository.findPaymentById(transactionId);
 
@@ -221,22 +221,33 @@ export class PaymentService {
       payload: tx.payment.depositAddress,
       }
     }
-    
-    const depositAddress = await this.walletService.generatePaymentWallet(
-      <string>tx.profile.wallet[0]?.address,
-      tx.amountInUSDC,
-      tx.mode
-    );
+      let tokenPrice: number;
+      if(token == "USDC"){
+        tokenPrice = tx.amountInUSDC;
+      }else{
+        const rate = await getTokenPrice(getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet")!);
+        if(!rate){
+          throw new APIError("Unsupported token.", STATUS.bad);
+        }
+        tokenPrice = tx.amountInUSDC / rate;
+      }
 
-    await this.paymentRepository.addDepositAddressToPayment(
-      tx.id,
-      depositAddress
-    )
-
-    return {
-      message: "Deposit address created successfully!",
-      payload: depositAddress,
-    }
+      const depositAddress = await this.walletService.generatePaymentWallet(
+        <string>tx.profile.wallet[0]?.address,
+        tokenPrice,
+        token,
+        tx.mode
+      );
+  
+      await this.paymentRepository.addDepositAddressToPayment(
+        tx.id,
+        depositAddress
+      )
+  
+      return {
+        message: "Deposit address created successfully!",
+        payload: depositAddress,
+      }
   }
 
   async generateTransferAddressForPaymentCompletiion(
@@ -327,7 +338,7 @@ export class PaymentService {
     });
   }
 
-  async verifyPayment(data: VerifyPaymentDto) {
+  async verifyPayment(data: Omit<VerifyPaymentDto, "token">) {
     const { paymentId } = data;
     const tx = await this.paymentRepository.findPaymentById(paymentId);
 
@@ -440,7 +451,7 @@ export class PaymentService {
 
 
   async verifyTransfer(data: VerifyPaymentDto) {
-    const { paymentId } = data;
+    const { paymentId, token } = data;
     const tx = await this.paymentRepository.findPaymentById(paymentId);
 
     if (!tx) {
@@ -453,7 +464,16 @@ export class PaymentService {
     await this.setActiveNetwork(tx.mode);
 
     const { amountInUSDC } = tx;
-    const target = BigInt(Math.floor(Number(amountInUSDC) * 1_000_000));
+    const coinType = getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet");
+    if(!coinType){
+      throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
+    }
+
+    const rate = await getTokenPrice(coinType);
+    if(!rate){
+      throw new APIError("Failed to fetch token price.", STATUS.bad);
+    }
+    const target = BigInt(Math.floor(Number(amountInUSDC / rate) * getCoinDecimal(token)));
 
     // Fetch every coin object in the deposit wallet across all pages
     const allCoins: Awaited<ReturnType<SuiClient["getCoins"]>>["data"] = [];
@@ -461,7 +481,7 @@ export class PaymentService {
     do {
       const page = await this.client.getCoins({
         owner: paymentWallet.address,
-        coinType: this.payoutService.cointype,
+        coinType,
         cursor,
       });
       allCoins.push(...page.data);
@@ -506,6 +526,7 @@ export class PaymentService {
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
       toAddress: tx?.profile.wallet[0]?.address as string,
+      token,
       mode: tx.mode,
     })
 

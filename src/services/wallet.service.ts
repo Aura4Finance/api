@@ -1,13 +1,15 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Service } from "typedi";
-import { Transaction } from "@mysten/sui/transactions";
+import { Transaction, TransactionObjectArgument, coinWithBalance } from "@mysten/sui/transactions";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { getFullnodeUrl, SuiClient, SuiObjectChange } from "@mysten/sui/client";
 import coinMarketClient from "@/config/coinMarketClient-config";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
-import { Mode } from "../../generated/prisma";
+import { Mode, Token } from "../../generated/prisma";
+import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
+import { MetaAg } from "@7kprotocol/sdk-ts";
 
 type CoinMarketPriceConversionResponse = {
   status: {
@@ -35,10 +37,10 @@ export class WalletService {
     this.MAINNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_MAINNET as string;
   }
 
-    private async setActiveNetwork(mode: Mode) {
-        this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
-        return mode === "live" ? this.MAINNET_SMART_CONTRACT_ADDRESS : this.TESTNET_SMART_CONTRACT_ADDRESS;
-    }
+  private async setActiveNetwork(mode: Mode) {
+    this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
+    return mode === "live" ? this.MAINNET_SMART_CONTRACT_ADDRESS : this.TESTNET_SMART_CONTRACT_ADDRESS;
+  }
 
   async createWallet() {
     const index = await this.systemRepository.getNextWalletIndex();
@@ -56,7 +58,12 @@ export class WalletService {
     return keypair.getSecretKey();
   }
 
-  async generatePaymentWallet(merchantAddress: string, amount: number, mode: Mode) {
+  async generatePaymentWallet(
+    merchantAddress: string,
+    amount: number,
+    token: Token,
+    mode: Mode
+  ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
     const admin_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
 
@@ -66,8 +73,9 @@ export class WalletService {
       target: `${smart_contract_address}::main::generatePaymentWallet`,
       arguments: [
         tx.pure.address(merchantAddress),
-        tx.pure.u64(Math.round(amount * 1000000)) // USDC has 6 decimals
+        tx.pure.u64(Math.round(amount * getCoinDecimal(token)))
       ],
+      typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
     });
 
     const result = await this.client.signAndExecuteTransaction({
@@ -80,14 +88,14 @@ export class WalletService {
     });
 
     const createdWallet = (result.objectChanges as SuiObjectChange[]).find((change) =>
-        change.type === "created" && change.objectType.includes("::main::Wallet")
+      change.type === "created" && change.objectType.includes("::main::Wallet")
     );
 
     if (createdWallet && createdWallet.type === "created") {
       return createdWallet.objectId;
     }
 
-    throw new APIError("Unable to create wallet. Please try again.", STATUS.serverError);
+    throw new APIError("Deposit wallet creation failed!.", STATUS.unprocessableEntity);
   }
 
   private async sponsoredTransaction(
@@ -157,17 +165,17 @@ export class WalletService {
     mode: Mode,
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
-    
+
     // Fetch the latest coin objects with current versions to avoid stale version errors
     const primaryCoin = await this.client.getObject({
       id: primaryCoinObjectId,
       options: { showOwner: true, showContent: true, showType: true }
     });
-    
+
     if (!primaryCoin.data) {
       throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
     }
-    
+
     // Fetch all merge target coins with current versions
     const mergeTargets = await Promise.all(
       mergeTargetsObjectIds.map((id) =>
@@ -177,15 +185,15 @@ export class WalletService {
         })
       )
     );
-    
+
     const validMergeTargets = mergeTargets
       .filter((target) => target.data)
       .map((target) => target.data!.objectId);
-    
+
     if (validMergeTargets.length === 0) {
       throw new APIError("No additional coin objects available to merge.", STATUS.bad);
     }
-    
+
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::merge_all_usdc`,
@@ -210,17 +218,17 @@ export class WalletService {
     mode: Mode,
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
-    
+
     // Fetch the latest coin object with current version to avoid stale version errors
     const coinObject = await this.client.getObject({
       id: primaryCoinObjectId,
       options: { showOwner: true, showContent: true, showType: true }
     });
-    
+
     if (!coinObject.data) {
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
-    
+
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
@@ -242,17 +250,17 @@ export class WalletService {
     mode: Mode
   ) {
     await this.setActiveNetwork(mode);
-    
+
     // Fetch the latest coin object with current version to avoid stale version errors
     const coinObject = await this.client.getObject({
       id: primaryCoinObjectId,
       options: { showOwner: true, showContent: true, showType: true }
     });
-    
+
     if (!coinObject.data) {
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
-    
+
     const tx = new Transaction();
     const [new_coin] = tx.splitCoins(coinObject.data.objectId, [tx.pure.u64(Math.round(amount * 1000000))]);
     tx.transferObjects([new_coin], tx.pure.address(to));
@@ -266,30 +274,61 @@ export class WalletService {
     primaryCoinObjectId: string,
     amount: string, // amount in smallest unit (u64)
     to: string,
+    tokenType: Token,
     mode: Mode
   ) {
     await this.setActiveNetwork(mode);
-    
+
     // Fetch the latest coin object with current version to avoid stale version errors
     const coinObject = await this.client.getObject({
       id: primaryCoinObjectId,
       options: { showOwner: true, showContent: true, showType: true }
     });
-    
+
     if (!coinObject.data) {
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
-    }
-    
-    const tx = new Transaction();
-    // Normalize amount
+    } 
     const totalAmount = BigInt(amount);
-
-    // 1% platform fee
     const platformFee = totalAmount / 100n;
+    const coinTypeIn = getCoinType(tokenType, mode === "live" ? "mainnet" : "testnet")!; 
+    const tx = new Transaction();
+    let coinOut: TransactionObjectArgument;
+    const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
+    if(tokenType == "USDC"){
+      // For USDC, we can skip the swap and directly split the coins
+     coinOut = tx.object(coinObject.data.objectId);
+    }else{
+      const metaAg = new MetaAg();
+      const quotes = await metaAg.quote({
+        amountIn: totalAmount.toString(),
+        coinTypeIn,
+        coinTypeOut:
+          "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC",
+      });
+  
+      const bestQuote = quotes.sort(
+        (a, b) =>
+          Number(b.simulatedAmountOut || b.amountOut) -
+          Number(a.simulatedAmountOut || a.amountOut),
+      )[0];
+  
+      // Build swap transaction
+      coinOut = await metaAg.swap(
+        {
+          quote: bestQuote!,
+          signer,
+          coinIn: coinWithBalance({
+            balance: totalAmount,
+            type: coinTypeIn,
+          }),
+          tx,
+        },
+        100, // Optional: 1% slippage (overrides global setting)
+      );
 
-    // Split out platform fee
+    }
     const [platformCoin] = tx.splitCoins(
-      tx.object(coinObject.data.objectId),
+      coinOut,
       [tx.pure.u64(platformFee.toString())]
     );
 
@@ -329,12 +368,12 @@ export class WalletService {
     const res = await coinMarketClient.get<CoinMarketPriceConversionResponse>(
       "/tools/price-conversion",
       {
-      params: {
-        amount,
-        symbol,
-        convert,
-      },
-    }
+        params: {
+          amount,
+          symbol,
+          convert,
+        },
+      }
     );
 
     if (
@@ -358,7 +397,7 @@ export class WalletService {
     secret_key: string,
     mode: Mode
   ) {
-    if(mode == "test"){
+    if (mode == "test") {
       throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad)
     }
     const tx = new Transaction();

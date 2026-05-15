@@ -1,5 +1,6 @@
 import { CreatePaymentDto, VerifyPaymentDto } from "@/dto/payment.dto";
 import Joi from "joi";
+import { TOKENS } from "@/constants/tokens.constants";
 
 export const createPaymentValidation = (data: CreatePaymentDto) => {
   const schema = Joi.object({
@@ -39,6 +40,9 @@ export const createPaymentValidation = (data: CreatePaymentDto) => {
 
 export const updatePaymentIntentValidation = (data: any) =>  {
   const schema = Joi.object({
+    token: Joi.string().valid(...Object.values(TOKENS).map(token => token.symbol)).optional().messages({
+      'any.required': 'Token is required for updating payment intent',
+    }),
     intent: Joi.string().valid("transfer_address", "deposit_address").optional().messages({
       'any.only': 'Intent must be transfer_address or deposit_address',
       'any.required': 'Intent is required for updating payment intent',
@@ -51,6 +55,9 @@ export const verifyPaymentValidation = (data: VerifyPaymentDto) => {
   const schema = Joi.object({
     paymentId: Joi.string().required().messages({
       'any.required': 'Payment ID is required',
+    }),
+    token: Joi.string().valid(...Object.values(TOKENS).map(token => token.symbol)).required().messages({
+      'any.required': 'Token is required to verify payment',
     }),
   });
 

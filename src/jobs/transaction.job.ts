@@ -32,17 +32,11 @@ export const startTransactionWorker = () => {
               // Try verifyPayment first
               await paymentService.verifyPayment({ paymentId: tx.id });
             } catch (error) {
-              try {
-                // If verifyPayment fails, try verifyTransfer
-                await paymentService.verifyTransfer({ paymentId: tx.id });
-              } catch (transferError) {
-                // If both fail, mark as FAILED
-                await db.transaction.update({
-                  where: { id: tx.id },
-                  data: { status: TransactionStatus.FAILED },
-                });
-                logger.info(`Transaction ${tx.id} expired and marked as failed`);
-              }
+              await db.transaction.update({
+                where: { id: tx.id },
+                data: { status: TransactionStatus.FAILED },
+              });
+              logger.info(`Transaction ${tx.id} expired and marked as failed`);
             }
           }
         } catch (error) {
@@ -56,6 +50,7 @@ export const startTransactionWorker = () => {
           coinObjectId,
           amount,
           toAddress,
+          tokenType,
           mode
         } = job.data;
         const walletService = Container.get(WalletService);
@@ -64,6 +59,7 @@ export const startTransactionWorker = () => {
           coinObjectId,
           amount,
           toAddress,
+          tokenType,
           mode
         )
       }

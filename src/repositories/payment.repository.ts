@@ -1,6 +1,6 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
-import { Customer, Mode, Network, PaymentMethod, Token, TransactionStatus, TransactionType } from "../../generated/prisma";
+import { Customer, Mode, Network, PaymentMethod, TransactionStatus, TransactionType } from "../../generated/prisma";
 
 
 type PaymentOptions =
@@ -41,7 +41,6 @@ export class PaymentRepository {
 
     const paymentData: any = {
       paymentMethod: options.paymentMethod,
-      token: Token.USDC,
       txRef,
       redirectUrl,
     };
@@ -59,7 +58,6 @@ export class PaymentRepository {
       network,
       amountInUSDC,
       mode,
-      token: Token.USDC,
       profile: {
         connect: { id: userId },
       },
