@@ -251,7 +251,6 @@ enum Mode {
 
 model Payment {
   id              String        @id @default(cuid()) @map("_id")
-  token           String
   refunded        Boolean       @default(false)
   depositAddress  String?       
   wallet          Wallet[]      @relation("PaymentWallets")
