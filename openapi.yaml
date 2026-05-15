@@ -485,6 +485,14 @@ paths:
             type: string
           description: The payment ID to verify
           example: payment_123
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+            default: USDC
+          description: Optional token/currency to use for transfer verification. Defaults to USDC.
+          example: USDC
       responses:
         '200':
           description: Payment transfer verified successfully
@@ -516,6 +524,14 @@ paths:
           schema:
             type: string
           description: The payment ID to update
+        - name: token
+          in: query
+          required: false
+          schema:
+            type: string
+            default: USDC
+          description: Optional token/currency to use when updating the payment intent. Defaults to USDC.
+          example: USDC
         - name: intent
           in: query
           required: false
