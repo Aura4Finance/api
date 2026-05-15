@@ -1,6 +1,14 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
-import { Customer, Mode, Network, PaymentMethod, TransactionStatus, TransactionType } from "../../generated/prisma";
+import { 
+  Customer, 
+  Mode, 
+  Network, 
+  PaymentMethod, 
+  TransactionStatus, 
+  TransactionType,
+  Token
+ } from "../../generated/prisma";
 
 
 type PaymentOptions =
@@ -150,13 +158,15 @@ export class PaymentRepository {
 
   async addDepositAddressToPayment(
     txId: string,
-    depositAddress: string
+    depositAddress: string,
+    token: Token
   ){
     await db.transaction.update({
       where: {
         id: txId
       },
       data: {
+        token,
         payment: {
           update: {
             depositAddress
@@ -166,12 +176,16 @@ export class PaymentRepository {
     })
   }
 
-  async confirmPaymentStatus(txId: string) {
+  async confirmPaymentStatus(
+    txId: string,
+    token?: Token
+  ) {
     const tx = await db.transaction.update({
       where: {
         id: txId,
       },
       data: {
+        ...( token? {token}: {}),
         status: TransactionStatus.COMPLETED,
         confirmedAt: new Date()
       },

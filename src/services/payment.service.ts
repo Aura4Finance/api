@@ -241,7 +241,8 @@ export class PaymentService {
   
       await this.paymentRepository.addDepositAddressToPayment(
         tx.id,
-        depositAddress
+        depositAddress,
+        token
       )
   
       return {
@@ -305,9 +306,10 @@ export class PaymentService {
     businessName: string,
     businessEmail: string,
     currency: string,
-    mode: Mode
+    mode: Mode,
+    token?: Token
   ) {
-    await this.paymentRepository.confirmPaymentStatus(paymentId);
+    await this.paymentRepository.confirmPaymentStatus(paymentId, token);
     if (mode == "live") await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
 
     await this.sendEmailIfNotSent(paymentId, "success", async () => {
@@ -541,7 +543,8 @@ export class PaymentService {
       tx.profile.businessName,
       <string>tx.profile.user?.email,
       tx.currency,
-      tx.mode
+      tx.mode,
+      token,
     )
 
     return {
