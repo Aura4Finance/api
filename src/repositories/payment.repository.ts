@@ -61,7 +61,6 @@ export class PaymentRepository {
     data: {
       type: TransactionType.PAYMENT,
       status: TransactionStatus.PENDING,
-      token: Token.USDC,
       amount,
       currency,
       network,

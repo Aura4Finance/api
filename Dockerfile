@@ -1,5 +1,5 @@
 FROM node:24 AS builder
-
+# Force rebuild: Oct 24, 2025 1:30 PM - Fix xyz feature
 WORKDIR /app
 
 COPY package*.json ./
@@ -7,6 +7,8 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 COPY . .
 
+# Force prisma generate to always re-run
+ARG CACHEBUST=1
 RUN npx prisma generate
 RUN npm run build
 RUN npx tsc-alias
