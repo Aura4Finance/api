@@ -451,7 +451,8 @@ export class PaymentService {
 
 
   async verifyTransfer(data: VerifyPaymentDto) {
-    const { paymentId, token } = data;
+    let { paymentId, token } = data;
+    if(!token) token = Token.USDC;
     const tx = await this.paymentRepository.findPaymentById(paymentId);
 
     if (!tx) {

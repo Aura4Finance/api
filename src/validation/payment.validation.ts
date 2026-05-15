@@ -56,7 +56,7 @@ export const verifyPaymentValidation = (data: VerifyPaymentDto) => {
     paymentId: Joi.string().required().messages({
       'any.required': 'Payment ID is required',
     }),
-    token: Joi.string().valid(...Object.values(TOKENS).map(token => token.symbol)).required().messages({
+    token: Joi.string().valid(...Object.values(TOKENS).map(token => token.symbol)).optional().messages({
       'any.required': 'Token is required to verify payment',
     }),
   });
