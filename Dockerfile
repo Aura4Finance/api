@@ -9,15 +9,12 @@ COPY . .
 
 RUN npx prisma generate
 RUN npm run build
-
 RUN npx tsc-alias
 
-# Copy HTML files into dist
 RUN cp -r src/html dist/html
 
 FROM node:24-slim
 
-# Install Chromium + dependencies
 RUN apt-get update && apt-get install -y \
   chromium \
   fonts-liberation \
@@ -54,13 +51,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+COPY package*.json ./
+
+# Install production dependencies only
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
+
+# Copy built output and generated prisma client
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/generated ./generated
 
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# Overwrite the generated prisma client inside node_modules with the builder's version
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-COPY package*.json ./
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 CMD ["node", "dist/server.js"]
