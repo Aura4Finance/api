@@ -472,7 +472,7 @@ export class PaymentService {
       throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
     }
 
-    let target: BigInt;
+    let target;
     if(token == Token.USDC){
       target = BigInt(Math.floor(Number(amountInUSDC) * getCoinDecimal(token)));
     }else {
