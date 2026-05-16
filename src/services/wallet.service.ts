@@ -87,8 +87,7 @@ export class WalletService {
         showObjectChanges: true,
       },
     });
-
-    console.log(getCoinType(token, mode === "live" ? "mainnet" : "testnet"))
+    
     const createdWallet = (result.objectChanges as SuiObjectChange[]).find((change) =>
       change.type === "created" && change.objectType.includes("::main::Wallet")
     );

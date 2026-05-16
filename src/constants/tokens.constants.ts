@@ -128,6 +128,46 @@ export const TOKENS = {
     },
     logoUrl: "https://imagedelivery.net/cBNDGgkrsEA-b_ixIp9SkQ/_MCfJKCnm7HFHwGk_JW1B-AU9kjOe3FtYe-ay75YcgI.png/public",
   },
+
+   USDT: {
+    name: "USD Tether",
+    symbol: "USDT",
+    decimals: 6,
+    mainnet: {
+      coinType: "0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT"
+    },
+    testnet: {
+      coinType: null
+    },
+    logoUrl: "https://imagedelivery.net/cBNDGgkrsEA-b_ixIp9SkQ/sui-usdt.png/public"
+  },
+
+  TRUTH: {
+    name: "TRUTH (Swarm Network)",
+    symbol: "TRUTH",
+    decimals: 8,
+    mainnet: {
+      coinType: "0x0a48f85a3905cfa49a652bdb074d9e9fabad27892d54afaa5c9e0adeb7ac3cdf::swarm_network_token::SWARM_NETWORK_TOKEN"
+    },
+    testnet: {
+      coinType: null
+    },
+    logoUrl: "https://truth-logo.swarmnetwork.ai"
+  },
+
+  WBTC: {
+    name: "WBTC (LayerZero)",
+    symbol: "WBTC",
+    decimals: 8,
+    mainnet: {
+      coinType: "0x0041f9f9344cac094454cd574e333c4fdb132d7bcc9379bcd4aab485b2a63942::wbtc::WBTC"
+    },
+    testnet: {
+      coinType: null
+    },
+    logoUrl: "https://imagedelivery.net/cBNDGgkrsEA-b_ixIp9SkQ/layerzero-wbtc.png/public"
+  }
+
 } as const;
 
 export type TokenSymbol = keyof typeof TOKENS;

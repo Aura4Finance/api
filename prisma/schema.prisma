@@ -162,6 +162,9 @@ enum Token {
   LOFI
   NAVX
   ALPHA
+  TRUTH
+  USDT
+  WBTC
 }
 
 enum TransactionStatus {
