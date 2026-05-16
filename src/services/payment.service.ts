@@ -472,11 +472,17 @@ export class PaymentService {
       throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
     }
 
-    const rate = await getTokenPrice(coinType);
-    if(!rate){
-      throw new APIError("Failed to fetch token price.", STATUS.bad);
+    let target: BigInt;
+    if(token == Token.USDC){
+      target = BigInt(Math.floor(Number(amountInUSDC) * getCoinDecimal(token)));
+    }else {
+      const rate = await getTokenPrice(coinType);
+      if(!rate){
+        throw new APIError("Failed to fetch token price.", STATUS.bad);
+      }
+      target = BigInt(Math.floor(Number(amountInUSDC / rate) * getCoinDecimal(token)));
     }
-    const target = BigInt(Math.floor(Number(amountInUSDC / rate) * getCoinDecimal(token)));
+
 
     // Fetch every coin object in the deposit wallet across all pages
     const allCoins: Awaited<ReturnType<SuiClient["getCoins"]>>["data"] = [];
