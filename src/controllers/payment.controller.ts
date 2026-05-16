@@ -15,7 +15,7 @@ import {
 } from "@/validation/payment.validation";
 import { Response } from "express";
 import { Service } from "typedi";
-import { Paylink, PaymentMethod, Token } from "../../generated/prisma";
+import { Paylink, PaymentMethod } from "../../generated/prisma";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 
 @Service()
@@ -59,14 +59,14 @@ export class PaymentController {
         message: formatErrorValidation(error),
       });
     }
-    const { paymentId, token } = value as { paymentId: string, token?: Token };
+    const { paymentId } = value as { paymentId: string};
     const { value: intentValue } = updatePaymentIntentValidation(req.query);
 
     let intent: "transfer_address" | "deposit_address" = intentValue.intent;
     if (!intent) intent = "transfer_address";
 
     if (intent == "deposit_address") {
-      const { message, payload } = await this.paymentService.generateDepositAddressForPaymentCompletion(paymentId, token);
+      const { message, payload } = await this.paymentService.generateDepositAddressForPaymentCompletion(paymentId, intentValue.token);
       return res.status(STATUS.created).json({
         success: true,
         message,

@@ -142,5 +142,5 @@ export function getCoinType(
 export function getCoinDecimal(
   symbol: TokenSymbol
 ): number {
-  return TOKENS[symbol].decimals; 
+  return 10 ** TOKENS[symbol].decimals; 
 }

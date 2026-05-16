@@ -222,7 +222,7 @@ export class PaymentService {
       }
     }
       let tokenPrice: number;
-      if(token == "USDC"){
+      if(token == Token.USDC){
         tokenPrice = tx.amountInUSDC;
       }else{
         const rate = await getTokenPrice(getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet")!);

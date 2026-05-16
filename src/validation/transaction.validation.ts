@@ -1,4 +1,5 @@
 import { STATUS } from "@/constants/status.constant";
+import { TOKENS } from "@/constants/tokens.constants";
 import { GetATransactionDto, GetTransactionMetrics } from "@/dto/transaction.dto";
 import { APIError } from "@/utils/error-handler";
 import Joi from "joi";
@@ -21,8 +22,8 @@ export const transactionQuerySchemaValidation = (raw: any) => {
         status: Joi.string().valid('PENDING', 'COMPLETED', 'FAILED').optional().messages({
           'any.only': 'Status must be one of: PENDING, COMPLETED, or FAILED',
         }),
-        token: Joi.string().valid('USDC', 'BTC', 'ETH', 'EUR', 'USD').optional().messages({
-          'any.only': 'Token must be one of: USDC, BTC, ETH, EUR, or USD',
+        token: Joi.string().valid(...Object.values(TOKENS).map(token => token.symbol)).optional().messages({
+          'any.only': 'Invalid token',
         }),
         mode: Joi.string().valid("test", "live").optional().messages({
           'any.only': 'Mode must be either "test" or "live"',
