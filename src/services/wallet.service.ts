@@ -77,6 +77,7 @@ export class WalletService {
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
     });
+    tx.setGasBudget(10_000_000);
 
     const result = await this.client.signAndExecuteTransaction({
       signer: admin_keypair,
@@ -87,6 +88,7 @@ export class WalletService {
       },
     });
 
+    console.log(getCoinType(token, mode === "live" ? "mainnet" : "testnet"))
     const createdWallet = (result.objectChanges as SuiObjectChange[]).find((change) =>
       change.type === "created" && change.objectType.includes("::main::Wallet")
     );
