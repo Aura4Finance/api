@@ -18,7 +18,13 @@ export interface RetrieveWebhookDeliveries {
   limit: number
 }
 
-export type EventType = "payment.success" | "payment.failed"
+export type EventType =
+  | "payment.success"
+  | "payment.failed"
+  | "payment.create"
+  | "subscription.create"
+  | "subscription.not_renew"
+  | "subscription.disable";
 
 export type WebhookPayload = {
   event: EventType,

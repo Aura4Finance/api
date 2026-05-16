@@ -16,8 +16,8 @@ export const registerWebhhookValidation = (data: RegisterWebhookDto) => {
 
 export const subscribeToEventSchemaValidation = (data: subscribeToEventDto) => {
   const schema = Joi.object({
-    event: Joi.string().valid("payment.failed", "payment.success").required().messages({
-      'any.only': 'Event must be either "payment.failed" or "payment.success"',
+    event: Joi.string().valid("payment.failed", "payment.success", "payment.create", "subscription.create", "subscription.not_renew", "subscription.disable").required().messages({
+      'any.only': 'Event must be one of the supported webhook event types',
       'any.required': 'Event is required',
     }),
   });
@@ -39,8 +39,8 @@ export const retrieveWebhookDeliveriesValidation = (raw: any) => {
       'any.only': 'Status must be one of: PENDING, COMPLETED, or FAILED',
     }),
     transactionId: Joi.string().optional(),
-    event: Joi.string().valid("payment.failed", "payment.success").optional().messages({
-      'any.only': 'Event must be either "payment.failed" or "payment.success"',
+    event: Joi.string().valid("payment.failed", "payment.success", "payment.create", "subscription.create", "subscription.not_renew", "subscription.disable").optional().messages({
+      'any.only': 'Event must be one of the supported webhook event types',
     }),
     limit: Joi.number().integer().min(1).max(100).optional().messages({
       'number.min': 'Limit must be at least 1',

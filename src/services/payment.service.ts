@@ -103,7 +103,8 @@ export class PaymentService {
     redirectUrl?: string;
     paylinkId?: string;
   }) {
-    const transaction = await this.paymentRepository.createPayment(
+    const transaction = await this.
+    paymentRepository.createPayment(
       amount,
       amountToPay,
       currency,

@@ -23,6 +23,117 @@ type PaymentOptions =
 
 @Service()
 export class PaymentRepository {
+  async createSubscriptionPayment(
+    amount: number,
+    amountInUSDC: number,
+    currency: string,
+    network: Network,
+    customer: Customer,
+    profileId: string,
+    subscriptionId: string,
+    mode: Mode
+  ) {
+    return db.transaction.create({
+      data: {
+        type: TransactionType.PAYMENT,
+        status: TransactionStatus.PENDING,
+        amount,
+        currency,
+        network,
+        amountInUSDC,
+        mode,
+        profile: {
+          connect: { id: profileId },
+        },
+        customer: {
+          connect: { id: customer.id },
+        },
+        payment: {
+          create: {
+            paymentMethod: PaymentMethod.SUBSCRIPTION,
+            subscription: {
+              connect: { id: subscriptionId },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        amount: true,
+        amountInUSDC: true,
+        currency: true,
+        network: true,
+        mode: true,
+        profile: {
+          select: {
+            id: true,
+            businessName: true,
+            user: {
+              select: { email: true },
+            },
+          },
+        },
+        customer: true,
+        payment: {
+          select: {
+            id: true,
+            paymentMethod: true,
+            subscriptionId: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findSubscriptionPaymentBySubscriptionId(subscriptionId: string) {
+    return db.transaction.findFirst({
+      where: {
+        payment: {
+          is: {
+            paymentMethod: PaymentMethod.SUBSCRIPTION,
+            subscriptionId,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        payment: true,
+        customer: true,
+        profile: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findSubscriptionPaymentsBySubscriptionIds(subscriptionIds: string[]) {
+    return db.transaction.findMany({
+      where: {
+        payment: {
+          is: {
+            paymentMethod: PaymentMethod.SUBSCRIPTION,
+            subscriptionId: {
+              in: subscriptionIds,
+            },
+          },
+        },
+      },
+      include: {
+        payment: true,
+        customer: true,
+        profile: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
+
   async createPayment(
     amount: number,
     amountInUSDC: number,

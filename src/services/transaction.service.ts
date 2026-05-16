@@ -5,7 +5,7 @@ import { APIError } from "@/utils/error-handler";
 import { TransactionRepository } from "@/repositories/transaction.repository";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { GetAllTransactionsDto } from "@/dto/transaction.dto";
-import { Mode } from "../../generated/prisma";
+import { Mode, Token } from "../../generated/prisma";
 
 @Service()
 export class TransactionService {
@@ -21,12 +21,22 @@ export class TransactionService {
         return networkData?.logoUrl || null;
     }
 
+    private getTokenLogoUrl(network: string, token: Token): string | null {
+        const networkData = SUPPORTED_NETWORKS.find(n => n.code === network || n.symbol === network);
+        const tokenData = networkData?.supportedTokens?.find(t => t.symbol === String(token));
+        return tokenData?.logoUrl || null;
+    }
+
     private enrichTransactionWithNetworkLogo(transaction: any) {
         return {
             ...transaction,
             network: {
                 symbol: transaction.network,
                 logo: this.getNetworkLogoUrl(transaction.network)
+            },
+            token: {
+                symbol: transaction.token,
+                logo: this.getTokenLogoUrl(transaction.network, transaction.token)
             }
         };
     }

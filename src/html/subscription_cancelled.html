@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Subscription Cancelled</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, Helvetica, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
+            <tr>
+              <td style="background:#0b0f1a; padding:24px;">
+                <h1 style="margin:0; color:#ffffff; font-size:22px;">OraFi</h1>
+                <p style="margin:6px 0 0; color:#9ca3af; font-size:14px;">Subscription cancelled</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:24px 0 0;">
+                <img src="cid:logo@orafi" alt="OraFi Logo" style="width:30%; max-width:180px;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px; color:#111827;">
+                <p style="margin:0 0 12px; color:#6b7280; font-size:14px;">Hi {{{customerName}}},</p>
+                <h2 style="margin:0 0 16px; font-size:26px; line-height:1.2;">Your <span style="color:#374151;">{{{planName}}}</span> subscription has been cancelled</h2>
+                <p style="margin:0 0 20px; color:#4b5563; line-height:1.7;">
+                  We’re letting you know that your subscription with <strong>{{{merchantName}}}</strong> is now cancelled and will no longer renew.
+                </p>
+                <div style="background:#f3f4f6; border:1px solid #e5e7eb; border-radius:10px; padding:16px; margin:24px 0;">
+                  <p style="margin:0; color:#111827; font-weight:bold;">Cancellation details</p>
+                  <p style="margin:10px 0 0; color:#374151; line-height:1.7;">
+                    Plan: <strong>{{{planName}}}</strong><br />
+                    Merchant: <strong>{{{merchantName}}}</strong><br />
+                    Duration: <strong>{{{duration}}}</strong><br />
+                    Cancelled at: <strong>{{{cancelledAt}}}</strong>
+                    {{#if expiresAt}}<br />Original expiry: <strong>{{{expiresAt}}}</strong>{{/if}}
+                  </p>
+                </div>
+                <p style="margin:0 0 20px; color:#4b5563; line-height:1.7;">
+                  If this was unexpected, please contact the merchant or our support team to review the subscription status.
+                </p>
+                <p style="margin:0; color:#6b7280; font-size:14px;">You can safely ignore this message if you requested the cancellation.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f9fafb; padding:20px; text-align:center;">
+                <p style="margin:0; font-size:12px; color:#9ca3af;">© 2026 OraFi • Subscription billing</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

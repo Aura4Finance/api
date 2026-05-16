@@ -10,6 +10,7 @@ import securityRoutes from "./user/security.routes";
 import fiatRoutes from "./user/fiat.routes";
 import transactionRoutes from "./user/transaction.routes";
 import paylinkRoutes from "./paylink.routes";
+import subscriptionRoutes from "./subscription.routes";
 import customersRoutes from "./customer.routes";
 import paymentRoutes from "./payment.routes";
 import notificationRoutes from "./user/notification.routes"
@@ -35,24 +36,26 @@ dashboardRouter.use("/api-keys", verifyActionUsing2FA, apiKeyRoutes);
 dashboardRouter.use("/business/mode", modeRoutes);
 dashboardRouter.use("/webhook", webhookRoutes);
 dashboardRouter.use("/security", securityRoutes);
-dashboardRouter.use("/paylink", paylinkRoutes);
+dashboardRouter.use("/paylinks", paylinkRoutes); //4
 dashboardRouter.use("/customers", customersRoutes);
 dashboardRouter.use("/notification", notificationRoutes);
+dashboardRouter.use("/subscriptions", subscriptionRoutes);
 
 const apiRouter = express.Router();
 apiRouter.use("/user", dashboardRouter);
 apiRouter.use("/transactions/payment", paymentRoutes);
 apiRouter.use("/", extraRoutes);
 apiRouter.use(verifyApiKey);
-apiRouter.use("/paylink", paylinkRoutes);
+apiRouter.use("/paylinks", paylinkRoutes); //3
 apiRouter.use("/webhook", webhookRoutes);
 apiRouter.use("/business/mode", modeRoutes);
 apiRouter.use("/transactions", transactionRoutes);
 apiRouter.use("/profile", profileRoutes);
-apiRouter.use("/settlement/crypto", settlementRoutes);
-apiRouter.use("/settlement/fiat", fiatRoutes);
+apiRouter.use("/settlements/crypto", settlementRoutes);  //1
+apiRouter.use("/settlements/fiat", fiatRoutes); //2
 apiRouter.use("/customers", customersRoutes);
 apiRouter.use("/notification", notificationRoutes);
+apiRouter.use("/subscriptions", subscriptionRoutes);
 
 
 export default apiRouter;

@@ -120,4 +120,67 @@ export class EmailQueue {
             }
         );
     }
+
+    async addSubscriptionReminderScheduler(data: {
+        email: string;
+        customerName: string;
+        merchantName: string;
+        planName: string;
+        duration: string;
+        amount: number;
+        currency: string;
+        daysLeft: number;
+        expiresAt: string;
+        checkoutUrl?: string;
+    }) {
+        await emailQueue.add(
+            "subscription-reminder",
+            data,
+            {
+                delay: 1000 * 10,
+                removeOnComplete: true,
+                removeOnFail: false,
+            }
+        );
+    }
+
+    async addSubscriptionExpiredScheduler(data: {
+        email: string;
+        customerName: string;
+        merchantName: string;
+        planName: string;
+        duration: string;
+        expiresAt: string;
+        checkoutUrl?: string;
+    }) {
+        await emailQueue.add(
+            "subscription-expired",
+            data,
+            {
+                delay: 1000 * 10,
+                removeOnComplete: true,
+                removeOnFail: false,
+            }
+        );
+    }
+
+    async addSubscriptionCancelledScheduler(data: {
+        email: string;
+        customerName: string;
+        merchantName: string;
+        planName: string;
+        duration: string;
+        cancelledAt: string;
+        expiresAt?: string;
+    }) {
+        await emailQueue.add(
+            "subscription-cancelled",
+            data,
+            {
+                delay: 1000 * 10,
+                removeOnComplete: true,
+                removeOnFail: false,
+            }
+        );
+    }
 }

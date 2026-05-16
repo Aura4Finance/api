@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Subscription Expired</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, Helvetica, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
+            <tr>
+              <td style="background:#0b0f1a; padding:24px;">
+                <h1 style="margin:0; color:#ffffff; font-size:22px;">OraFi</h1>
+                <p style="margin:6px 0 0; color:#9ca3af; font-size:14px;">Subscription expired today</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:24px 0 0;">
+                <img src="cid:logo@orafi" alt="OraFi Logo" style="width:30%; max-width:180px;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px; color:#111827;">
+                <p style="margin:0 0 12px; color:#6b7280; font-size:14px;">Hi {{{customerName}}},</p>
+                <h2 style="margin:0 0 16px; font-size:26px; line-height:1.2;">Your <span style="color:#b91c1c;">{{{planName}}}</span> subscription has expired</h2>
+                <p style="margin:0 0 20px; color:#4b5563; line-height:1.7;">
+                  Your subscription with <strong>{{{merchantName}}}</strong> reached the end of its billing cycle on <strong>{{{expiresAt}}}</strong>.
+                </p>
+                <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:16px; margin:24px 0;">
+                  <p style="margin:0; color:#991b1b; font-weight:bold;">Expired subscription details</p>
+                  <p style="margin:10px 0 0; color:#7f1d1d; line-height:1.7;">
+                    Plan: <strong>{{{planName}}}</strong><br />
+                    Merchant: <strong>{{{merchantName}}}</strong><br />
+                    Duration: <strong>{{{duration}}}</strong><br />
+                    Expired on: <strong>{{{expiresAt}}}</strong>
+                  </p>
+                </div>
+                <p style="margin:0 0 20px; color:#4b5563; line-height:1.7;">
+                  If you want to continue using the service, please renew your subscription when the checkout link becomes available.
+                </p>
+                {{#if checkoutUrl}}
+                <p style="margin:0 0 20px;">
+                  <a href="{{{checkoutUrl}}}" style="display:inline-block; background:#b91c1c; color:#ffffff; text-decoration:none; padding:12px 18px; border-radius:8px; font-weight:bold;">Renew subscription</a>
+                </p>
+                {{/if}}
+                <p style="margin:0; color:#6b7280; font-size:14px;">If no action is taken, the subscription will remain inactive until renewed.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#f9fafb; padding:20px; text-align:center;">
+                <p style="margin:0; font-size:12px; color:#9ca3af;">© 2026 OraFi • Subscription billing</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

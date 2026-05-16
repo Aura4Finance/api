@@ -3,16 +3,20 @@ import { transactionQueue } from "./transaction.queue";
 import Container from "typedi";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { initializeSeed } from "@/utils/wallet/seed";
+import { startSubscriptionWorker } from "@/jobs/subscription.job";
+import { startTransactionWorker } from "@/jobs/transaction.job";
 
 export async function initTransactionAndEmailOnboardJobs() {
     await initializeSeed();
 
     const emailQueue = Container.get(EmailQueue);
+    startTransactionWorker();
+    startSubscriptionWorker();
     const repeatableJobs = await transactionQueue.getJobSchedulers();
 
     // Clean up existing schedulers first
     for (const job of repeatableJobs) {
-        if (job.name === "expire-pending-transactions" || job.name === "onboarded") {
+        if (job.name === "expire-pending-transactions" || job.name === "process-subscription-renewals" || job.name === "onboarded") {
             await transactionQueue.removeJobScheduler(job.key);
         }
     }
@@ -34,8 +38,22 @@ export async function initTransactionAndEmailOnboardJobs() {
         }
     );
 
+    await transactionQueue.upsertJobScheduler(
+        "process-subscription-renewals-scheduler",
+        { every: 1000 * 60 * 60 * 24 },
+        {
+            name: "process-subscription-renewals",
+            data: {},
+            opts: {
+                removeOnComplete: true,
+                removeOnFail: false,
+            },
+        }
+    );
+
     await emailQueue.addOnboardEmailScheduler();
 
     logger.info("Transaction expiry scheduler initialized!");
+    logger.info("Subscription renewal scheduler initialized!");
     logger.info("Email onboard scheduler initialized!");
 }

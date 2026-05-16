@@ -35,6 +35,8 @@ tags:
     description: Business mode and settings
   - name: Notifications
     description: Notification preferences
+  - name: Subscriptions
+    description: Subscription plans and customer subscriptions
 
 paths:
   /paylink:
@@ -228,6 +230,285 @@ paths:
                     example: Paylink deleted successfully
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /subscription/plans:
+    post:
+      tags:
+        - Subscriptions
+      summary: Create a subscription plan
+      description: Create a new subscription plan (merchant only)
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionPlanRequest'
+      responses:
+        '201':
+          description: Subscription plan created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Subscription plan created
+                  data:
+                    $ref: '#/components/schemas/SubscriptionPlan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags:
+        - Subscriptions
+      summary: Get subscription plans
+      description: Retrieve all subscription plans
+      responses:
+        '200':
+          description: List of subscription plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Plans retrieved
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriptionPlan'
+
+  /subscription/plans/{planId}:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get subscription plan
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plan retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Plan retrieved
+                  data:
+                    $ref: '#/components/schemas/SubscriptionPlan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags:
+        - Subscriptions
+      summary: Update subscription plan
+      security:
+        - apiKey: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSubscriptionPlanRequest'
+      responses:
+        '200':
+          description: Plan updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Plan updated
+                  data:
+                    $ref: '#/components/schemas/SubscriptionPlan'
+    delete:
+      tags:
+        - Subscriptions
+      summary: Delete subscription plan
+      security:
+        - apiKey: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plan deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Plan deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /subscription:
+    post:
+      tags:
+        - Subscriptions
+      summary: Create a subscription for a customer
+      description: Create a subscription linked to a plan and customer
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '201':
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Subscription created
+                  data:
+                    $ref: '#/components/schemas/Subscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /subscription/{subscriptionId}/cancel:
+    post:
+      tags:
+        - Subscriptions
+      summary: Cancel a subscription
+      security:
+        - apiKey: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription canceled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Subscription canceled
+                  data:
+                    $ref: '#/components/schemas/Subscription'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /subscription/{subscriptionId}:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get subscription
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Subscription retrieved
+                  data:
+                    $ref: '#/components/schemas/Subscription'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /subscription/customer/{customerId}:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get subscriptions for a customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscriptions retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Subscriptions retrieved
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Subscription'
         '404':
           $ref: '#/components/responses/NotFound'
   /transactions/payment/{paymentId}:
@@ -2038,9 +2319,14 @@ components:
           example: CONFIRMED
         paymentMethod:
           type: string
-          enum: [PAYMENT_LINK, HOSTED_CHECKOUT]
+          enum: [PAYMENT_LINK, HOSTED_CHECKOUT, SUBSCRIPTION]
           description: Payment method used
           example: HOSTED_CHECKOUT
+        subscriptionId:
+          type: string
+          description: Associated subscription ID if applicable
+        subscription:
+          $ref: '#/components/schemas/Subscription'
         redirectUrl:
           type: string
           description: URL to redirect after payment
@@ -2282,6 +2568,87 @@ components:
           type: string
           format: date-time
           description: Creation timestamp
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Subscription plan unique identifier
+          example: plan_abc123
+        name:
+          type: string
+          description: Plan name
+          example: Basic Monthly
+        duration:
+          type: string
+          enum: [WEEKLY, MONTHLY, SIX_MONTHS, YEARLY]
+          description: Duration of the plan
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Subscription unique identifier
+          example: sub_abc123
+        customerId:
+          type: string
+          description: Customer associated with subscription
+        planId:
+          type: string
+          description: Plan associated with subscription
+        status:
+          type: string
+          enum: [ACTIVE, CANCELED, EXPIRED]
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        canceledAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateSubscriptionPlanRequest:
+      type: object
+      required:
+        - name
+        - duration
+      properties:
+        name:
+          type: string
+        duration:
+          type: string
+          enum: [WEEKLY, MONTHLY, SIX_MONTHS, YEARLY]
+    UpdateSubscriptionPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        duration:
+          type: string
+          enum: [WEEKLY, MONTHLY, SIX_MONTHS, YEARLY]
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - customerId
+        - planId
+      properties:
+        customerId:
+          type: string
+        planId:
+          type: string
     CryptoAccount:
       type: object
       properties:

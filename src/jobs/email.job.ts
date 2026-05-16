@@ -22,12 +22,13 @@ export const startEmailWorker = () => {
   new Worker(
     "email-queue",
     async (job) => {
-      const { email, name, ...rest } = job.data;
+      const { email, name, customerName, ...rest } = job.data;
+      const recipientName = name ?? customerName;
       try {
         switch (job.name) {
           case "welcome-email":
             try {
-              await emailService.sendWelcomeEmail(email, name);
+              await emailService.sendWelcomeEmail(email, recipientName);
               logger.info("Welcome email sent!")
             } catch (error: any) {
               logger.error(`Error sending email: ${error.message}`)
@@ -45,7 +46,7 @@ export const startEmailWorker = () => {
 
           case "problems":
             try {
-              await emailService.sendProblemEmail(email, name);
+              await emailService.sendProblemEmail(email, recipientName);
               logger.info("Problems email sent")
             } catch (error: any) {
               logger.error(`Error sending email: ${error.message}`);
@@ -53,7 +54,7 @@ export const startEmailWorker = () => {
             break;
           case "payment_failed":
             try {
-              await emailService.sendPaymentFailedEmail(email, name, rest.amount, rest.currency, rest.reference);
+              await emailService.sendPaymentFailedEmail(email, recipientName, rest.amount, rest.currency, rest.reference);
             } catch (err: any) {
               logger.error(`Error sending payment failed email: ${err.message}`);
             }
@@ -61,16 +62,67 @@ export const startEmailWorker = () => {
           case "payment_success": {
             try {
               if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
-                await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, name, rest.amount, rest.currency, rest.reference);
+                await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, recipientName, rest.amount, rest.currency, rest.reference);
                 logger.info("payment succeess email sent for merchant")
               }
-              await emailService.sendPaymentSuccessEmail(email, name, rest.amount, rest.currency, rest.reference, rest.merchantName);
+              await emailService.sendPaymentSuccessEmail(email, recipientName, rest.amount, rest.currency, rest.reference, rest.merchantName);
               logger.info("payment success email sent for customer")
             } catch (error: any) {
               logger.info(`Error sending email: ${error.message}`)
             }
             break;
           }
+
+          case "subscription-reminder":
+            try {
+              await emailService.sendSubscriptionReminderEmail(email, {
+                customerName: recipientName,
+                merchantName: rest.merchantName,
+                planName: rest.planName,
+                duration: rest.duration,
+                amountDue: rest.amount,
+                currency: rest.currency,
+                daysLeft: rest.daysLeft,
+                expiresAt: rest.expiresAt,
+                checkoutUrl: rest.checkoutUrl,
+              });
+              logger.info("Subscription reminder email sent")
+            } catch (error: any) {
+              logger.error(`Error sending subscription reminder email: ${error.message}`)
+            }
+            break;
+
+          case "subscription-expired":
+            try {
+              await emailService.sendSubscriptionExpiredEmail(email, {
+                customerName: recipientName,
+                merchantName: rest.merchantName,
+                planName: rest.planName,
+                duration: rest.duration,
+                expiresAt: rest.expiresAt,
+                checkoutUrl: rest.checkoutUrl,
+              });
+              logger.info("Subscription expired email sent")
+            } catch (error: any) {
+              logger.error(`Error sending subscription expired email: ${error.message}`)
+            }
+            break;
+
+          case "subscription-cancelled":
+            try {
+              await emailService.sendSubscriptionCancelledEmail(email, {
+                customerName: recipientName,
+                merchantName: rest.merchantName,
+                planName: rest.planName,
+                duration: rest.duration,
+                cancelledAt: rest.cancelledAt,
+                expiresAt: rest.expiresAt,
+              });
+              logger.info("Subscription cancelled email sent")
+            } catch (error: any) {
+              logger.error(`Error sending subscription cancelled email: ${error.message}`)
+            }
+            break;
 
 
           case "onboarded":

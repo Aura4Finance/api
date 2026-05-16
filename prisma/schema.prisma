@@ -62,6 +62,7 @@ model BusinessProfile {
   userCustomers  UserCustomer[]  @relation("ProfileUserCustomers")
   transactions   Transaction[]   @relation("ProfileTransactions")
   paylinks       Paylink[]       @relation("ProfilePaylinks")
+  subscriptionPlans SubscriptionPlan[]
   fiatAccounts   FiatAccount[]   @relation("ProfileFiatAccounts")
   CryptoAccount  CryptoAccount[]
   isLive         Boolean         @default(false)
@@ -125,6 +126,47 @@ model Customer {
   totalSpent    Float            @default(0)
   userCustomers UserCustomer[]
   transactions  Transaction[]  @relation("CustomerTransactions")
+  subscriptions Subscription[]
+}
+
+model SubscriptionPlan {
+  id          String               @id @default(cuid()) @map("_id")
+  profileId   String
+  profile     BusinessProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  duration    SubscriptionDuration
+  amount      Float
+  currency    String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @default(now())
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String           @id @default(cuid()) @map("_id")
+  customerId String
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  status    SubscriptionStatus @default(ACTIVE)
+  startsAt  DateTime         @default(now())
+  endsAt    DateTime?
+  canceledAt DateTime?
+  payments  Payment[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now())
+}
+
+enum SubscriptionDuration {
+  WEEKLY
+  MONTHLY
+  SIX_MONTHS
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
 }
 
 model UserCustomer {
@@ -141,6 +183,7 @@ model UserCustomer {
 enum PaymentMethod {
   PAYMENT_LINK
   HOSTED_CHECKOUT
+  SUBSCRIPTION
 }
 
 enum PayOutMethod {
@@ -262,6 +305,8 @@ model Payment {
   redirectUrl     String?       
   paylinkId       String?
   paylink         Paylink?      @relation("PaylinkPayments", fields: [paylinkId], references: [id])
+  subscriptionId  String?
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id])
   transactionId   String        @unique
   transaction     Transaction   @relation(fields: [transactionId], references: [id])
 }

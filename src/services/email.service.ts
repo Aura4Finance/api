@@ -7,7 +7,7 @@ import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 
-type TemplateVars = Record<string, string | number>;
+type TemplateVars = Record<string, string | number | undefined>;
 
 @Service()
 export class EmailService {
@@ -71,6 +71,10 @@ private async queueEmail(emailPayload: any) {
   notification = true,
   receipt = false
 ) {
+  const templateVariables = Object.fromEntries(
+    Object.entries(variables).filter(([, value]) => value !== undefined)
+  ) as Record<string, string | number>;
+
   let attachments = [
      {
         content: this.logoBase64,
@@ -111,7 +115,7 @@ private async queueEmail(emailPayload: any) {
     subject,
     template: {
       id: templateId,
-      variables,
+      variables: templateVariables,
     },
     attachments
   };
@@ -133,6 +137,10 @@ private async queueEmail(emailPayload: any) {
     variables: TemplateVars,
     notification: boolean = true
   ) {
+    const templateVariables = Object.fromEntries(
+      Object.entries(variables).filter(([, value]) => value !== undefined)
+    ) as Record<string, string | number>;
+
     return resend.emails.send({
       from: notification
         ? "OraFi <notifications@orafi.app>"
@@ -141,7 +149,7 @@ private async queueEmail(emailPayload: any) {
       subject,
       template: {
         id: templateId,
-        variables,
+        variables: templateVariables,
       },
       attachments: [
         {
@@ -177,7 +185,7 @@ private async queueEmail(emailPayload: any) {
   }
 
 
-  async sendWelcomeEmail(to: string, name: string) {
+  async sendWelcomeEmail(to: string, name: string): Promise<any> {
     return this.sendEmail(
       to,
       "Welcome to OraFi",
@@ -187,7 +195,7 @@ private async queueEmail(emailPayload: any) {
     );
   }
 
-  async sendOfferEmail(to: string) {
+  async sendOfferEmail(to: string): Promise<any> {
     return this.sendEmail(
       to,
       "What OraFi Offers",
@@ -197,7 +205,7 @@ private async queueEmail(emailPayload: any) {
     );
   }
 
-  async sendProblemEmail(to: string, name: string) {
+  async sendProblemEmail(to: string, name: string): Promise<any> {
     return this.sendEmail(
       to,
       "Why OraFi Exists",
@@ -207,7 +215,7 @@ private async queueEmail(emailPayload: any) {
     );
   }
 
-  async sendOnBoardingEmail(to: string | string[], name: string) {
+  async sendOnBoardingEmail(to: string | string[], name: string): Promise<any> {
     return this.sendEmail(
       to,
       "Complete your OraFi setup to get started!",
@@ -274,7 +282,7 @@ async sendPaymentSuccessEmail(
     amount: number,
     currency: string,
     reference: string
-  ) {
+    ): Promise<any> {
 
     const payload = await this.buildEmailPayload(
       to,
@@ -289,6 +297,84 @@ async sendPaymentSuccessEmail(
         date: new Date().toLocaleString(),
       }
     );
+    await this.queueEmail(payload);
+  }
+
+  async sendSubscriptionReminderEmail(
+    to: string,
+    variables: {
+      customerName: string;
+      merchantName: string;
+      planName: string;
+      duration: string;
+      amountDue?: string | number;
+      currency?: string;
+      daysLeft: number;
+      expiresAt: string;
+      checkoutUrl?: string;
+    }
+  ): Promise<any> {
+    const payload = await this.buildEmailPayload(
+      to,
+      `${variables.planName} renews soon`,
+      "subscription_reminder",
+      {
+        ...variables,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
+
+    await this.queueEmail(payload);
+  }
+
+  async sendSubscriptionExpiredEmail(
+    to: string,
+    variables: {
+      customerName: string;
+      merchantName: string;
+      planName: string;
+      duration: string;
+      expiresAt: string;
+      checkoutUrl?: string;
+    }
+  ): Promise<any> {
+    const payload = await this.buildEmailPayload(
+      to,
+      `${variables.planName} has expired`,
+      "subscription_expired",
+      {
+        ...variables,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
+
+    await this.queueEmail(payload);
+  }
+
+  async sendSubscriptionCancelledEmail(
+    to: string,
+    variables: {
+      customerName: string;
+      merchantName: string;
+      planName: string;
+      duration: string;
+      cancelledAt: string;
+      expiresAt?: string;
+    }
+  ): Promise<any> {
+    const payload = await this.buildEmailPayload(
+      to,
+      `${variables.planName} subscription cancelled`,
+      "subscription_cancelled",
+      {
+        ...variables,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
+
     await this.queueEmail(payload);
   }
 
