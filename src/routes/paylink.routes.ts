@@ -5,6 +5,7 @@ import express, { Response } from "express";
 import Container from "typedi";
 import multer from "multer";
 import { checkIfUserIsDisabled } from "@/middlewares/user.milddleware";
+import { verifyRequestBody } from "@/middlewares/verify-request-body";
 
 const router = express.Router();
 const paylinkController = Container.get(PaylinkController);
@@ -14,6 +15,7 @@ const upload = multer({ storage: storage });
 router.post(
   "/ai-description",
   checkIfUserIsDisabled,
+  verifyRequestBody,
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.generatePaylinkDescription(req, res)
   )
@@ -22,6 +24,7 @@ router.post(
 router.post(
   "/",
   checkIfUserIsDisabled,
+  verifyRequestBody,
   upload.array("images", 10),
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.createPaylink(req, res)
@@ -61,6 +64,7 @@ router.delete(
 router.patch(
   "/:paylinkId",
   checkIfUserIsDisabled,
+  verifyRequestBody,
   upload.array("images", 10),
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.editPaylink(req, res)

@@ -12,7 +12,7 @@ import {
   CreateSubscriptionPlanDto,
   UpdateSubscriptionPlanDto,
 } from "@/dto/subscription.dto";
-import { Mode } from "../../generated/prisma";
+import { Mode, PaymentMethod } from "../../generated/prisma";
 
 @Service()
 export class SubscriptionService {
@@ -108,6 +108,7 @@ export class SubscriptionService {
 
     const subscription = await this.subscriptionRepository.createSubscription(input, mode);
 
+    let txId: string = "";
     // Create an initial subscription payment transaction and schedule verification
     try {
       const paymentData = {
@@ -116,14 +117,14 @@ export class SubscriptionService {
         currency: plan.currency,
         network: input.network,
         txRef: subscription.id,
-        type: "SUBSCRIPTION" as any,
+        type: PaymentMethod.SUBSCRIPTION,
         subscriptionId: subscription.id,
       };
 
-      const paymentResult = await this.paymentService.createPayment(paymentData as any, userId, mode);
+      const paymentResult = await this.paymentService.createPayment(paymentData, userId, mode);
 
       // schedule verification after 10 minutes
-      const txId = paymentResult.payload.transaction.id;
+      txId = paymentResult.payload.transaction.id;
       await transactionQueue.add(
         "verify-payment",
         { paymentId: txId, subscriptionId: subscription.id },
@@ -149,8 +150,11 @@ export class SubscriptionService {
     }
 
     return {
-      message: "Subscription created",
-      payload: subscription,
+      message: "Subscription created. Complete transaction to active subscription.",
+      payload: {
+        subscription,
+        checkoutUrl: `https://checkout.orafi.app/${txId}`
+      },
     };
   }
 

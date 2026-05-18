@@ -1,5 +1,6 @@
 import { RequestAuth } from "@/@types/request";
 import { FiatController } from "@/controllers/user/fiat.controller";
+import { verifyRequestBody } from "@/middlewares/verify-request-body";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response} from "express";
 import Container from "typedi";
@@ -13,6 +14,7 @@ router.get("/",
 ))
 
 router.post("/",
+    verifyRequestBody,
     asyncHandler((req: RequestAuth, res: Response) => 
     fiatController.addBankAccount(req, res)
 ))
@@ -22,6 +24,7 @@ router.delete("/:id",
 ))
 
 router.patch("/:id",
+    verifyRequestBody,
     asyncHandler((req: RequestAuth, res: Response) => 
     fiatController.updateAccount(req, res)
 ))

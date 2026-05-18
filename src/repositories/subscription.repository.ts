@@ -63,7 +63,6 @@ export class SubscriptionRepository {
     return db.subscriptionPlan.findMany({
       ...(where ? { where } : {}),
       include: {
-        profile: true,
         subscriptions: true,
       },
       orderBy: {
@@ -76,7 +75,6 @@ export class SubscriptionRepository {
     return db.subscriptionPlan.findFirst({
       where: profileId ? { id: planId, profileId } : { id: planId },
       include: {
-        profile: true,
         subscriptions: true,
       },
     });
@@ -118,16 +116,30 @@ export class SubscriptionRepository {
       throw new APIError("Customer not found", STATUS.notFound);
     }
 
-    const activeSubscription = await db.subscription.findFirst({
+    const existingSubscription = await db.subscription.findFirst({
       where: {
         customerId,
         planId,
-        status: SubscriptionStatus.ACTIVE,
       },
     });
 
-    if (activeSubscription) {
-      throw new APIError("Customer already has an active subscription for this plan", STATUS.conflict);
+    if(existingSubscription){
+      if (existingSubscription.status == SubscriptionStatus.ACTIVE) {
+        throw new APIError("Customer already has an active subscription for this plan", STATUS.conflict);
+      }else {
+        return db.subscription.update({
+          where: { id: existingSubscription.id },
+          data: {
+            network,
+            mode,
+            status: SubscriptionStatus.PENDING,
+            startsAt: new Date(),
+        },
+        include: {
+          plan: true
+        }
+      })
+      }
     }
 
     // Create as PENDING — activation happens after payment verification
