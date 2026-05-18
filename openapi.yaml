@@ -2583,6 +2583,14 @@ components:
           type: string
           enum: [WEEKLY, MONTHLY, SIX_MONTHS, YEARLY]
           description: Duration of the plan
+        amount:
+          type: number
+          description: Plan amount
+          example: 9.99
+        currency:
+          type: string
+          description: Currency code for the plan amount
+          example: USDC
         createdAt:
           type: string
           format: date-time
@@ -2602,6 +2610,10 @@ components:
         planId:
           type: string
           description: Plan associated with subscription
+        network:
+          type: string
+          enum: [SUI]
+          description: Network used for subscription payments
         status:
           type: string
           enum: [ACTIVE, CANCELED, EXPIRED]
@@ -2625,12 +2637,22 @@ components:
       required:
         - name
         - duration
+        - amount
+        - currency
       properties:
         name:
           type: string
         duration:
           type: string
           enum: [WEEKLY, MONTHLY, SIX_MONTHS, YEARLY]
+        amount:
+          type: number
+          description: Plan amount
+          example: 9.99
+        currency:
+          type: string
+          description: Currency code (3-letter) for the plan
+          example: USDC
     UpdateSubscriptionPlanRequest:
       type: object
       properties:
@@ -2639,16 +2661,29 @@ components:
         duration:
           type: string
           enum: [WEEKLY, MONTHLY, SIX_MONTHS, YEARLY]
+        amount:
+          type: number
+          description: Plan amount
+          example: 9.99
+        currency:
+          type: string
+          description: Currency code (3-letter) for the plan
+          example: USDC
     CreateSubscriptionRequest:
       type: object
       required:
         - customerId
         - planId
+        - network
       properties:
         customerId:
           type: string
         planId:
           type: string
+        network:
+          type: string
+          enum: [SUI]
+          description: Network for subscription payments
     CryptoAccount:
       type: object
       properties:

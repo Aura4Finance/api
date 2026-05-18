@@ -37,12 +37,6 @@ function dayKey(date: Date) {
     return date.toISOString().slice(0, 10);
 }
 
-function getCheckoutUrl(transactionId: string) {
-    return process.env.ORAFI_SUBSCRIPTION_CHECKOUT_URL
-        ? `${process.env.ORAFI_SUBSCRIPTION_CHECKOUT_URL}/${transactionId}`
-        : undefined;
-}
-
 async function acquireLock(key: string, ttlSeconds: number) {
     const acquired = await (redis as any).setnx(key, "1");
     if (!acquired) {
@@ -192,8 +186,6 @@ export const startSubscriptionWorker = () => {
                         }
                     }
 
-                    const checkoutUrl = getCheckoutUrl(renewalTransaction.id);
-
                     const reminderPayload: any = {
                         email: context.customer.email,
                         customerName: `${context.customer.firstname} ${context.customer.lastname}`,
@@ -203,29 +195,11 @@ export const startSubscriptionWorker = () => {
                         amount: context.plan.amount,
                         currency: context.plan.currency,
                         daysLeft: 3,
+                        checkoutUrl: `https://checkout.orafi.app/${renewalTransaction.id}`,
                         expiresAt: context.subscription.endsAt?.toISOString() ?? "",
                     };
 
-                    if (checkoutUrl) {
-                        reminderPayload.checkoutUrl = checkoutUrl;
-                    }
-
                     await emailQueue.addSubscriptionReminderScheduler(reminderPayload);
-
-                    try {
-                        await triggerWebhook(context.profile.id, {
-                            event: "subscription.not_renew",
-                            data: {
-                                transactionId: context.subscription.id,
-                                amount: context.plan.amount,
-                                currency: context.plan.currency,
-                                status: "pending_renewal",
-                                occuredAt: new Date().toISOString(),
-                            },
-                        });
-                    } catch {
-                        // Webhook delivery should not block the renewal workflow.
-                    }
                 }
 
                 const expirySubscriptions = await db.subscription.findMany({
@@ -284,20 +258,15 @@ export const startSubscriptionWorker = () => {
                         );
                     }
 
-                    const checkoutUrl = getCheckoutUrl(renewalTransaction.id);
-
                     const expiredPayload: any = {
                         email: context.customer.email,
                         customerName: `${context.customer.firstname} ${context.customer.lastname}`,
                         merchantName: context.profile.businessName,
                         planName: context.plan.name,
                         duration: String(context.plan.duration),
+                        checkoutUrl: `https://checkout.orafi.app/${renewalTransaction.id}`,
                         expiresAt: context.subscription.endsAt?.toISOString() ?? "",
                     };
-
-                    if (checkoutUrl) {
-                        expiredPayload.checkoutUrl = checkoutUrl;
-                    }
 
                     await emailQueue.addSubscriptionExpiredScheduler(expiredPayload);
                 }
@@ -332,7 +301,7 @@ export const startSubscriptionWorker = () => {
                                 transactionId: context.subscription.id,
                                 amount: context.plan.amount,
                                 currency: context.plan.currency,
-                                status: "cancelled",
+                                status: "disabled",
                                 occuredAt: new Date().toISOString(),
                             },
                         });

@@ -13,6 +13,7 @@ import {
   UpdateSubscriptionPlanDto,
 } from "@/dto/subscription.dto";
 import { Mode, PaymentMethod } from "../../generated/prisma";
+import { WebhookQueue } from "./schedule.webhook.service";
 
 @Service()
 export class SubscriptionService {
@@ -21,6 +22,7 @@ export class SubscriptionService {
     private readonly userRepository: UserRepository,
     private readonly customerRepository: CustomerRepository,
     private readonly paymentService: PaymentService,
+    private readonly webhookQueue: WebhookQueue
   ) {}
 
   async createPlan(userId: string, input: CreateSubscriptionPlanDto) {
@@ -173,6 +175,17 @@ export class SubscriptionService {
     if (!customer) throw new APIError("Subscription does not belong to your profile", STATUS.forbidden);
 
     const canceled = await this.subscriptionRepository.cancelSubscription(subscriptionId);
+
+    await this.webhookQueue.addScheduler(profileId, {
+      event: "subscription.not_renew",
+      data: {
+        transactionId: subscription.id,
+        amount: subscription.plan.amount,
+        currency: subscription.plan.currency,
+        status: "cancelled",
+        occuredAt: new Date().toISOString(),
+      },
+    });
 
     return {
       message: "Subscription canceled",
