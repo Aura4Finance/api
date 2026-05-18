@@ -124,6 +124,38 @@ export const startEmailWorker = () => {
             }
             break;
 
+          case "subscription-active":
+            try {
+              await emailService.sendSubscriptionActiveEmail(email, {
+                customerName: recipientName,
+                merchantName: rest.merchantName,
+                planName: rest.planName,
+                duration: rest.duration,
+                amount: rest.amount,
+                currency: rest.currency,
+                startsAt: rest.startsAt,
+                expiresAt: rest.expiresAt,
+              });
+              logger.info("Subscription active email sent")
+            } catch (error: any) {
+              logger.error(`Error sending subscription active email: ${error.message}`)
+            }
+            break;
+
+          case "subscription-abandoned":
+            try {
+              await emailService.sendSubscriptionAbandonedEmail(email, {
+                customerName: recipientName,
+                merchantName: rest.merchantName,
+                planName: rest.planName,
+                checkoutUrl: rest.checkoutUrl,
+              });
+              logger.info("Subscription abandoned email sent")
+            } catch (error: any) {
+              logger.error(`Error sending subscription abandoned email: ${error.message}`)
+            }
+            break;
+
 
           case "onboarded":
             const users = await db.businessProfile.findMany({

@@ -5,18 +5,22 @@ import { SubscriptionRepository } from "@/repositories/subscription.repository";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { triggerWebhook } from "@/services/user/webhook.service";
+import { PaymentService } from "@/services/payment.service";
+import { transactionQueue } from "@/queues/transaction.queue";
 import {
   CreateSubscriptionDto,
   CreateSubscriptionPlanDto,
   UpdateSubscriptionPlanDto,
 } from "@/dto/subscription.dto";
+import { Mode } from "../../generated/prisma";
 
 @Service()
 export class SubscriptionService {
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
     private readonly userRepository: UserRepository,
-    private readonly customerRepository: CustomerRepository
+    private readonly customerRepository: CustomerRepository,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async createPlan(userId: string, input: CreateSubscriptionPlanDto) {
@@ -86,7 +90,7 @@ export class SubscriptionService {
     };
   }
 
-  async createSubscription(userId: string, input: CreateSubscriptionDto) {
+  async createSubscription(userId: string, input: CreateSubscriptionDto, mode: Mode) {
     const profile = await this.userRepository.findUserById(userId);
     const profileId = profile?.businessProfile?.id;
 
@@ -102,8 +106,33 @@ export class SubscriptionService {
       throw new APIError("Subscription plan not found for profile", STATUS.notFound);
     }
 
-    const subscription = await this.subscriptionRepository.createSubscription(input.customerId, input.planId);
+    const subscription = await this.subscriptionRepository.createSubscription(input, mode);
 
+    // Create an initial subscription payment transaction and schedule verification
+    try {
+      const paymentData = {
+        amount: plan.amount,
+        customerId: input.customerId,
+        currency: plan.currency,
+        network: input.network,
+        txRef: subscription.id,
+        type: "SUBSCRIPTION" as any,
+        subscriptionId: subscription.id,
+      };
+
+      const paymentResult = await this.paymentService.createPayment(paymentData as any, userId, mode);
+
+      // schedule verification after 10 minutes
+      const txId = paymentResult.payload.transaction.id;
+      await transactionQueue.add(
+        "verify-payment",
+        { paymentId: txId, subscriptionId: subscription.id },
+        { delay: 10 * 60 * 1000, removeOnComplete: true }
+      );
+    } catch (err) {
+      // Payment creation shouldn't block subscription creation; log and continue
+      // (service layer has no logger here; swallow silently)
+    }
     try {
       await triggerWebhook(profileId, {
         event: "subscription.create",

@@ -354,7 +354,7 @@ export class WalletService {
     amount: number,
     currency: string,
     direction: ConversionDirection
-  ) {
+  ): Promise<number> {
     if (!amount || amount <= 0) {
       throw new APIError("Amount must be greater than 0.", STATUS.bad);
     }

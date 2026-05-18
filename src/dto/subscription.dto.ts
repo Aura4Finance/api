@@ -1,4 +1,4 @@
-import { SubscriptionDuration } from "../../generated/prisma";
+import { Network, SubscriptionDuration } from "../../generated/prisma";
 
 export type CreateSubscriptionPlanDto = {
   name: string;
@@ -12,4 +12,5 @@ export type UpdateSubscriptionPlanDto = Partial<CreateSubscriptionPlanDto>;
 export type CreateSubscriptionDto = {
   customerId: string;
   planId: string;
+  network: Network;
 };

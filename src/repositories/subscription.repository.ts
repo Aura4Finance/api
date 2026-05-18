@@ -1,8 +1,9 @@
 import db from "@/config/db-config";
 import { APIError } from "@/utils/error-handler";
-import { SubscriptionDuration, SubscriptionStatus } from "../../generated/prisma";
+import { Mode, SubscriptionDuration, SubscriptionStatus } from "../../generated/prisma";
 import { Service } from "typedi";
 import { STATUS } from "@/constants/status.constant";
+import { CreateSubscriptionDto } from "@/dto/subscription.dto";
 
 export type CreateSubscriptionPlanInput = {
   name: string;
@@ -15,28 +16,7 @@ export type UpdateSubscriptionPlanInput = Partial<CreateSubscriptionPlanInput>;
 
 @Service()
 export class SubscriptionRepository {
-  private getPlanDurationEndDate(startsAt: Date, duration: SubscriptionDuration) {
-    const endsAt = new Date(startsAt);
-
-    switch (duration) {
-      case "WEEKLY":
-        endsAt.setDate(endsAt.getDate() + 7);
-        break;
-      case "MONTHLY":
-        endsAt.setMonth(endsAt.getMonth() + 1);
-        break;
-      case "SIX_MONTHS":
-        endsAt.setMonth(endsAt.getMonth() + 6);
-        break;
-      case "YEARLY":
-        endsAt.setFullYear(endsAt.getFullYear() + 1);
-        break;
-      default:
-        return null;
-    }
-
-    return endsAt;
-  }
+  
 
   async createPlan(profileId: string, data: CreateSubscriptionPlanInput) {
     const existingPlan = await db.subscriptionPlan.findFirst({
@@ -116,7 +96,12 @@ export class SubscriptionRepository {
     });
   }
 
-  async createSubscription(customerId: string, planId: string) {
+  async createSubscription(data: CreateSubscriptionDto, mode: Mode) {
+    const { 
+      planId,
+      customerId,
+      network
+    } = data;
     const plan = await db.subscriptionPlan.findUnique({
       where: { id: planId },
     });
@@ -145,16 +130,15 @@ export class SubscriptionRepository {
       throw new APIError("Customer already has an active subscription for this plan", STATUS.conflict);
     }
 
-    const startsAt = new Date();
-    const endsAt = this.getPlanDurationEndDate(startsAt, plan.duration);
-
+    // Create as PENDING — activation happens after payment verification
     return db.subscription.create({
       data: {
         customerId,
         planId,
-        startsAt,
-        endsAt,
-        status: SubscriptionStatus.ACTIVE,
+        network,
+        mode,
+        // startsAt will default to now (schema default). endsAt left null until activation.
+        status: SubscriptionStatus.PENDING,
       },
       include: {
         customer: true,

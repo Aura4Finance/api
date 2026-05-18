@@ -15,6 +15,14 @@ const WEBHOOK_EVENT = [
     name: "Subscription Created",
     type: "subscription.create",
   },
+  { 
+    name: "Subscription Is Active",
+    type: "subscription.active"
+  },
+  {
+    name: "Subscription Abandonded",
+    type: "subscription.abandonded"
+  },
   {
     name: "Subscription Will Not Renew",
     type: "subscription.not_renew",

@@ -378,4 +378,54 @@ async sendPaymentSuccessEmail(
     await this.queueEmail(payload);
   }
 
+  async sendSubscriptionActiveEmail(
+    to: string,
+    variables: {
+      customerName: string;
+      merchantName: string;
+      planName: string;
+      duration: string;
+      amount?: number;
+      currency?: string;
+      startsAt: string;
+      expiresAt: string;
+    }
+  ): Promise<any> {
+    const payload = await this.buildEmailPayload(
+      to,
+      `${variables.planName} subscription is active`,
+      "subscription_active",
+      {
+        ...variables,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
+
+    await this.queueEmail(payload);
+  }
+
+  async sendSubscriptionAbandonedEmail(
+    to: string,
+    variables: {
+      customerName: string;
+      merchantName: string;
+      planName: string;
+      checkoutUrl?: string;
+    }
+  ): Promise<any> {
+    const payload = await this.buildEmailPayload(
+      to,
+      `${variables.planName} subscription incomplete`,
+      "subscription_abandoned",
+      {
+        ...variables,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
+
+    await this.queueEmail(payload);
+  }
+
 }

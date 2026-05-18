@@ -183,4 +183,44 @@ export class EmailQueue {
             }
         );
     }
+
+        async addSubscriptionActiveScheduler(data: {
+            email: string;
+            customerName: string;
+            merchantName: string;
+            planName: string;
+            duration: string;
+            amount?: number;
+            currency?: string;
+            startsAt: string;
+            expiresAt: string;
+        }) {
+            await emailQueue.add(
+                "subscription-active",
+                data,
+                {
+                    delay: 1000 * 10,
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                }
+            );
+        }
+
+        async addSubscriptionAbandonedScheduler(data: {
+            email: string;
+            customerName: string;
+            merchantName: string;
+            planName: string;
+            checkoutUrl?: string;
+        }) {
+            await emailQueue.add(
+                "subscription-abandoned",
+                data,
+                {
+                    delay: 1000 * 10,
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                }
+            );
+        }
 }

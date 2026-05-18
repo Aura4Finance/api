@@ -90,6 +90,7 @@ export class PaymentService {
     paymentMethod,
     redirectUrl,
     paylinkId,
+    subscriptionId,
   }: {
     user: UserWithProfile;
     mode: Mode;
@@ -102,6 +103,7 @@ export class PaymentService {
     paymentMethod: PaymentMethod;
     redirectUrl?: string;
     paylinkId?: string;
+    subscriptionId?: string;
   }) {
     const transaction = await this.
     paymentRepository.createPayment(
@@ -117,10 +119,13 @@ export class PaymentService {
         ? {
           paymentMethod,
           redirectUrl: redirectUrl as string,
-        }
-        : {
+        } : paymentMethod === "PAYMENT_LINK"
+        ? {
           paymentMethod,
           paylinkId: paylinkId as string,
+        } : {
+          paymentMethod,
+          subscriptionId: subscriptionId as string,
         }
     );
 
@@ -164,17 +169,23 @@ export class PaymentService {
         let currency: string;
         let redirectUrl: string | undefined = undefined;
         let paylinkId: string | undefined = undefined;
+        let subscriptionId: string | undefined = undefined;
         try {
           if (data.type === PaymentMethod.HOSTED_CHECKOUT) {
             amount = data.amount;
             paymentMethod = PaymentMethod.HOSTED_CHECKOUT;
             currency = data.currency;
             redirectUrl = data.redirectUrl
-          }else{
+          }else if(data.type == PaymentMethod.PAYMENT_LINK) {
             paymentMethod = PaymentMethod.PAYMENT_LINK;
             amount = <number>data.payLink?.amount
             currency = <string>data.payLink?.currency
             paylinkId = data.payLink?.id
+          }else {
+            paymentMethod = PaymentMethod.SUBSCRIPTION;
+            subscriptionId = data.subscriptionId;
+            amount = data.amount;
+            currency = data.currency;
           }
           const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
             amount,
@@ -194,6 +205,7 @@ export class PaymentService {
             paymentMethod,
             ...(redirectUrl ? { redirectUrl } : {}),
             ...(paylinkId ? { paylinkId } : {}),
+            ...(subscriptionId ? { subscriptionId } : {}),
           };
           return this.finalizePaymentCreation(finalizeArgs)
 

@@ -12,6 +12,7 @@ export interface CreatePaymentDto {
   txRef: string;
   type: PaymentMethod,
   redirectUrl?: string,
+  subscriptionId?: string;
   payLink?: Paylink
 }
 

@@ -23,6 +23,8 @@ export type EventType =
   | "payment.failed"
   | "payment.create"
   | "subscription.create"
+  | "subscription.active"
+  | "subscription.abandoned"
   | "subscription.not_renew"
   | "subscription.disable";
 

@@ -143,7 +143,9 @@ model SubscriptionPlan {
 }
 
 model Subscription {
-  id        String           @id @default(cuid()) @map("_id")
+  id         String           @id @default(cuid()) @map("_id")
+  mode       Mode
+  network    Network
   customerId String
   customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   planId    String
@@ -165,6 +167,8 @@ enum SubscriptionDuration {
 }
 
 enum SubscriptionStatus {
+  PENDING
+  ABANDONED
   ACTIVE
   CANCELLED
 }
