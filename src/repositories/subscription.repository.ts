@@ -183,9 +183,12 @@ export class SubscriptionRepository {
     });
   }
 
-  async getSubscriptionsByCustomer(customerId: string) {
+  async getSubscriptionsByCustomer(customerId: string, planId?: string) {
     return db.subscription.findMany({
-      where: { customerId },
+      where: { 
+        customerId,
+        ...(planId ? { planId } : {}),
+      },
       include: {
         customer: true,
         plan: true,

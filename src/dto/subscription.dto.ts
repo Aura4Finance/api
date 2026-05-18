@@ -14,3 +14,8 @@ export type CreateSubscriptionDto = {
   planId: string;
   network: Network;
 };
+
+export type GetSubscriptionsDto = {
+   customerId: string;
+   planId?: string;
+}

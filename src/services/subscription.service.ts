@@ -186,8 +186,8 @@ export class SubscriptionService {
     };
   }
 
-  async getSubscriptionsByCustomer(customerId: string) {
-    const subscriptions = await this.subscriptionRepository.getSubscriptionsByCustomer(customerId);
+  async getSubscriptionsByCustomer(customerId: string, planId?: string) {
+    const subscriptions = await this.subscriptionRepository.getSubscriptionsByCustomer(customerId, planId);
 
     return {
       message: "Subscriptions retrieved",

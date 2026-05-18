@@ -1,5 +1,10 @@
 import Joi from "joi";
-import { CreateSubscriptionDto, CreateSubscriptionPlanDto, UpdateSubscriptionPlanDto } from "@/dto/subscription.dto";
+import { 
+    CreateSubscriptionDto, 
+    CreateSubscriptionPlanDto, 
+    UpdateSubscriptionPlanDto,
+    GetSubscriptionsDto
+ } from "@/dto/subscription.dto";
 import { Network, SubscriptionDuration } from "../../generated/prisma";
 
 export const createSubscriptionPlanValidation = (data: CreateSubscriptionPlanDto) => {
@@ -67,11 +72,14 @@ export const createSubscriptionValidation = (data: CreateSubscriptionDto) => {
   return schema.validate(data);
 };
 
-export const subscriptionIdValidation = (data: { subscriptionId: string }) => {
+export const subscriptionIdValidation = (data: GetSubscriptionsDto) => {
   const schema = Joi.object({
     subscriptionId: Joi.string().required().messages({
       'any.required': 'Subscription ID is required',
     }),
+    planId: Joi.string().optional().messages({
+    'any.only': 'Plan ID must be a string'
+    })
   });
 
   return schema.validate(data);
@@ -87,11 +95,14 @@ export const planIdValidation = (data: { planId: string }) => {
   return schema.validate(data);
 };
 
-export const customerIdValidation = (data: { customerId: string }) => {
+export const customerIdValidation = (data: { customerId: string, planId?: string }) => {
   const schema = Joi.object({
     customerId: Joi.string().required().messages({
       'any.required': 'Customer ID is required',
     }),
+    planId: Joi.string().optional().messages({
+      'any.only': 'Plan ID must be a string'
+    })
   });
 
   return schema.validate(data);

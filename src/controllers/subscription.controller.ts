@@ -3,7 +3,12 @@ import { Response } from "express";
 import { Service } from "typedi";
 import { STATUS } from "@/constants/status.constant";
 import { SubscriptionService } from "@/services/subscription.service";
-import { CreateSubscriptionDto, CreateSubscriptionPlanDto, UpdateSubscriptionPlanDto } from "@/dto/subscription.dto";
+import { 
+  CreateSubscriptionDto, 
+  CreateSubscriptionPlanDto, 
+  UpdateSubscriptionPlanDto, 
+  GetSubscriptionsDto
+ } from "@/dto/subscription.dto";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import {
   createSubscriptionPlanValidation,
@@ -144,7 +149,10 @@ export class SubscriptionController {
   }
 
   async getSubscriptionsByCustomer(req: RequestAuth, res: Response) {
-    const { error, value } = customerIdValidation(req.params as any);
+    const { error, value } = customerIdValidation({
+      ...req.params,
+      ...req.query
+    } as any);
 
     if (error) {
       return res.status(STATUS.bad).json({
@@ -153,8 +161,8 @@ export class SubscriptionController {
       });
     }
 
-    const customerId = value.customerId as string;
-    const { message, payload } = await this.subscriptionService.getSubscriptionsByCustomer(customerId);
+    const {customerId, planId} = value as GetSubscriptionsDto;
+    const { message, payload } = await this.subscriptionService.getSubscriptionsByCustomer(customerId, planId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 }
