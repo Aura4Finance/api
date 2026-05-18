@@ -5,18 +5,12 @@ import { redisConnection } from "@/config/redis-config";
 import db from "@/config/db-config";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { WalletService } from "@/services/wallet.service";
-import { PaymentMethod, SubscriptionStatus, SubscriptionDuration } from "../../generated/prisma";
+import { PaymentMethod, SubscriptionStatus } from "../../generated/prisma";
 import { redisClient as redis, redisClient } from "@/middlewares/rate-limit.middleware";
 import { triggerWebhook } from "@/services/user/webhook.service";
 import { PaymentRepository } from "@/repositories/payment.repository";
 
 const DAY_MS = 1000 * 60 * 60 * 24;
-const SUBSCRIPTION_EXPIRY_SECONDS: Record<SubscriptionDuration, number> = {
-    [SubscriptionDuration.WEEKLY]: 7 * 24 * 60 * 60,   // 7 days
-    [SubscriptionDuration.MONTHLY]: 5 * 24 * 60 * 60,   // 5 days
-    [SubscriptionDuration.SIX_MONTHS]: 14 * 24 * 60 * 60,  // 14 days
-    [SubscriptionDuration.YEARLY]: 30 * 24 * 60 * 60,  // 30 days
-};
 
 function startOfUtcDay(date: Date) {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -38,49 +32,14 @@ function dayKey(date: Date) {
 }
 
 async function acquireLock(key: string, ttlSeconds: number) {
-    const acquired = await (redis as any).setnx(key, "1");
-    if (!acquired) {
-        return false;
-    }
+    const result = await redis.set(
+        key,
+        "1",
+        "EX",
+        ttlSeconds
+    );
 
-    await (redis as any).expire(key, ttlSeconds);
-    return true;
-}
-
-async function resolveSubscriptionContext(subscriptionId: string) {
-    const subscription = await db.subscription.findUnique({
-        where: { id: subscriptionId },
-    });
-
-    if (!subscription) {
-        return null;
-    }
-
-    const plan = await db.subscriptionPlan.findUnique({
-        where: { id: subscription.planId },
-    });
-
-    if (!plan) {
-        return null;
-    }
-
-    const customer = await db.customer.findUnique({
-        where: { id: subscription.customerId },
-    });
-
-    if (!customer) {
-        return null;
-    }
-
-    const profile = await db.businessProfile.findUnique({
-        where: { id: plan.profileId },
-    });
-
-    if (!profile) {
-        return null;
-    }
-
-    return { subscription, plan, customer, profile };
+    return result === "OK";
 }
 
 export const startSubscriptionWorker = () => {
@@ -128,7 +87,20 @@ export const startSubscriptionWorker = () => {
                     const lock = await acquireLock(dedupeKey, Math.floor((DAY_MS * 10) / 1000));
                     if (!lock) continue;
 
-                    const context = await resolveSubscriptionContext(subscription.id);
+                    const context = await db.subscription.findFirst({
+                        where: {
+                            status: SubscriptionStatus.ACTIVE,
+                            endsAt: reminderWindow,
+                        },
+                        include: {
+                            customer: true,
+                            plan: {
+                                include: {
+                                    profile: true,
+                                },
+                            },
+                        },
+                    });
                     if (!context) continue;
 
                     let renewalTransaction = await paymentRepository.findSubscriptionPaymentBySubscriptionId(subscription.id);
@@ -143,35 +115,33 @@ export const startSubscriptionWorker = () => {
                             context.plan.amount,
                             amountToPay,
                             context.plan.currency,
-                            context.subscription.network,
+                            context.network,
                             context.customer,
                             "",
-                            context.profile.id,
-                            context.subscription.mode,
+                            context.plan.profile.id,
+                            context.mode,
                             {
                                 paymentMethod: PaymentMethod.SUBSCRIPTION,
-                                subscriptionId: context.subscription.id
+                                subscriptionId: context.id
                             }
                         );
-                        const expirySeconds: number = SUBSCRIPTION_EXPIRY_SECONDS[context.plan.duration] ?? 6000;
-
                         await redisClient.set(
                             renewalTransaction.id,
                             JSON.stringify({
                                 amount: context.plan.amount,
                                 amountInUSDC: amountToPay,
-                                businessName: context.profile.businessName,
+                                businessName: context.plan.profile.businessName,
                                 redirectUrl: "",
-                                mode: context.subscription.mode,
+                                mode: context.mode,
                                 currency: context.plan.currency,
-                                network: context.subscription.network,
+                                network: context.network,
                             }),
                             "EX",
-                            expirySeconds
+                            3 * 24 * 60 * 60
                         );
 
                         try {
-                            await triggerWebhook(context.profile.id, {
+                            await triggerWebhook(context.plan.profile.id, {
                                 event: "payment.create",
                                 data: {
                                     transactionId: renewalTransaction.id,
@@ -189,14 +159,14 @@ export const startSubscriptionWorker = () => {
                     const reminderPayload: any = {
                         email: context.customer.email,
                         customerName: `${context.customer.firstname} ${context.customer.lastname}`,
-                        merchantName: context.profile.businessName,
+                        merchantName: context.plan.profile.businessName,
                         planName: context.plan.name,
                         duration: String(context.plan.duration),
                         amount: context.plan.amount,
                         currency: context.plan.currency,
                         daysLeft: 3,
                         checkoutUrl: `https://checkout.orafi.app/${renewalTransaction.id}`,
-                        expiresAt: context.subscription.endsAt?.toISOString() ?? "",
+                        expiresAt: context.endsAt?.toISOString() ?? "",
                     };
 
                     await emailQueue.addSubscriptionReminderScheduler(reminderPayload);
@@ -214,7 +184,20 @@ export const startSubscriptionWorker = () => {
                     const lock = await acquireLock(dedupeKey, Math.floor((DAY_MS * 10) / 1000));
                     if (!lock) continue;
 
-                    const context = await resolveSubscriptionContext(subscription.id);
+                    const context = await db.subscription.findFirst({
+                        where: {
+                            status: SubscriptionStatus.ACTIVE,
+                            endsAt: reminderWindow,
+                        },
+                        include: {
+                            customer: true,
+                            plan: {
+                                include: {
+                                    profile: true,
+                                },
+                            },
+                        },
+                    });
                     if (!context) continue;
 
                     let renewalTransaction = (await paymentRepository.findSubscriptionPaymentBySubscriptionId(subscription.id)) as { id: string } | null;
@@ -229,43 +212,41 @@ export const startSubscriptionWorker = () => {
                             context.plan.amount,
                             amountToPay,
                             context.plan.currency,
-                            context.subscription.network,
+                            context.network,
                             context.customer,
                             "",
-                            context.profile.id,
-                            context.subscription.mode,
+                            context.plan.profile.id,
+                            context.mode,
                             {
                                 paymentMethod: PaymentMethod.SUBSCRIPTION,
-                                subscriptionId: context.subscription.id
+                                subscriptionId: context.id
                             }
                         )) as { id: string };
-
-                        const expirySeconds: number = SUBSCRIPTION_EXPIRY_SECONDS[context.plan.duration] ?? 6000;
 
                         await redisClient.set(
                             renewalTransaction.id,
                             JSON.stringify({
                                 amount: context.plan.amount,
                                 amountInUSDC: amountToPay,
-                                businessName: context.profile.businessName,
+                                businessName: context.plan.profile.businessName,
                                 redirectUrl: "",
-                                mode: context.subscription.mode,
+                                mode: context.mode,
                                 currency: context.plan.currency,
-                                network: context.subscription.network,
+                                network: context.network,
                             }),
                             "EX",
-                            expirySeconds
+                            2 * 24 * 60 * 60
                         );
                     }
 
                     const expiredPayload: any = {
                         email: context.customer.email,
                         customerName: `${context.customer.firstname} ${context.customer.lastname}`,
-                        merchantName: context.profile.businessName,
+                        merchantName: context.plan.profile.businessName,
                         planName: context.plan.name,
                         duration: String(context.plan.duration),
                         checkoutUrl: `https://checkout.orafi.app/${renewalTransaction.id}`,
-                        expiresAt: context.subscription.endsAt?.toISOString() ?? "",
+                        expiresAt: context.endsAt?.toISOString() ?? "",
                     };
 
                     await emailQueue.addSubscriptionExpiredScheduler(expiredPayload);
@@ -283,11 +264,24 @@ export const startSubscriptionWorker = () => {
                     const lock = await acquireLock(dedupeKey, Math.floor((DAY_MS * 10) / 1000));
                     if (!lock) continue;
 
-                    const context = await resolveSubscriptionContext(subscription.id);
+                    const context = await db.subscription.findFirst({
+                        where: {
+                            status: SubscriptionStatus.ACTIVE,
+                            endsAt: reminderWindow,
+                        },
+                        include: {
+                            customer: true,
+                            plan: {
+                                include: {
+                                    profile: true,
+                                },
+                            },
+                        },
+                    });
                     if (!context) continue;
 
                     await db.subscription.update({
-                        where: { id: context.subscription.id },
+                        where: { id: context.id },
                         data: {
                             status: "CANCELLED" as any,
                             canceledAt: new Date(),
@@ -295,10 +289,10 @@ export const startSubscriptionWorker = () => {
                     });
 
                     try {
-                        await triggerWebhook(context.profile.id, {
+                        await triggerWebhook(context.plan.profile.id, {
                             event: "subscription.disable",
                             data: {
-                                transactionId: context.subscription.id,
+                                transactionId: context.id,
                                 amount: context.plan.amount,
                                 currency: context.plan.currency,
                                 status: "disabled",
@@ -312,14 +306,14 @@ export const startSubscriptionWorker = () => {
                     const cancelledPayload: any = {
                         email: context.customer.email,
                         customerName: `${context.customer.firstname} ${context.customer.lastname}`,
-                        merchantName: context.profile.businessName,
+                        merchantName: context.plan.profile.businessName,
                         planName: context.plan.name,
                         duration: String(context.plan.duration),
                         cancelledAt: new Date().toISOString(),
                     };
 
-                    if (context.subscription.endsAt) {
-                        cancelledPayload.expiresAt = context.subscription.endsAt.toISOString();
+                    if (context.endsAt) {
+                        cancelledPayload.expiresAt = context.endsAt.toISOString();
                     }
 
                     await emailQueue.addSubscriptionCancelledScheduler(cancelledPayload);
