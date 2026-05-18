@@ -137,7 +137,7 @@ export const startSubscriptionWorker = () => {
                                 network: context.network,
                             }),
                             "EX",
-                            3 * 24 * 60 * 60
+                            5 * 24 * 60 * 60
                         );
 
                         try {
