@@ -121,6 +121,7 @@ export class SubscriptionService {
         txRef: subscription.id,
         type: PaymentMethod.SUBSCRIPTION,
         subscriptionId: subscription.id,
+        billingCycleKey: subscription.id
       };
 
       const paymentResult = await this.paymentService.createPayment(paymentData, userId, mode);
