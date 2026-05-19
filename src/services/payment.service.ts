@@ -91,7 +91,6 @@ export class PaymentService {
     redirectUrl,
     paylinkId,
     subscriptionId,
-    billingCycleKey,
   }: {
     user: UserWithProfile;
     mode: Mode;
@@ -105,7 +104,6 @@ export class PaymentService {
     redirectUrl?: string;
     paylinkId?: string;
     subscriptionId?: string;
-    billingCycleKey?: string;
   }) {
     const transaction = await this.
     paymentRepository.createPayment(
@@ -128,7 +126,7 @@ export class PaymentService {
         } : {
           paymentMethod,
           subscriptionId: subscriptionId as string,
-          billingCycleKey: billingCycleKey as string,
+          billingCycleKey: subscriptionId as string,
         }
     );
 

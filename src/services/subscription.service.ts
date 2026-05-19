@@ -14,6 +14,7 @@ import {
 } from "@/dto/subscription.dto";
 import { Mode, PaymentMethod } from "../../generated/prisma";
 import { WebhookQueue } from "./schedule.webhook.service";
+import { CreatePaymentDto } from "@/dto/payment.dto";
 
 @Service()
 export class SubscriptionService {
@@ -113,7 +114,7 @@ export class SubscriptionService {
     let txId: string = "";
     // Create an initial subscription payment transaction and schedule verification
     try {
-      const paymentData = {
+      const paymentData: CreatePaymentDto = {
         amount: plan.amount,
         customerId: input.customerId,
         currency: plan.currency,
@@ -121,7 +122,6 @@ export class SubscriptionService {
         txRef: subscription.id,
         type: PaymentMethod.SUBSCRIPTION,
         subscriptionId: subscription.id,
-        billingCycleKey: subscription.id
       };
 
       const paymentResult = await this.paymentService.createPayment(paymentData, userId, mode);
