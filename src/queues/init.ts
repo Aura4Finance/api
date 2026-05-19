@@ -16,7 +16,12 @@ export async function initTransactionAndEmailOnboardJobs() {
 
     // Clean up existing schedulers first
     for (const job of repeatableJobs) {
-        if (job.name === "expire-pending-transactions" || job.name === "process-subscription-renewals" || job.name === "onboarded") {
+        if (
+            job.name === "expire-pending-transactions" ||
+            job.name === "process-subscription-renewals" ||
+            job.name === "reconcile-stuck-subscriptions" ||
+            job.name === "onboarded"
+        ) {
             await transactionQueue.removeJobScheduler(job.key);
         }
     }
@@ -51,9 +56,25 @@ export async function initTransactionAndEmailOnboardJobs() {
         }
     );
 
+    await transactionQueue.add("reconcile-stuck-subscriptions", {});
+
+    await transactionQueue.upsertJobScheduler(
+        "reconcile-stuck-subscriptions-scheduler",
+        { every: 1000 * 60 * 60 * 24 },
+        {
+            name: "reconcile-stuck-subscriptions",
+            data: {},
+            opts: {
+                removeOnComplete: true,
+                removeOnFail: false,
+            },
+        }
+    );
+
     await emailQueue.addOnboardEmailScheduler();
 
     logger.info("Transaction expiry scheduler initialized!");
     logger.info("Subscription renewal scheduler initialized!");
+    logger.info("Subscription reconciliation scheduler initialized!");
     logger.info("Email onboard scheduler initialized!");
 }

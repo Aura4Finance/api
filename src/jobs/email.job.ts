@@ -1,4 +1,5 @@
 import { Worker } from "bullmq";
+import pLimit from "p-limit";
 import { redisClient } from "@/middlewares/rate-limit.middleware";
 import Container from "typedi";
 import { EmailService } from "@/services/email.service";
@@ -10,6 +11,107 @@ import { redisConnection } from "@/config/redis-config";
 import { resend } from "@/config/resend-config";
 
 const emailService = Container.get(EmailService);
+
+const EMAIL_CONFIG = {
+  concurrencyLimit: 10,
+} as const;
+
+interface JobStats {
+  phase:
+    | "welcome-email"
+    | "offers"
+    | "problems"
+    | "payment_failed"
+    | "payment_success"
+    | "subscription-reminder"
+    | "subscription-expired"
+    | "subscription-cancelled"
+    | "subscription-active"
+    | "subscription-abandoned"
+    | "onboarded";
+  attempted: number;
+  skipped: number;
+  succeeded: number;
+  failed: number;
+}
+
+function logStats(stats: JobStats): void {
+  logger.info(
+    `[email-worker] phase=${stats.phase} ` +
+      `attempted=${stats.attempted} skipped=${stats.skipped} ` +
+      `succeeded=${stats.succeeded} failed=${stats.failed}`
+  );
+}
+
+async function runTrackedEmailJob(
+  phase: JobStats["phase"],
+  task: () => Promise<void>,
+): Promise<void> {
+  const stats: JobStats = { phase, attempted: 1, skipped: 0, succeeded: 0, failed: 0 };
+
+  try {
+    await task();
+    stats.succeeded = 1;
+  } catch (error) {
+    stats.failed = 1;
+    throw error;
+  } finally {
+    logStats(stats);
+  }
+}
+
+async function processOnboardedEmails(): Promise<JobStats> {
+  const stats: JobStats = {
+    phase: "onboarded",
+    attempted: 0,
+    skipped: 0,
+    succeeded: 0,
+    failed: 0,
+  };
+
+  const users = await db.businessProfile.findMany({
+    where: { onboarded: false },
+    include: { user: true },
+  });
+
+  const limit = pLimit(EMAIL_CONFIG.concurrencyLimit);
+
+  await Promise.all(
+    users.map((user) =>
+      limit(async () => {
+        stats.attempted++;
+
+        try {
+          const userState = await redisClient.get(user.userId);
+          const count = userState ? JSON.parse(userState).count : 0;
+
+          if (count >= 2) {
+            stats.skipped++;
+            return;
+          }
+
+          await emailService.sendOnBoardingEmail(
+            user.user.email,
+            user.user.firstname
+          );
+
+          await redisClient.set(
+            user.userId,
+            JSON.stringify({ count: count + 1 })
+          );
+
+          stats.succeeded++;
+        } catch (error) {
+          stats.failed++;
+          logger.error(`[email-worker] onboarded failed for ${user.userId}: ${error}`);
+        }
+      })
+    )
+  );
+
+  return stats;
+}
+
 const checkIfUserSuscribedForEmailNotification = async (email: string) => {
   const customer = await resend.contacts.get({ email });
   if (!customer.data) return false;
@@ -27,54 +129,44 @@ export const startEmailWorker = () => {
       try {
         switch (job.name) {
           case "welcome-email":
-            try {
+            await runTrackedEmailJob("welcome-email", async () => {
               await emailService.sendWelcomeEmail(email, recipientName);
-              logger.info("Welcome email sent!")
-            } catch (error: any) {
-              logger.error(`Error sending email: ${error.message}`)
-            }
+              logger.info("Welcome email sent!");
+            });
             break;
 
           case "offers":
-            try {
+            await runTrackedEmailJob("offers", async () => {
               await emailService.sendOfferEmail(email);
-              logger.info("Offer email sent")
-            } catch (error: any) {
-              logger.error(`Error sending email: ${error.message}`)
-            }
+              logger.info("Offer email sent");
+            });
             break;
 
           case "problems":
-            try {
+            await runTrackedEmailJob("problems", async () => {
               await emailService.sendProblemEmail(email, recipientName);
-              logger.info("Problems email sent")
-            } catch (error: any) {
-              logger.error(`Error sending email: ${error.message}`);
-            }
+              logger.info("Problems email sent");
+            });
             break;
           case "payment_failed":
-            try {
+            await runTrackedEmailJob("payment_failed", async () => {
               await emailService.sendPaymentFailedEmail(email, recipientName, rest.amount, rest.currency, rest.reference);
-            } catch (err: any) {
-              logger.error(`Error sending payment failed email: ${err.message}`);
-            }
+            });
             break;
           case "payment_success": {
-            try {
+            await runTrackedEmailJob("payment_success", async () => {
               if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
                 await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, recipientName, rest.amount, rest.currency, rest.reference);
-                logger.info("payment succeess email sent for merchant")
+                logger.info("payment succeess email sent for merchant");
               }
               await emailService.sendPaymentSuccessEmail(email, recipientName, rest.amount, rest.currency, rest.reference, rest.merchantName);
-              logger.info("payment success email sent for customer")
-            } catch (error: any) {
-              logger.info(`Error sending email: ${error.message}`)
-            }
+              logger.info("payment success email sent for customer");
+            });
             break;
           }
 
           case "subscription-reminder":
-            try {
+            await runTrackedEmailJob("subscription-reminder", async () => {
               await emailService.sendSubscriptionReminderEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -86,14 +178,12 @@ export const startEmailWorker = () => {
                 expiresAt: rest.expiresAt,
                 checkoutUrl: rest.checkoutUrl,
               });
-              logger.info("Subscription reminder email sent")
-            } catch (error: any) {
-              logger.error(`Error sending subscription reminder email: ${error.message}`)
-            }
+              logger.info("Subscription reminder email sent");
+            });
             break;
 
           case "subscription-expired":
-            try {
+            await runTrackedEmailJob("subscription-expired", async () => {
               await emailService.sendSubscriptionExpiredEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -102,14 +192,12 @@ export const startEmailWorker = () => {
                 expiresAt: rest.expiresAt,
                 checkoutUrl: rest.checkoutUrl,
               });
-              logger.info("Subscription expired email sent")
-            } catch (error: any) {
-              logger.error(`Error sending subscription expired email: ${error.message}`)
-            }
+              logger.info("Subscription expired email sent");
+            });
             break;
 
           case "subscription-cancelled":
-            try {
+            await runTrackedEmailJob("subscription-cancelled", async () => {
               await emailService.sendSubscriptionCancelledEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -118,14 +206,12 @@ export const startEmailWorker = () => {
                 cancelledAt: rest.cancelledAt,
                 expiresAt: rest.expiresAt,
               });
-              logger.info("Subscription cancelled email sent")
-            } catch (error: any) {
-              logger.error(`Error sending subscription cancelled email: ${error.message}`)
-            }
+              logger.info("Subscription cancelled email sent");
+            });
             break;
 
           case "subscription-active":
-            try {
+            await runTrackedEmailJob("subscription-active", async () => {
               await emailService.sendSubscriptionActiveEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -136,49 +222,26 @@ export const startEmailWorker = () => {
                 startsAt: rest.startsAt,
                 expiresAt: rest.expiresAt,
               });
-              logger.info("Subscription active email sent")
-            } catch (error: any) {
-              logger.error(`Error sending subscription active email: ${error.message}`)
-            }
+              logger.info("Subscription active email sent");
+            });
             break;
 
           case "subscription-abandoned":
-            try {
+            await runTrackedEmailJob("subscription-abandoned", async () => {
               await emailService.sendSubscriptionAbandonedEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
                 planName: rest.planName,
                 checkoutUrl: rest.checkoutUrl,
               });
-              logger.info("Subscription abandoned email sent")
-            } catch (error: any) {
-              logger.error(`Error sending subscription abandoned email: ${error.message}`)
-            }
+              logger.info("Subscription abandoned email sent");
+            });
             break;
 
 
           case "onboarded":
-            const users = await db.businessProfile.findMany({
-              where: { onboarded: false },
-              include: { user: true },
-            });
-
-            for (const user of users) {
-              const userState = await redisClient.get(user.userId);
-              const count = userState ? JSON.parse(userState).count : 0;
-
-              if (count >= 2) continue;
-
-              await emailService.sendOnBoardingEmail(
-                user.user.email,
-                user.user.firstname
-              );
-
-              await redisClient.set(
-                user.userId,
-                JSON.stringify({ count: count + 1 })
-              );
-            }
+            const onboardingStats = await processOnboardedEmails();
+            logStats(onboardingStats);
             break;
 
           default:

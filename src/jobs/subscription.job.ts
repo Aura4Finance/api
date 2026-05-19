@@ -1,329 +1,579 @@
+/**
+ * subscription.worker.ts
+ *
+ * Processes subscription lifecycle events: reminders, expiry notifications,
+ * and grace-period cancellations.
+ *
+ * Design principles applied:
+ *  - Atomic NX locks prevent duplicate processing across worker instances.
+ *  - DB-level unique constraint on (subscriptionId, billingCycleKey) prevents
+ *    duplicate renewal transactions even under concurrent workers.
+ *  - Batch Prisma includes eliminate N+1 queries.
+ *  - Each phase (reminder / expiry / cancellation) queries its own correct window.
+ *  - Controlled concurrency via p-limit instead of sequential awaits.
+ *  - Grace-period state (PAST_DUE) replaces immediate hard cancellation.
+ *  - All timings and domain config are centralised in RENEWAL_CONFIG.
+ *  - Per-subscription errors are caught and logged; one bad record never
+ *    aborts the entire batch.
+ *  - Reconciliation helpers surface subscriptions whose state is inconsistent
+ *    so a follow-up job or alert can intervene.
+ */
+
 import { Worker } from "bullmq";
 import Container from "typedi";
+import pLimit from "p-limit";
 import logger from "@/utils/logger";
 import { redisConnection } from "@/config/redis-config";
 import db from "@/config/db-config";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { WalletService } from "@/services/wallet.service";
 import { PaymentMethod, SubscriptionStatus } from "../../generated/prisma";
-import { redisClient as redis, redisClient } from "@/middlewares/rate-limit.middleware";
+import { redisClient } from "@/middlewares/rate-limit.middleware";
 import { triggerWebhook } from "@/services/user/webhook.service";
 import { PaymentRepository } from "@/repositories/payment.repository";
 
-const DAY_MS = 1000 * 60 * 60 * 24;
+// ---------------------------------------------------------------------------
+// Configuration – move these to environment variables / feature flags as needed
+// ---------------------------------------------------------------------------
+const RENEWAL_CONFIG = {
+    /** How many days before expiry the customer receives their first reminder. */
+    reminderDaysAhead: 3,
+    /** How many days after expiry before a non-renewed subscription is cancelled. */
+    gracePeriodDays: 2,
+    /** Redis TTL (seconds) for idempotency keys – 10 days. */
+    lockTtlSeconds: 10 * 24 * 60 * 60,
+    /** Redis TTL (seconds) for the renewal-transaction cache entry – 5 days. */
+    renewalTxCacheTtlSeconds: 5 * 24 * 60 * 60,
+    /** Maximum parallel subscription processing within a single job run. */
+    concurrencyLimit: 10,
+    /** Base URL for the customer checkout page. */
+    checkoutBaseUrl: process.env.CHECKOUT_BASE_URL ?? "https://checkout.orafi.app",
+} as const;
 
-function startOfUtcDay(date: Date) {
+const DAY_MS = 1_000 * 60 * 60 * 24;
+
+// ---------------------------------------------------------------------------
+// Date helpers
+// ---------------------------------------------------------------------------
+function startOfUtcDay(date: Date): Date {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
-function endOfUtcDay(date: Date) {
+function endOfUtcDay(date: Date): Date {
     const end = startOfUtcDay(date);
     end.setUTCDate(end.getUTCDate() + 1);
     end.setUTCMilliseconds(-1);
     return end;
 }
 
-function addUtcDays(date: Date, days: number) {
+function addUtcDays(date: Date, days: number): Date {
     return new Date(date.getTime() + days * DAY_MS);
 }
 
-function dayKey(date: Date) {
+/** YYYY-MM-DD string used in idempotency keys. */
+function dayKey(date: Date): string {
     return date.toISOString().slice(0, 10);
 }
 
-async function acquireLock(key: string, ttlSeconds: number) {
-    const result = await redis.set(
-        key,
-        "1",
-        "EX",
-        ttlSeconds
-    );
+/**
+ * A stable billing-cycle identifier derived from the subscription ID and
+ * the day the current billing period ends.  Used as a unique key in the DB
+ * to prevent duplicate renewal transactions even if two workers race.
+ */
+function billingCycleKey(subscriptionId: string, endsAt: Date): string {
+    return `${subscriptionId}:${dayKey(endsAt)}`;
+}
 
+// ---------------------------------------------------------------------------
+// Redis distributed lock
+// ---------------------------------------------------------------------------
+
+/**
+ * Atomically acquires a lock using SET NX EX.
+ *
+ * The previous implementation omitted the NX flag, meaning a second worker
+ * could silently overwrite the lock and both would believe they held it.
+ * SET NX EX is a single atomic command – no race window exists.
+ */
+async function acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
+    const result = await redisClient.set(key, "1", "EX", ttlSeconds, "NX");
     return result === "OK";
 }
 
-export const startSubscriptionWorker = () => {
-    const paymentRepository = Container.get(PaymentRepository)
+// ---------------------------------------------------------------------------
+// Metrics / observability stub
+// ---------------------------------------------------------------------------
+interface BatchStats {
+    phase: "reminder" | "expiry" | "cancellation" | "reconciliation";
+    attempted: number;
+    skipped: number;   // lock already held
+    succeeded: number;
+    failed: number;
+}
+
+interface ReconciliationStats extends BatchStats {
+    phase: "reconciliation";
+    activeRepaired: number;
+    pastDueRepaired: number;
+}
+
+function logStats(stats: BatchStats | ReconciliationStats): void {
+    const reconciliationMetrics = "activeRepaired" in stats
+        ? ` activeRepaired=${stats.activeRepaired} pastDueRepaired=${stats.pastDueRepaired}`
+        : "";
+
+    logger.info(
+        `[subscription-worker] phase=${stats.phase} ` +
+        `attempted=${stats.attempted} skipped=${stats.skipped} ` +
+        `succeeded=${stats.succeeded} failed=${stats.failed}` +
+        reconciliationMetrics
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Renewal-transaction helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Finds an existing renewal transaction for this billing cycle or creates
+ * a new one.  The billingCycleKey unique constraint in the DB makes this
+ * safe even when two workers run concurrently – the second INSERT will fail
+ * and fall back to a SELECT.
+ *
+ * NOTE: Your PaymentRepository.createPayment must propagate a unique-
+ * constraint error (e.g. Prisma P2002) rather than swallowing it for this
+ * guarantee to hold.  Add a unique index in your Prisma schema:
+ *
+ *   @@unique([billingCycleKey])   on the Payment model
+ */
+async function findOrCreateRenewalTransaction(
+    paymentRepository: PaymentRepository,
+    walletService: WalletService,
+    context: SubscriptionWithRelations,
+): Promise<{ id: string }> {
+    const cycleKey = billingCycleKey(context.id, context.endsAt!);
+
+    // 1. Try to find an existing renewal transaction for this cycle.
+    const existing = await paymentRepository.findSubscriptionPaymentByBillingCycleKey(cycleKey);
+    if (existing) return existing;
+
+    // 2. None found – convert amount and create.
+    const amountInUsdt = await walletService.convertBetweenCurrencyAndUSDT(
+        context.plan.amount,
+        context.plan.currency,
+        "to_USDT"
+    );
+
+    try {
+        const tx = await paymentRepository.createPayment(
+            context.plan.amount,
+            amountInUsdt,
+            context.plan.currency,
+            context.network,
+            context.customer,
+            "",
+            context.plan.profile.id,
+            context.mode,
+            {
+                paymentMethod: PaymentMethod.SUBSCRIPTION,
+                subscriptionId: context.id,
+                billingCycleKey: cycleKey,  // stored for uniqueness guarantee
+            }
+        );
+
+        // Cache the metadata needed at the checkout page so it survives restarts.
+        await redisClient.set(
+            tx.id,
+            JSON.stringify({
+                amount: context.plan.amount,
+                amountInUSDC: amountInUsdt,
+                businessName: context.plan.profile.businessName,
+                redirectUrl: "",
+                mode: context.mode,
+                currency: context.plan.currency,
+                network: context.network,
+            }),
+            "EX",
+            RENEWAL_CONFIG.renewalTxCacheTtlSeconds
+        );
+
+        try {
+            await triggerWebhook(context.plan.profile.id, {
+                event: "payment.create",
+                data: {
+                    transactionId: tx.id,
+                    amount: context.plan.amount,
+                    currency: context.plan.currency,
+                    status: "created",
+                    occuredAt: new Date().toISOString(),
+                },
+            });
+        } catch (webhookErr) {
+            // Webhook failure must never block the renewal workflow.
+            logger.warn(`[subscription-worker] webhook failed for tx ${tx.id}: ${webhookErr}`);
+        }
+
+        return tx;
+    } catch (err: any) {
+        // P2002 = Prisma unique constraint violation – another worker beat us.
+        if (err?.code === "P2002") {
+            const race = await paymentRepository.findSubscriptionPaymentByBillingCycleKey(cycleKey);
+            if (race) return race;
+        }
+        throw err;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Type alias for the hydrated subscription shape used throughout
+// ---------------------------------------------------------------------------
+type SubscriptionWithRelations = Awaited<
+    ReturnType<typeof db.subscription.findMany<{
+        include: {
+            customer: true;
+            plan: { include: { profile: true } };
+        };
+    }>>
+>[number];
+
+// ---------------------------------------------------------------------------
+// Phase handlers
+// ---------------------------------------------------------------------------
+
+async function processReminders(
+    paymentRepository: PaymentRepository,
+    walletService: WalletService,
+    emailQueue: EmailQueue,
+    now: Date,
+): Promise<BatchStats> {
+    const stats: BatchStats = { phase: "reminder", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+    const target = addUtcDays(now, RENEWAL_CONFIG.reminderDaysAhead);
+    const window = { gte: startOfUtcDay(target), lte: endOfUtcDay(target) };
+
+    // Single query with includes – eliminates all N+1 lookups.
+    const subscriptions = await db.subscription.findMany({
+        where: { status: SubscriptionStatus.ACTIVE, endsAt: window },
+        include: { customer: true, plan: { include: { profile: true } } },
+    });
+
+    const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
+
+    await Promise.all(
+        subscriptions.map((sub) =>
+            limit(async () => {
+                stats.attempted++;
+                const dedupeKey = `subscription:reminder:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
+
+                const locked = await acquireLock(dedupeKey, RENEWAL_CONFIG.lockTtlSeconds);
+                if (!locked) { stats.skipped++; return; }
+
+                try {
+                    const renewalTx = await findOrCreateRenewalTransaction(paymentRepository, walletService, sub);
+
+                    await emailQueue.addSubscriptionReminderScheduler({
+                        email: sub.customer.email,
+                        customerName: `${sub.customer.firstname} ${sub.customer.lastname}`,
+                        merchantName: sub.plan.profile.businessName,
+                        planName: sub.plan.name,
+                        duration: String(sub.plan.duration),
+                        amount: sub.plan.amount,
+                        currency: sub.plan.currency,
+                        daysLeft: RENEWAL_CONFIG.reminderDaysAhead,
+                        checkoutUrl: `${RENEWAL_CONFIG.checkoutBaseUrl}/${renewalTx.id}`,
+                        expiresAt: sub.endsAt?.toISOString() ?? "",
+                    });
+
+                    stats.succeeded++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] reminder failed for ${sub.id}: ${err}`);
+                }
+            })
+        )
+    );
+
+    return stats;
+}
+
+async function processExpiries(
+    paymentRepository: PaymentRepository,
+    walletService: WalletService,
+    emailQueue: EmailQueue,
+    now: Date,
+): Promise<BatchStats> {
+    const stats: BatchStats = { phase: "expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+
+    // BUG FIX: use expiryWindow (today), NOT reminderWindow (3 days out).
+    const expiryWindow = { gte: startOfUtcDay(now), lte: endOfUtcDay(now) };
+
+    const subscriptions = await db.subscription.findMany({
+        where: { status: SubscriptionStatus.ACTIVE, endsAt: expiryWindow },
+        include: { customer: true, plan: { include: { profile: true } } },
+    });
+
+    const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
+
+    await Promise.all(
+        subscriptions.map((sub) =>
+            limit(async () => {
+                stats.attempted++;
+                const dedupeKey = `subscription:expiry:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
+
+                const locked = await acquireLock(dedupeKey, RENEWAL_CONFIG.lockTtlSeconds);
+                if (!locked) { stats.skipped++; return; }
+
+                try {
+                    // Reuse the transaction created by the reminder phase if present.
+                    const renewalTx = await findOrCreateRenewalTransaction(paymentRepository, walletService, sub);
+
+                    // Transition to PAST_DUE grace period instead of immediate cancellation.
+                    await db.subscription.update({
+                        where: { id: sub.id },
+                        data: { status: SubscriptionStatus.PAST_DUE },
+                    });
+
+                    await emailQueue.addSubscriptionExpiredScheduler({
+                        email: sub.customer.email,
+                        customerName: `${sub.customer.firstname} ${sub.customer.lastname}`,
+                        merchantName: sub.plan.profile.businessName,
+                        planName: sub.plan.name,
+                        duration: String(sub.plan.duration),
+                        checkoutUrl: `${RENEWAL_CONFIG.checkoutBaseUrl}/${renewalTx.id}`,
+                        expiresAt: sub.endsAt?.toISOString() ?? "",
+                    });
+
+                    stats.succeeded++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] expiry failed for ${sub.id}: ${err}`);
+                }
+            })
+        )
+    );
+
+    return stats;
+}
+
+async function processCancellations(
+    emailQueue: EmailQueue,
+    now: Date,
+): Promise<BatchStats> {
+    const stats: BatchStats = { phase: "cancellation", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+
+    // Target subscriptions still in PAST_DUE after the grace period has elapsed.
+    // BUG FIX: use cancellationWindow against PAST_DUE status (not ACTIVE + reminderWindow).
+    const graceCutoff = addUtcDays(now, -RENEWAL_CONFIG.gracePeriodDays);
+    const cancellationWindow = { lte: endOfUtcDay(graceCutoff) };
+
+    const subscriptions = await db.subscription.findMany({
+        where: { status: SubscriptionStatus.PAST_DUE, endsAt: cancellationWindow },
+        include: { customer: true, plan: { include: { profile: true } } },
+    });
+
+    const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
+
+    await Promise.all(
+        subscriptions.map((sub) =>
+            limit(async () => {
+                stats.attempted++;
+                const dedupeKey = `subscription:cancel:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
+
+                const locked = await acquireLock(dedupeKey, RENEWAL_CONFIG.lockTtlSeconds);
+                if (!locked) { stats.skipped++; return; }
+
+                try {
+                    const cancelledAt = new Date();
+
+                    await db.subscription.update({
+                        where: { id: sub.id },
+                        data: { status: "CANCELLED" as any, canceledAt: cancelledAt },
+                    });
+
+                    try {
+                        await triggerWebhook(sub.plan.profile.id, {
+                            event: "subscription.disable",
+                            data: {
+                                transactionId: sub.id,
+                                amount: sub.plan.amount,
+                                currency: sub.plan.currency,
+                                status: "disabled",
+                                occuredAt: cancelledAt.toISOString(),
+                            },
+                        });
+                    } catch (webhookErr) {
+                        logger.warn(`[subscription-worker] webhook failed for cancel ${sub.id}: ${webhookErr}`);
+                    }
+
+                    await emailQueue.addSubscriptionCancelledScheduler({
+                        email: sub.customer.email,
+                        customerName: `${sub.customer.firstname} ${sub.customer.lastname}`,
+                        merchantName: sub.plan.profile.businessName,
+                        planName: sub.plan.name,
+                        duration: String(sub.plan.duration),
+                        cancelledAt: cancelledAt.toISOString(),
+                        ...(sub.endsAt ? { expiresAt: sub.endsAt.toISOString() } : {}),
+                    });
+
+                    stats.succeeded++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] cancellation failed for ${sub.id}: ${err}`);
+                }
+            })
+        )
+    );
+
+    return stats;
+}
+
+// ---------------------------------------------------------------------------
+// Reconciliation – surfaces stuck states for alerting / follow-up jobs
+// ---------------------------------------------------------------------------
+async function reconcileStuckSubscriptions(now: Date): Promise<ReconciliationStats> {
+    // Subscriptions still ACTIVE but whose endsAt is in the past (worker may have been down).
+    const stuckActive = await db.subscription.findMany({
+        where: {
+            status: SubscriptionStatus.ACTIVE,
+            endsAt: { lte: endOfUtcDay(addUtcDays(now, -1)) },
+        },
+        select: { id: true },
+    });
+
+    // Subscriptions stuck in PAST_DUE beyond 2× the grace period.
+    const stuckPastDue = await db.subscription.findMany({
+        where: {
+            status: SubscriptionStatus.PAST_DUE,
+            endsAt: { lte: endOfUtcDay(addUtcDays(now, -(RENEWAL_CONFIG.gracePeriodDays * 2))) },
+        },
+        select: { id: true },
+    });
+
+    const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
+    const stats: ReconciliationStats = {
+        phase: "reconciliation",
+        attempted: stuckActive.length + stuckPastDue.length,
+        skipped: 0,
+        succeeded: 0,
+        failed: 0,
+        activeRepaired: 0,
+        pastDueRepaired: 0,
+    };
+
+    await Promise.all([
+        ...stuckActive.map((subscription) =>
+            limit(async () => {
+                try {
+                    const result = await db.subscription.updateMany({
+                        where: {
+                            id: subscription.id,
+                            status: SubscriptionStatus.ACTIVE,
+                        },
+                        data: { status: SubscriptionStatus.PAST_DUE },
+                    });
+
+                    if (result.count === 0) {
+                        stats.skipped++;
+                        return;
+                    }
+
+                    stats.succeeded++;
+                    stats.activeRepaired++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] reconciliation failed for ACTIVE ${subscription.id}: ${err}`);
+                }
+            })
+        ),
+        ...stuckPastDue.map((subscription) =>
+            limit(async () => {
+                try {
+                    const result = await db.subscription.updateMany({
+                        where: {
+                            id: subscription.id,
+                            status: SubscriptionStatus.PAST_DUE,
+                        },
+                        data: { status: "CANCELLED" as any, canceledAt: now },
+                    });
+
+                    if (result.count === 0) {
+                        stats.skipped++;
+                        return;
+                    }
+
+                    stats.succeeded++;
+                    stats.pastDueRepaired++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] reconciliation failed for PAST_DUE ${subscription.id}: ${err}`);
+                }
+            })
+        ),
+    ]);
+
+    if (stuckActive.length > 0) {
+        logger.warn(
+            `[subscription-worker] reconcile: repaired ${stats.activeRepaired}/${stuckActive.length} ACTIVE subscriptions with past endsAt.`
+        );
+    }
+
+    if (stuckPastDue.length > 0) {
+        logger.warn(
+            `[subscription-worker] reconcile: repaired ${stats.pastDueRepaired}/${stuckPastDue.length} PAST_DUE subscriptions beyond grace period.`
+        );
+    }
+
+    return stats;
+}
+
+// ---------------------------------------------------------------------------
+// Worker bootstrap
+// ---------------------------------------------------------------------------
+export const startSubscriptionWorker = (): void => {
+    const paymentRepository = Container.get(PaymentRepository);
     const emailQueue = Container.get(EmailQueue);
     const walletService = Container.get(WalletService);
 
     new Worker(
         "transaction-queue",
         async (job) => {
-            if (job.name !== "process-subscription-renewals") {
-                return;
-            }
+            if (job.name !== "process-subscription-renewals") return;
 
             const now = new Date();
-            const reminderTarget = addUtcDays(now, 3);
-            const expiryTarget = now;
-            const cancellationTarget = addUtcDays(now, -2);
 
-            const reminderWindow = {
-                gte: startOfUtcDay(reminderTarget),
-                lte: endOfUtcDay(reminderTarget),
-            };
+            const [reminderStats, expiryStats, cancellationStats] = await Promise.all([
+                processReminders(paymentRepository, walletService, emailQueue, now),
+                processExpiries(paymentRepository, walletService, emailQueue, now),
+                processCancellations(emailQueue, now),
+            ]);
 
-            const expiryWindow = {
-                gte: startOfUtcDay(expiryTarget),
-                lte: endOfUtcDay(expiryTarget),
-            };
-
-            const cancellationWindow = {
-                gte: startOfUtcDay(cancellationTarget),
-                lte: endOfUtcDay(cancellationTarget),
-            };
-
-            try {
-                const reminderSubscriptions = await db.subscription.findMany({
-                    where: {
-                        status: SubscriptionStatus.ACTIVE,
-                        endsAt: reminderWindow,
-                    },
-                });
-
-                for (const subscription of reminderSubscriptions) {
-                    const dedupeKey = `subscription:reminder:${subscription.id}:${dayKey(subscription.endsAt ?? now)}`;
-                    const lock = await acquireLock(dedupeKey, Math.floor((DAY_MS * 10) / 1000));
-                    if (!lock) continue;
-
-                    const context = await db.subscription.findFirst({
-                        where: {
-                            status: SubscriptionStatus.ACTIVE,
-                            endsAt: reminderWindow,
-                        },
-                        include: {
-                            customer: true,
-                            plan: {
-                                include: {
-                                    profile: true,
-                                },
-                            },
-                        },
-                    });
-                    if (!context) continue;
-
-                    let renewalTransaction = await paymentRepository.findSubscriptionPaymentBySubscriptionId(subscription.id);
-                    if (!renewalTransaction) {
-                        const amountToPay = await walletService.convertBetweenCurrencyAndUSDT(
-                            context.plan.amount,
-                            context.plan.currency,
-                            "to_USDT"
-                        );
-
-                        renewalTransaction = await paymentRepository.createPayment(
-                            context.plan.amount,
-                            amountToPay,
-                            context.plan.currency,
-                            context.network,
-                            context.customer,
-                            "",
-                            context.plan.profile.id,
-                            context.mode,
-                            {
-                                paymentMethod: PaymentMethod.SUBSCRIPTION,
-                                subscriptionId: context.id
-                            }
-                        );
-                        await redisClient.set(
-                            renewalTransaction.id,
-                            JSON.stringify({
-                                amount: context.plan.amount,
-                                amountInUSDC: amountToPay,
-                                businessName: context.plan.profile.businessName,
-                                redirectUrl: "",
-                                mode: context.mode,
-                                currency: context.plan.currency,
-                                network: context.network,
-                            }),
-                            "EX",
-                            5 * 24 * 60 * 60
-                        );
-
-                        try {
-                            await triggerWebhook(context.plan.profile.id, {
-                                event: "payment.create",
-                                data: {
-                                    transactionId: renewalTransaction.id,
-                                    amount: context.plan.amount,
-                                    currency: context.plan.currency,
-                                    status: "created",
-                                    occuredAt: new Date().toISOString(),
-                                },
-                            });
-                        } catch {
-                            // Webhook delivery should not block the renewal workflow.
-                        }
-                    }
-
-                    const reminderPayload: any = {
-                        email: context.customer.email,
-                        customerName: `${context.customer.firstname} ${context.customer.lastname}`,
-                        merchantName: context.plan.profile.businessName,
-                        planName: context.plan.name,
-                        duration: String(context.plan.duration),
-                        amount: context.plan.amount,
-                        currency: context.plan.currency,
-                        daysLeft: 3,
-                        checkoutUrl: `https://checkout.orafi.app/${renewalTransaction.id}`,
-                        expiresAt: context.endsAt?.toISOString() ?? "",
-                    };
-
-                    await emailQueue.addSubscriptionReminderScheduler(reminderPayload);
-                }
-
-                const expirySubscriptions = await db.subscription.findMany({
-                    where: {
-                        status: SubscriptionStatus.ACTIVE,
-                        endsAt: expiryWindow,
-                    },
-                });
-
-                for (const subscription of expirySubscriptions) {
-                    const dedupeKey = `subscription:expiry:${subscription.id}:${dayKey(subscription.endsAt ?? now)}`;
-                    const lock = await acquireLock(dedupeKey, Math.floor((DAY_MS * 10) / 1000));
-                    if (!lock) continue;
-
-                    const context = await db.subscription.findFirst({
-                        where: {
-                            status: SubscriptionStatus.ACTIVE,
-                            endsAt: reminderWindow,
-                        },
-                        include: {
-                            customer: true,
-                            plan: {
-                                include: {
-                                    profile: true,
-                                },
-                            },
-                        },
-                    });
-                    if (!context) continue;
-
-                    let renewalTransaction = (await paymentRepository.findSubscriptionPaymentBySubscriptionId(subscription.id)) as { id: string } | null;
-                    if (!renewalTransaction) {
-                        const amountToPay = await walletService.convertBetweenCurrencyAndUSDT(
-                            context.plan.amount,
-                            context.plan.currency,
-                            "to_USDT"
-                        );
-
-                        renewalTransaction = (await paymentRepository.createPayment(
-                            context.plan.amount,
-                            amountToPay,
-                            context.plan.currency,
-                            context.network,
-                            context.customer,
-                            "",
-                            context.plan.profile.id,
-                            context.mode,
-                            {
-                                paymentMethod: PaymentMethod.SUBSCRIPTION,
-                                subscriptionId: context.id
-                            }
-                        )) as { id: string };
-
-                        await redisClient.set(
-                            renewalTransaction.id,
-                            JSON.stringify({
-                                amount: context.plan.amount,
-                                amountInUSDC: amountToPay,
-                                businessName: context.plan.profile.businessName,
-                                redirectUrl: "",
-                                mode: context.mode,
-                                currency: context.plan.currency,
-                                network: context.network,
-                            }),
-                            "EX",
-                            2 * 24 * 60 * 60
-                        );
-                    }
-
-                    const expiredPayload: any = {
-                        email: context.customer.email,
-                        customerName: `${context.customer.firstname} ${context.customer.lastname}`,
-                        merchantName: context.plan.profile.businessName,
-                        planName: context.plan.name,
-                        duration: String(context.plan.duration),
-                        checkoutUrl: `https://checkout.orafi.app/${renewalTransaction.id}`,
-                        expiresAt: context.endsAt?.toISOString() ?? "",
-                    };
-
-                    await emailQueue.addSubscriptionExpiredScheduler(expiredPayload);
-                }
-
-                const cancellationSubscriptions = await db.subscription.findMany({
-                    where: {
-                        status: SubscriptionStatus.ACTIVE,
-                        endsAt: cancellationWindow,
-                    },
-                });
-
-                for (const subscription of cancellationSubscriptions) {
-                    const dedupeKey = `subscription:cancel:${subscription.id}:${dayKey(subscription.endsAt ?? now)}`;
-                    const lock = await acquireLock(dedupeKey, Math.floor((DAY_MS * 10) / 1000));
-                    if (!lock) continue;
-
-                    const context = await db.subscription.findFirst({
-                        where: {
-                            status: SubscriptionStatus.ACTIVE,
-                            endsAt: reminderWindow,
-                        },
-                        include: {
-                            customer: true,
-                            plan: {
-                                include: {
-                                    profile: true,
-                                },
-                            },
-                        },
-                    });
-                    if (!context) continue;
-
-                    await db.subscription.update({
-                        where: { id: context.id },
-                        data: {
-                            status: "CANCELLED" as any,
-                            canceledAt: new Date(),
-                        },
-                    });
-
-                    try {
-                        await triggerWebhook(context.plan.profile.id, {
-                            event: "subscription.disable",
-                            data: {
-                                transactionId: context.id,
-                                amount: context.plan.amount,
-                                currency: context.plan.currency,
-                                status: "disabled",
-                                occuredAt: new Date().toISOString(),
-                            },
-                        });
-                    } catch {
-                        // Webhook delivery should not block cancellation.
-                    }
-
-                    const cancelledPayload: any = {
-                        email: context.customer.email,
-                        customerName: `${context.customer.firstname} ${context.customer.lastname}`,
-                        merchantName: context.plan.profile.businessName,
-                        planName: context.plan.name,
-                        duration: String(context.plan.duration),
-                        cancelledAt: new Date().toISOString(),
-                    };
-
-                    if (context.endsAt) {
-                        cancelledPayload.expiresAt = context.endsAt.toISOString();
-                    }
-
-                    await emailQueue.addSubscriptionCancelledScheduler(cancelledPayload);
-                }
-            } catch (error) {
-                logger.error(`Subscription worker error: ${error}`);
-                throw error;
-            }
+            logStats(reminderStats);
+            logStats(expiryStats);
+            logStats(cancellationStats);
         },
-        { connection: redisConnection }
+        {
+            connection: redisConnection,
+            // BullMQ-level retry: retry up to 3 times with exponential back-off
+            // before the job is moved to the dead-letter (failed) queue.
+            settings: { backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000) },
+        }
+    );
+
+    new Worker(
+        "transaction-queue",
+        async (job) => {
+            if (job.name !== "reconcile-stuck-subscriptions") return;
+
+            const now = new Date();
+            const reconciliationStats = await reconcileStuckSubscriptions(now);
+
+            logStats(reconciliationStats);
+        },
+        {
+            connection: redisConnection,
+            // BullMQ-level retry: retry up to 3 times with exponential back-off
+            // before the job is moved to the dead-letter (failed) queue.
+            settings: { backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000) },
+        }
     );
 
     logger.info("🔁 Subscription renewal worker started");

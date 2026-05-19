@@ -15,6 +15,7 @@ type PaymentOptions =
   {
     paymentMethod: PaymentMethod;
     subscriptionId: string;
+    billingCycleKey: string;
   }
   | {
     paymentMethod: PaymentMethod;
@@ -43,7 +44,6 @@ export class PaymentRepository {
     let redirectUrl: string;
     let paylinkConnect: any = undefined;
     let subscriptionConnect: any = undefined;
-
     if (options.paymentMethod === PaymentMethod.PAYMENT_LINK) {
       const paymentLinkOptions = options as any;
       redirectUrl = `${process.env.ORAFI_PAYLINK_URL}/${paymentLinkOptions.paylinkId}`;
@@ -69,6 +69,7 @@ export class PaymentRepository {
 
     if (subscriptionConnect) {
       paymentData.subscription = subscriptionConnect;
+      paymentData.billingCycleKey = (options as any).billingCycleKey;
     }
 
     const tx = await db.transaction.create({
@@ -145,6 +146,24 @@ export class PaymentRepository {
     });
 
     return result;
+  }
+
+  async findSubscriptionPaymentByBillingCycleKey(billingCycleKey: string) {
+    const payment = await db.payment.findFirst({
+      where: {
+        billingCycleKey,
+        paymentMethod: PaymentMethod.SUBSCRIPTION,
+      },
+      select: {
+        transactionId: true,
+      },
+    });
+
+    if (!payment) {
+      return null;
+    }
+
+    return { id: payment.transactionId };
   }
 
   async addTransferAddressToPayment(

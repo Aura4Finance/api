@@ -1,4 +1,5 @@
 import { Worker } from "bullmq";
+import pLimit from "p-limit";
 import db from "@/config/db-config";
 import { TransactionStatus } from "../../generated/prisma";
 import logger from "@/utils/logger";
@@ -10,13 +11,76 @@ import { EmailQueue } from "@/services/schedule.email.service";
 import { triggerWebhook } from "@/services/user/webhook.service";
 import { SubscriptionStatus, SubscriptionDuration } from "../../generated/prisma";
 
+const EXPIRY_CONFIG = {
+  concurrencyLimit: 10,
+} as const;
+
+interface BatchStats {
+  phase: "expiry";
+  attempted: number;
+  skipped: number;
+  succeeded: number;
+  failed: number;
+}
+
+function logStats(stats: BatchStats): void {
+  logger.info(
+    `[transaction-worker] phase=${stats.phase} ` +
+      `attempted=${stats.attempted} skipped=${stats.skipped} ` +
+      `succeeded=${stats.succeeded} failed=${stats.failed}`
+  );
+}
+
+async function processExpiredPendingTransactions(paymentService: PaymentService): Promise<BatchStats> {
+  const stats: BatchStats = { phase: "expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const pending = await db.transaction.findMany({
+    where: {
+      status: TransactionStatus.PENDING,
+      createdAt: { lte: cutoff },
+    },
+    select: { id: true },
+  });
+
+  const limit = pLimit(EXPIRY_CONFIG.concurrencyLimit);
+
+  await Promise.all(
+    pending.map((tx) =>
+      limit(async () => {
+        stats.attempted++;
+
+        try {
+          // Try verifyPayment first; the service is responsible for the successful-path update.
+          await paymentService.verifyPayment({ paymentId: tx.id });
+          stats.succeeded++;
+        } catch (error) {
+          try {
+            await db.transaction.update({
+              where: { id: tx.id },
+              data: { status: TransactionStatus.FAILED },
+            });
+            stats.succeeded++;
+            logger.info(`Transaction ${tx.id} expired and marked as failed`);
+          } catch (updateError) {
+            stats.failed++;
+            logger.error(`[transaction-worker] failed to expire ${tx.id}: ${updateError}`);
+          }
+        }
+      })
+    )
+  );
+
+  return stats;
+}
+
 export const startTransactionWorker = () => {
   const paymentService = Container.get(PaymentService);
 
   new Worker(
     "transaction-queue",
     async (job) => {
-      if (job.name == "verify-payment") {
+      if (job.name === "verify-payment") {
         const { paymentId, subscriptionId } = job.data;
         const emailQueue = Container.get(EmailQueue);
         try {
@@ -123,38 +187,20 @@ export const startTransactionWorker = () => {
 
         return;
       }
-      if (job.name == "expire-pending-transactions") {
-
-        logger.info("⏱ Transaction expiry job running");
-        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
+      if (job.name === "expire-pending-transactions") {
         try {
-          const pending = await db.transaction.findMany({
-            where: {
-              status: TransactionStatus.PENDING,
-              createdAt: { lte: cutoff },
-            },
-            select: { id: true },
-          });
+          logger.info("⏱ Transaction expiry job running");
 
-          for (const tx of pending) {
-            try {
-              // Try verifyPayment first
-              await paymentService.verifyPayment({ paymentId: tx.id });
-            } catch (error) {
-              await db.transaction.update({
-                where: { id: tx.id },
-                data: { status: TransactionStatus.FAILED },
-              });
-              logger.info(`Transaction ${tx.id} expired and marked as failed`);
-            }
-          }
+          const expiryStats = await processExpiredPendingTransactions(paymentService);
+
+          logStats(expiryStats);
         } catch (error) {
-          logger.error(`Transaction worker error: ${error}`);
+          logger.error(`[transaction-worker] expiry job error: ${error}`);
           throw error;
         }
+        return;
       }
-      if (job.name == "transfer-usdt") {
+      if (job.name === "transfer-usdt") {
         const {
           walletPrivateKey,
           coinObjectId,
@@ -174,7 +220,12 @@ export const startTransactionWorker = () => {
         )
       }
     },
-    { connection: redisConnection }
+    {
+      connection: redisConnection,
+      settings: {
+        backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000),
+      },
+    }
   );
 
   logger.info("💸 Transaction Worker started");
