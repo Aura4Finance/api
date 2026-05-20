@@ -4,9 +4,14 @@ import logger from "@/utils/logger";
 
 const limiterCache = new Map<string, Bottleneck>();
 let shutdownHookRegistered = false;
+let sharedLimiterConnection: Bottleneck.IORedisConnection | undefined;
 
 const DEFAULT_MAX_CONCURRENT = parseNumber(process.env.RATE_LIMIT_MAX_CONCURRENT, 3);
 const DEFAULT_MIN_TIME_MS = parseNumber(process.env.RATE_LIMIT_MIN_TIME_MS, 200);
+const DEFAULT_LIMITER_TIMEOUT_MS = parseNumber(
+  process.env.RATE_LIMIT_TIMEOUT_MS,
+  5 * 60 * 1000
+);
 
 function parseNumber(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback;
@@ -18,29 +23,14 @@ function sanitizeKey(key: string): string {
   return key.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
 }
 
-function buildRedisOptions(): Record<string, unknown> {
-  const redisOptions = { ...redisClient } as Record<string, unknown>;
-
-  const maxRetriesPerRequest = parseNumber(
-    process.env.REDIS_MAX_RETRIES_PER_REQUEST,
-    -1
-  );
-  if (maxRetriesPerRequest >= 0) {
-    redisOptions.maxRetriesPerRequest = maxRetriesPerRequest;
+function getSharedLimiterConnection() {
+  if (!sharedLimiterConnection) {
+    sharedLimiterConnection = new Bottleneck.IORedisConnection({
+      client: redisClient,
+    });
   }
 
-  if (process.env.REDIS_ENABLE_OFFLINE_QUEUE) {
-    redisOptions.enableOfflineQueue =
-      process.env.REDIS_ENABLE_OFFLINE_QUEUE === "true";
-  }
-
-  const retryDelayMs = parseNumber(process.env.REDIS_RETRY_DELAY_MS, 200);
-  if (retryDelayMs > 0) {
-    redisOptions.retryStrategy = (times: number) =>
-      Math.min(times * retryDelayMs, 2000);
-  }
-
-  return redisOptions;
+  return sharedLimiterConnection;
 }
 
 function getLimiterDefaults(key: string) {
@@ -85,8 +75,8 @@ export function getLimiter(
 
   const limiter = new Bottleneck({
     id: `limiter:${key}`,
-    datastore: "ioredis",
-    clientOptions: buildRedisOptions(),
+    connection: getSharedLimiterConnection(),
+    timeout: DEFAULT_LIMITER_TIMEOUT_MS,
     maxConcurrent: defaults.maxConcurrent,
     minTime: defaults.minTime,
     ...options,
