@@ -8,7 +8,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 
 type TemplateVars = Record<string, string | number | undefined>;
-
+//edits
 @Service()
 export class EmailService {
   private templatePath: string;
