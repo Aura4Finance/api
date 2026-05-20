@@ -10,7 +10,7 @@ import speakeasy from "speakeasy";
 import logger from "@/utils/logger";
 import { PaymentMethod, Role } from "../../generated/prisma";
 import { PaylinkRepository } from "@/repositories/paylink.repository";
-import { redisClient } from "./rate-limit.middleware";
+import { redisClient } from "@/config/redis-config";
 
 
 

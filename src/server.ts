@@ -1,5 +1,5 @@
 import app from "./app"
-import { initTransactionAndEmailOnboardJobs } from "./queues/init";
+import { executeInits } from "./queues/init";
 import logger from "./utils/logger";
 import "reflect-metadata";
 
@@ -28,8 +28,7 @@ if(process.env.PROCESS_TYPE === "worker") {
     try {
       logger.info("🚀 Starting server...");
 
-      await initTransactionAndEmailOnboardJobs();
-
+      await executeInits();
       app.listen(PORT, () => {
         logger.info(`Server is running on Port: ${PORT}`);
       });

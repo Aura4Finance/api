@@ -2,7 +2,7 @@ import { RequestAuth } from "@/@types/request";
 import { STATUS } from "@/constants/status.constant";
 import { APIError } from "@/utils/error-handler";
 import logger from "@/utils/logger";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
+import { redisClient } from "@/config/redis-config";
 import { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
 

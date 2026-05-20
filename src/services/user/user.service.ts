@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { AuthRepository } from "@/repositories/auth.repository";
 import { EmailService } from "../email.service";
 import { resend } from "@/config/resend-config";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
+import { redisClient } from "@/config/redis-config";
 import speakeasy from "speakeasy";
 
 @Service()    

@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs";
 import { resend } from "@/config/resend-config";
 import { generateReceiptPDF, generateReceiptNumber } from "@/utils/pdf-generator";
-import { redisClient as redis } from "@/middlewares/rate-limit.middleware";
+import { redisClient } from "@/config/redis-config";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 
@@ -165,7 +165,7 @@ private async queueEmail(emailPayload: any) {
   async sendOtp(to: string, otp: string) {
     const throttleKey = `email:otp:${to}`;
 
-    const alreadySent = await redis.get(throttleKey);
+    const alreadySent = await redisClient.get(throttleKey);
     if (alreadySent) {
       throw new APIError("OTP already sent. Please wait before requesting again.", STATUS.tooManyRequests);
     }
@@ -181,7 +181,7 @@ private async queueEmail(emailPayload: any) {
     );
 
     //throttle OTP for 60 seconds
-   await redis.set(throttleKey, "1", "EX", 60);
+   await redisClient.set(throttleKey, "1", "EX", 60);
   }
 
 

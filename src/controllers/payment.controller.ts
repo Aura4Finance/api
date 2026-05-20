@@ -16,7 +16,7 @@ import {
 import { Response } from "express";
 import { Service } from "typedi";
 import { Paylink, PaymentMethod } from "../../generated/prisma";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
+import { redisClient } from "@/config/redis-config";
 
 @Service()
 export class PaymentController {

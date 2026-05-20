@@ -1,5 +1,5 @@
 import Bottleneck from "bottleneck";
-import { redisConnection } from "@/config/redis-config";
+import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 
 const limiterCache = new Map<string, Bottleneck>();
@@ -19,7 +19,7 @@ function sanitizeKey(key: string): string {
 }
 
 function buildRedisOptions(): Record<string, unknown> {
-  const redisOptions = { ...redisConnection } as Record<string, unknown>;
+  const redisOptions = { ...redisClient } as Record<string, unknown>;
 
   const maxRetriesPerRequest = parseNumber(
     process.env.REDIS_MAX_RETRIES_PER_REQUEST,
