@@ -6,7 +6,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import logger from "@/utils/logger";
 import db from "@/config/db-config";
-import { redisClient } from "@/config/redis-config";
+import { redisConnection, redisClient } from "@/config/redis-config";
 import { resend } from "@/config/resend-config";
 import { EMAIL_WORKER, jobs } from "@/queues/email.queue";
 
@@ -242,7 +242,7 @@ export const startEmailWorker = () => {
       }
     },
     {
-      connection: redisClient,
+      connection: redisConnection,
       concurrency: 1,
       limiter: {
         max: 2,

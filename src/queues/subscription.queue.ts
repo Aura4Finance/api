@@ -1,11 +1,11 @@
 import { Queue } from "bullmq";
-import { redisClient } from "@/config/redis-config";
+import { redisConnection } from "@/config/redis-config";
 
 export const SUBSCRIPTION_WORKER = "subscription-worker";
 
 export const subscriptionQueue = new Queue(
     SUBSCRIPTION_WORKER,
-    {connection: redisClient}
+    {connection: redisConnection}
 );
 
 export const jobs = {

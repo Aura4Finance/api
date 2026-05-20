@@ -1,15 +1,15 @@
 import { Queue } from "bullmq";
-import { redisClient } from "@/config/redis-config";
+import { redisConnection } from "@/config/redis-config";
 
 export const WEBHOOK_WORKER = "webhook-worker";
 
 export const webhookQueue = new Queue(WEBHOOK_WORKER, {
-    connection: redisClient
+    connection: redisConnection
 })
 
 export const WEBHOOK_DEAD_LETTER_WORKER = "webhook-dead-letter-worker";
 export const webhookDlqQueue = new Queue(WEBHOOK_DEAD_LETTER_WORKER, {
-    connection: redisClient
+    connection: redisConnection
 })
 
 export const jobs = {

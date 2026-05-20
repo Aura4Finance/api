@@ -28,7 +28,7 @@ import { EmailQueue } from "@/services/schedule.email.service";
 import { WalletService } from "@/services/wallet.service";
 import { PaymentMethod, SubscriptionStatus } from "../../generated/prisma";
 import { PaymentRepository } from "@/repositories/payment.repository";
-import { redisClient } from "@/config/redis-config";
+import { redisConnection, redisClient } from "@/config/redis-config";
 import { jobs, SUBSCRIPTION_WORKER } from "@/queues/subscription.queue";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 
@@ -556,7 +556,7 @@ export const startSubscriptionWorker = (): void => {
              }
             },
         {
-            connection: redisClient,
+            connection: redisConnection,
             // BullMQ-level retry: retry up to 3 times with exponential back-off
             // before the job is moved to the dead-letter (failed) queue.
             settings: { backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000) },

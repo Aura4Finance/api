@@ -30,12 +30,12 @@ const baseRedisOptions: ConnectionOptions = {
   },
 };
 
-const redisConnectionOptions: ConnectionOptions =
+export const redisConnection: ConnectionOptions =
 process.env.REDIS_TLS === "true"
 ? { ...baseRedisOptions, tls: {} }
 : baseRedisOptions;
 
-export const redisClient = new RedisClient(redisConnectionOptions);
+export const redisClient = new RedisClient(redisConnection);
 redisClient.on("error", (err) => {
   logger.error("Redis error: ", err);
 })

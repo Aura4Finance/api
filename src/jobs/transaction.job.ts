@@ -5,7 +5,7 @@ import { TransactionStatus } from "../../generated/prisma";
 import logger from "@/utils/logger";
 import { PaymentService } from "@/services/payment.service";
 import Container from "typedi";
-import { redisClient } from "@/config/redis-config";
+import { redisConnection } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { SubscriptionStatus, SubscriptionDuration } from "../../generated/prisma";
@@ -223,7 +223,7 @@ export const startTransactionWorker = () => {
       }
     },
     {
-      connection: redisClient,
+      connection: redisConnection,
       settings: {
         backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000),
       },

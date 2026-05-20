@@ -7,7 +7,7 @@ import {
   toHttpRequestError,
 } from "@/utils/http-client";
 import { getRetryDelayMs, isRetryableError } from "@/utils/retry-strategy";
-import { redisClient } from "@/config/redis-config";
+import { redisConnection } from "@/config/redis-config";
 import { 
   WEBHOOK_DEAD_LETTER_WORKER, 
   WEBHOOK_WORKER,
@@ -174,7 +174,7 @@ export const startWebhookWorker = () => {
       }
     },
     {
-      connection: redisClient,
+      connection: redisConnection,
       concurrency: 5,
       settings: {
         backoffStrategy: (
@@ -201,7 +201,7 @@ export const startWebhookWorker = () => {
       logStats(stats);
     },
     {
-      connection: redisClient,
+      connection: redisConnection,
       concurrency: 1,
       settings: {
         backoffStrategy: (
