@@ -133,7 +133,9 @@ export class SubscriptionRepository {
             network,
             mode,
             status: SubscriptionStatus.PENDING,
+            updatedAt: new Date(),
             startsAt: new Date(),
+            canceledAt: null,
         },
         include: {
           plan: true

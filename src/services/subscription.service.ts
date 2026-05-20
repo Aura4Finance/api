@@ -4,7 +4,6 @@ import { APIError } from "@/utils/error-handler";
 import { SubscriptionRepository } from "@/repositories/subscription.repository";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { CustomerRepository } from "@/repositories/customer.repository";
-import { triggerWebhook } from "@/services/user/webhook.service";
 import { PaymentService } from "@/services/payment.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import {
@@ -15,6 +14,7 @@ import {
 import { Mode, PaymentMethod } from "../../generated/prisma";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { CreatePaymentDto } from "@/dto/payment.dto";
+import crypto from "crypto";
 
 @Service()
 export class SubscriptionService {
@@ -119,7 +119,7 @@ export class SubscriptionService {
         customerId: input.customerId,
         currency: plan.currency,
         network: input.network,
-        txRef: subscription.id,
+        txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}subscription.id`,
         type: PaymentMethod.SUBSCRIPTION,
         subscriptionId: subscription.id,
       };
@@ -138,7 +138,7 @@ export class SubscriptionService {
       // (service layer has no logger here; swallow silently)
     }
     try {
-      await triggerWebhook(profileId, {
+      await this.webhookQueue.addScheduler(profileId, {
         event: "subscription.create",
         data: {
           transactionId: subscription.id,
