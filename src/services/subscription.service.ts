@@ -161,13 +161,13 @@ export class SubscriptionService {
     };
   }
 
-  async cancelSubscription(userId: string, subscriptionId: string) {
+  async cancelSubscription(userId: string, subscriptionId: string, mode: Mode) {
     const profile = await this.userRepository.findUserById(userId);
     const profileId = profile?.businessProfile?.id;
 
     if (!profileId) throw new APIError("Profile not found", STATUS.notFound);
 
-    const subscription = await this.subscriptionRepository.getSubscription(subscriptionId);
+    const subscription = await this.subscriptionRepository.getSubscription(mode, subscriptionId);
 
     if (!subscription) throw new APIError("Subscription not found", STATUS.notFound);
 
@@ -194,8 +194,8 @@ export class SubscriptionService {
     };
   }
 
-  async getSubscription(subscriptionId: string) {
-    const subscription = await this.subscriptionRepository.getSubscription(subscriptionId);
+  async getSubscription(mode: Mode, subscriptionId: string) {
+    const subscription = await this.subscriptionRepository.getSubscription(mode, subscriptionId);
     if (!subscription) throw new APIError("Subscription not found", STATUS.notFound);
 
     return {
@@ -204,8 +204,8 @@ export class SubscriptionService {
     };
   }
 
-  async getSubscriptionsByCustomer(customerId: string, planId?: string) {
-    const subscriptions = await this.subscriptionRepository.getSubscriptionsByCustomer(customerId, planId);
+  async getSubscriptionsByCustomer(mode: Mode, customerId: string, planId?: string) {
+    const subscriptions = await this.subscriptionRepository.getSubscriptionsByCustomer(mode, customerId, planId);
 
     return {
       message: "Subscriptions retrieved",

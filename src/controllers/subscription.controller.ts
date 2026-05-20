@@ -129,7 +129,7 @@ export class SubscriptionController {
     }
 
     const subscriptionId = value.subscriptionId as string;
-    const { message, payload } = await this.subscriptionService.cancelSubscription(userId, subscriptionId);
+    const { message, payload } = await this.subscriptionService.cancelSubscription(userId, subscriptionId, req.mode);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
@@ -144,7 +144,7 @@ export class SubscriptionController {
     }
 
     const subscriptionId = value.subscriptionId as string;
-    const { message, payload } = await this.subscriptionService.getSubscription(subscriptionId);
+    const { message, payload } = await this.subscriptionService.getSubscription(req.mode, subscriptionId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
@@ -162,7 +162,7 @@ export class SubscriptionController {
     }
 
     const {customerId, planId} = value as GetSubscriptionsDto;
-    const { message, payload } = await this.subscriptionService.getSubscriptionsByCustomer(customerId, planId);
+    const { message, payload } = await this.subscriptionService.getSubscriptionsByCustomer(req.mode, customerId, planId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 }

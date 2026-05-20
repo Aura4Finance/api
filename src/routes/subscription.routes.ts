@@ -41,8 +41,21 @@ router.post("/",
     asyncHandler((req: RequestAuth, res: Response) =>
         controller.createSubscription(req, res)
     ));
-router.post("/:subscriptionId/cancel", checkIfUserIsDisabled, asyncHandler((req: RequestAuth, res: Response) => controller.cancelSubscription(req, res)));
-router.get("/customer/:customerId", asyncHandler((req: RequestAuth, res: Response) => controller.getSubscriptionsByCustomer(req, res)));
-router.get("/:subscriptionId", asyncHandler((req: RequestAuth, res: Response) => controller.getSubscription(req, res)));
+
+router.post("/:subscriptionId/cancel", 
+    checkIfUserIsDisabled, 
+    asyncHandler((req: RequestAuth, res: Response) => 
+        controller.cancelSubscription(req, res)
+));
+
+router.get("/customer/:customerId", 
+    asyncHandler((req: RequestAuth, res: Response) => 
+        controller.getSubscriptionsByCustomer(req, res)
+));
+
+router.get("/:subscriptionId", 
+    asyncHandler((req: RequestAuth, res: Response) => 
+        controller.getSubscription(req, res)
+));
 
 export default router;

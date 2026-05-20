@@ -187,9 +187,12 @@ export class SubscriptionRepository {
     });
   }
 
-  async getSubscription(subscriptionId: string) {
+  async getSubscription(mode: Mode, subscriptionId: string) {
     return db.subscription.findUnique({
-      where: { id: subscriptionId },
+      where: { 
+        id: subscriptionId,
+        mode
+       },
       include: {
         customer: true,
         plan: true,
@@ -197,10 +200,11 @@ export class SubscriptionRepository {
     });
   }
 
-  async getSubscriptionsByCustomer(customerId: string, planId?: string) {
+  async getSubscriptionsByCustomer(mode: Mode, customerId: string, planId?: string) {
     return db.subscription.findMany({
       where: { 
         customerId,
+        mode,
         ...(planId ? { planId } : {}),
       },
       include: {
