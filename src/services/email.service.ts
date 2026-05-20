@@ -317,7 +317,7 @@ async sendPaymentSuccessEmail(
     const payload = await this.buildEmailPayload(
       to,
       `${variables.planName} renews soon`,
-      "subscription_reminder",
+      "subscriptionreminder",
       {
         ...variables,
         date: new Date().toLocaleString(),
@@ -342,7 +342,7 @@ async sendPaymentSuccessEmail(
     const payload = await this.buildEmailPayload(
       to,
       `${variables.planName} has expired`,
-      "subscription_expired",
+      "subscriptionexpired",
       {
         ...variables,
         date: new Date().toLocaleString(),
@@ -367,7 +367,7 @@ async sendPaymentSuccessEmail(
     const payload = await this.buildEmailPayload(
       to,
       `${variables.planName} subscription cancelled`,
-      "subscription_cancelled",
+      "subscription-cancelled",
       {
         ...variables,
         date: new Date().toLocaleString(),
@@ -394,7 +394,7 @@ async sendPaymentSuccessEmail(
     const payload = await this.buildEmailPayload(
       to,
       `${variables.planName} subscription is active`,
-      "subscription_active",
+      "subscriptionactive",
       {
         ...variables,
         date: new Date().toLocaleString(),
@@ -417,7 +417,7 @@ async sendPaymentSuccessEmail(
     const payload = await this.buildEmailPayload(
       to,
       `${variables.planName} subscription incomplete`,
-      "subscription_abandoned",
+      "subscriptionabandoned",
       {
         ...variables,
         date: new Date().toLocaleString(),
