@@ -119,7 +119,7 @@ export class SubscriptionService {
         customerId: input.customerId,
         currency: plan.currency,
         network: input.network,
-        txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}subscription.id`,
+        txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}-subscription.id`,
         type: PaymentMethod.SUBSCRIPTION,
         subscriptionId: subscription.id,
       };
