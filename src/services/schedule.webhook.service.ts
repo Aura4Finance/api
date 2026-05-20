@@ -1,12 +1,12 @@
 import { WebhookPayload } from "@/dto/webhook.dto";
-import { webhookQueue } from "@/queues/webhook.queue";
+import { webhookQueue, jobs } from "@/queues/webhook.queue";
 import { Service } from "typedi";
 
 @Service()
 export class WebhookQueue {
   async addScheduler(profileId: string, payload: WebhookPayload) {
     await webhookQueue.add(
-      "process-webhook-event",
+      jobs.TRIGGER,
       {
         profileId,
         payload,

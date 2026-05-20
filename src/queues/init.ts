@@ -1,40 +1,33 @@
 import logger from "@/utils/logger";
-import { transactionQueue } from "./transaction.queue";
+import { transactionQueue, jobs } from "./transaction.queue";
 import Container from "typedi";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { initializeSeed } from "@/utils/wallet/seed";
-import { startSubscriptionWorker } from "@/jobs/subscription.job";
-import { startTransactionWorker } from "@/jobs/transaction.job";
 
 export async function initTransactionAndEmailOnboardJobs() {
     await initializeSeed();
 
     const emailQueue = Container.get(EmailQueue);
-    startTransactionWorker();
-    startSubscriptionWorker();
-    const repeatableJobs = await transactionQueue.getJobSchedulers();
+    const transactionJobs = await transactionQueue.getJobSchedulers();
 
     // Clean up existing schedulers first
-    for (const job of repeatableJobs) {
+    for (const job of transactionJobs) {
         if (
-            job.name === "expire-pending-transactions" ||
-            job.name === "process-subscription-renewals" ||
-            job.name === "reconcile-stuck-subscriptions" ||
-            job.name === "onboarded"
+            job.name === jobs.EXPIRE_PENDING 
         ) {
             await transactionQueue.removeJobScheduler(job.key);
         }
     }
 
     // Run once immediately on initialization
-    await transactionQueue.add("expire-pending-transactions", {});
+    await transactionQueue.add(jobs.EXPIRE_PENDING, {});
 
     // Schedule recurring job every 30 minutes
     await transactionQueue.upsertJobScheduler(
         "expire-pending-transactions-scheduler",
         { every: 1000 * 60 * 30 },
         {
-            name: "expire-pending-transactions",
+            name: jobs.EXPIRE_PENDING,
             data: {},
             opts: {
                 removeOnComplete: true,

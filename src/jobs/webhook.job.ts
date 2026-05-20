@@ -1,14 +1,18 @@
 import { Worker } from "bullmq";
 import { triggerWebhook } from "@/services/user/webhook.service";
 import logger from "@/utils/logger";
-import { redisConnection } from "@/config/redis-config";
-import { webhookDlqQueue } from "@/queues/webhook-dlq.queue";
 import {
   HttpRequestError,
   isHttpRequestError,
   toHttpRequestError,
 } from "@/utils/http-client";
 import { getRetryDelayMs, isRetryableError } from "@/utils/retry-strategy";
+import { redisClient } from "@/config/redis-config";
+import { 
+  WEBHOOK_DEAD_LETTER_WORKER, 
+  WEBHOOK_WORKER,
+  jobs,
+  webhookDlqQueue } from "@/queues/webhook.queue";
 
 interface JobStats {
   phase: "delivery" | "dead-letter";
@@ -53,9 +57,9 @@ async function processWebhookDeadLetter(job: { data: any; attemptsMade: number; 
 
 export const startWebhookWorker = () => {
   new Worker(
-    "webhook-queue",
+    WEBHOOK_WORKER,
     async (job) => {
-      if (job.name !== "process-webhook-event") return;
+      if (job.name !== jobs.TRIGGER) return;
 
       const { profileId, payload } = job.data;
       const attemptsMade = job.attemptsMade + 1;
@@ -128,7 +132,7 @@ export const startWebhookWorker = () => {
 
         if (attemptsMade >= maxAttempts) {
           await webhookDlqQueue.add(
-            "webhook-dead-letter",
+            jobs.TRIGGER_DEADLETTER,
             {
               profileId,
               payload,
@@ -170,7 +174,7 @@ export const startWebhookWorker = () => {
       }
     },
     {
-      connection: redisConnection,
+      connection: redisClient,
       concurrency: 5,
       settings: {
         backoffStrategy: (
@@ -189,15 +193,15 @@ export const startWebhookWorker = () => {
   );
 
   new Worker(
-    "webhook-dlq",
+    WEBHOOK_DEAD_LETTER_WORKER,
     async (job) => {
-      if (job.name !== "webhook-dead-letter") return;
+      if (job.name !== jobs.TRIGGER_DEADLETTER) return;
 
       const stats = await processWebhookDeadLetter(job as any);
       logStats(stats);
     },
     {
-      connection: redisConnection,
+      connection: redisClient,
       concurrency: 1,
       settings: {
         backoffStrategy: (

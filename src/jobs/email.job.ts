@@ -1,14 +1,14 @@
 import { Worker } from "bullmq";
 import pLimit from "p-limit";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
 import Container from "typedi";
 import { EmailService } from "@/services/email.service";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import logger from "@/utils/logger";
 import db from "@/config/db-config";
-import { redisConnection } from "@/config/redis-config";
+import { redisClient } from "@/config/redis-config";
 import { resend } from "@/config/resend-config";
+import { EMAIL_WORKER, jobs } from "@/queues/email.queue";
 
 const emailService = Container.get(EmailService);
 
@@ -17,18 +17,7 @@ const EMAIL_CONFIG = {
 } as const;
 
 interface JobStats {
-  phase:
-    | "welcome-email"
-    | "offers"
-    | "problems"
-    | "payment_failed"
-    | "payment_success"
-    | "subscription-reminder"
-    | "subscription-expired"
-    | "subscription-cancelled"
-    | "subscription-active"
-    | "subscription-abandoned"
-    | "onboarded";
+  phase: typeof jobs[keyof typeof jobs]
   attempted: number;
   skipped: number;
   succeeded: number;
@@ -122,39 +111,39 @@ const checkIfUserSuscribedForEmailNotification = async (email: string) => {
 export const startEmailWorker = () => {
 
   new Worker(
-    "email-queue",
+    EMAIL_WORKER,
     async (job) => {
       const { email, name, customerName, ...rest } = job.data;
       const recipientName = name ?? customerName;
       try {
         switch (job.name) {
-          case "welcome-email":
-            await runTrackedEmailJob("welcome-email", async () => {
+          case jobs.WELCOME:
+            await runTrackedEmailJob(jobs.WELCOME, async () => {
               await emailService.sendWelcomeEmail(email, recipientName);
               logger.info("Welcome email sent!");
             });
             break;
 
-          case "offers":
-            await runTrackedEmailJob("offers", async () => {
+          case jobs.OFFERS:
+            await runTrackedEmailJob(jobs.OFFERS, async () => {
               await emailService.sendOfferEmail(email);
               logger.info("Offer email sent");
             });
             break;
 
-          case "problems":
-            await runTrackedEmailJob("problems", async () => {
+          case jobs.PROBLEMS:
+            await runTrackedEmailJob(jobs.PROBLEMS, async () => {
               await emailService.sendProblemEmail(email, recipientName);
               logger.info("Problems email sent");
             });
             break;
-          case "payment_failed":
-            await runTrackedEmailJob("payment_failed", async () => {
+          case jobs.PAYMENT_FAILED:
+            await runTrackedEmailJob(jobs.PAYMENT_FAILED, async () => {
               await emailService.sendPaymentFailedEmail(email, recipientName, rest.amount, rest.currency, rest.reference);
             });
             break;
-          case "payment_success": {
-            await runTrackedEmailJob("payment_success", async () => {
+          case jobs.PAYMENT_SUCCESS: {
+            await runTrackedEmailJob(jobs.PAYMENT_SUCCESS, async () => {
               if (await checkIfUserSuscribedForEmailNotification(rest.merchantEmail)) {
                 await emailService.sendMerchantPaymentReceivedEmail(rest.merchantEmail, rest.merchantName, recipientName, rest.amount, rest.currency, rest.reference);
                 logger.info("payment succeess email sent for merchant");
@@ -165,8 +154,8 @@ export const startEmailWorker = () => {
             break;
           }
 
-          case "subscription-reminder":
-            await runTrackedEmailJob("subscription-reminder", async () => {
+          case jobs.SUBSCRIPTION_REMINDER:
+            await runTrackedEmailJob(jobs.SUBSCRIPTION_REMINDER, async () => {
               await emailService.sendSubscriptionReminderEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -182,8 +171,8 @@ export const startEmailWorker = () => {
             });
             break;
 
-          case "subscription-expired":
-            await runTrackedEmailJob("subscription-expired", async () => {
+          case jobs.SUBSCRIPTION_EXPIRED:
+            await runTrackedEmailJob(jobs.SUBSCRIPTION_EXPIRED, async () => {
               await emailService.sendSubscriptionExpiredEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -196,8 +185,8 @@ export const startEmailWorker = () => {
             });
             break;
 
-          case "subscription-cancelled":
-            await runTrackedEmailJob("subscription-cancelled", async () => {
+          case jobs.SUBSCRIPTION_CANCELLED:
+            await runTrackedEmailJob(jobs.SUBSCRIPTION_CANCELLED, async () => {
               await emailService.sendSubscriptionCancelledEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -210,8 +199,8 @@ export const startEmailWorker = () => {
             });
             break;
 
-          case "subscription-active":
-            await runTrackedEmailJob("subscription-active", async () => {
+          case jobs.SUBSCRIPTION_ACTIVE:
+            await runTrackedEmailJob(jobs.SUBSCRIPTION_ACTIVE, async () => {
               await emailService.sendSubscriptionActiveEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -226,8 +215,8 @@ export const startEmailWorker = () => {
             });
             break;
 
-          case "subscription-abandoned":
-            await runTrackedEmailJob("subscription-abandoned", async () => {
+          case jobs.SUBSCRIPTION_ABANDONED:
+            await runTrackedEmailJob(jobs.SUBSCRIPTION_ABANDONED, async () => {
               await emailService.sendSubscriptionAbandonedEmail(email, {
                 customerName: recipientName,
                 merchantName: rest.merchantName,
@@ -239,7 +228,7 @@ export const startEmailWorker = () => {
             break;
 
 
-          case "onboarded":
+          case jobs.ONBOARDED:
             const onboardingStats = await processOnboardedEmails();
             logStats(onboardingStats);
             break;
@@ -253,7 +242,7 @@ export const startEmailWorker = () => {
       }
     },
     {
-      connection: redisConnection,
+      connection: redisClient,
       concurrency: 1,
       limiter: {
         max: 2,

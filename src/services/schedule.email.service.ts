@@ -1,11 +1,11 @@
-import { emailQueue } from "@/queues/email.queue";
+import { emailQueue, jobs } from "@/queues/email.queue";
 import { Service } from "typedi";
 
 @Service()
 export class EmailQueue {
     async addOnboardEmailScheduler() {
         await emailQueue.add(
-            "onboarded",
+            jobs.ONBOARDED,
             {},
             {
                 repeat: {
@@ -25,7 +25,7 @@ export class EmailQueue {
         currency: string = "NGN"
     ) {
         await emailQueue.add(
-            "payment_failed",
+            jobs.PAYMENT_FAILED,
             {
                 email,
                 name,
@@ -51,7 +51,7 @@ export class EmailQueue {
         currency: string = "NGN"
     ) {
         await emailQueue.add(
-            "payment_success",
+            jobs.PAYMENT_SUCCESS,
             {
                 email: customerEmail,
                 name: customerName,
@@ -74,7 +74,7 @@ export class EmailQueue {
         firstName: string
     }) {
         await emailQueue.add(
-            "welcome-email",
+            jobs.WELCOME,
             {
                 email: user.email,
                 name: user.firstName
@@ -90,7 +90,7 @@ export class EmailQueue {
         );
 
         await emailQueue.add(
-            "problems",
+            jobs.PROBLEMS,
             {
                 email: user.email,
                 name: user.firstName
@@ -106,7 +106,7 @@ export class EmailQueue {
         );
 
         await emailQueue.add(
-            "offers",
+            jobs.OFFERS,
             {
                 email: user.email
             },
@@ -134,7 +134,7 @@ export class EmailQueue {
         checkoutUrl?: string;
     }) {
         await emailQueue.add(
-            "subscription-reminder",
+            jobs.SUBSCRIPTION_REMINDER,
             data,
             {
                 delay: 1000 * 10,
@@ -154,7 +154,7 @@ export class EmailQueue {
         checkoutUrl?: string;
     }) {
         await emailQueue.add(
-            "subscription-expired",
+            jobs.SUBSCRIPTION_EXPIRED,
             data,
             {
                 delay: 1000 * 10,
@@ -174,7 +174,7 @@ export class EmailQueue {
         expiresAt?: string;
     }) {
         await emailQueue.add(
-            "subscription-cancelled",
+            jobs.SUBSCRIPTION_CANCELLED,
             data,
             {
                 delay: 1000 * 10,
@@ -196,7 +196,7 @@ export class EmailQueue {
             expiresAt: string;
         }) {
             await emailQueue.add(
-                "subscription-active",
+                jobs.SUBSCRIPTION_ACTIVE,
                 data,
                 {
                     delay: 1000 * 10,
@@ -214,7 +214,7 @@ export class EmailQueue {
             checkoutUrl?: string;
         }) {
             await emailQueue.add(
-                "subscription-abandoned",
+                jobs.SUBSCRIPTION_ABANDONED,
                 data,
                 {
                     delay: 1000 * 10,

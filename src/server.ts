@@ -19,6 +19,10 @@ if(process.env.PROCESS_TYPE === "worker") {
     startWebhookWorker();
   });
 
+  import("./jobs/subscription.job").then(({ startSubscriptionWorker }) => {
+    startSubscriptionWorker();
+  })
+
 } else {
   (async () => {
     try {

@@ -8,14 +8,14 @@ import { STATUS } from "@/constants/status.constant";
 import { UserRepository } from "@/repositories/user/user.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
 import { Customer, Mode, PaymentMethod, Prisma, Token } from "../../generated/prisma";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "./schedule.email.service";
-import { transactionQueue } from "@/queues/transaction.queue";
+import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
+import { redisClient } from "@/config/redis-config";
 
 type UserWithProfile = Prisma.UserGetPayload<{
   include: { businessProfile: { include: { wallet: true } } }
@@ -544,14 +544,19 @@ export class PaymentService {
 
     const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex as number);
     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
-    await transactionQueue.add("transfer-usdt", {
+    
+    await transactionQueue.add(jobs.SETTLE_PAYMENT, {
       walletPrivateKey: secretKey,
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
       toAddress: tx?.profile.wallet[0]?.address as string,
       token,
       mode: tx.mode,
-    })
+    }, 
+    {
+      removeOnComplete: true,
+    }
+  )
 
     await this.confirmPayment(
       tx.id,

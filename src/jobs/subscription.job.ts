@@ -23,18 +23,19 @@ import { Worker } from "bullmq";
 import Container from "typedi";
 import pLimit from "p-limit";
 import logger from "@/utils/logger";
-import { redisConnection } from "@/config/redis-config";
 import db from "@/config/db-config";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { WalletService } from "@/services/wallet.service";
 import { PaymentMethod, SubscriptionStatus } from "../../generated/prisma";
-import { redisClient } from "@/middlewares/rate-limit.middleware";
-import { triggerWebhook } from "@/services/user/webhook.service";
 import { PaymentRepository } from "@/repositories/payment.repository";
+import { redisClient } from "@/config/redis-config";
+import { jobs, SUBSCRIPTION_WORKER } from "@/queues/subscription.queue";
+import { WebhookQueue } from "@/services/schedule.webhook.service";
 
 // ---------------------------------------------------------------------------
 // Configuration – move these to environment variables / feature flags as needed
 // ---------------------------------------------------------------------------
+const webhookQueueSvc = Container.get(WebhookQueue);
 const RENEWAL_CONFIG = {
     /** How many days before expiry the customer receives their first reminder. */
     reminderDaysAhead: 3,
@@ -198,7 +199,7 @@ async function findOrCreateRenewalTransaction(
         );
 
         try {
-            await triggerWebhook(context.plan.profile.id, {
+            await webhookQueueSvc.addScheduler(context.plan.profile.id, {
                 event: "payment.create",
                 data: {
                     transactionId: tx.id,
@@ -390,7 +391,7 @@ async function processCancellations(
                     });
 
                     try {
-                        await triggerWebhook(sub.plan.profile.id, {
+                        await webhookQueueSvc.addScheduler(sub.plan.profile.id, {
                             event: "subscription.disable",
                             data: {
                                 transactionId: sub.id,
@@ -534,42 +535,28 @@ export const startSubscriptionWorker = (): void => {
     const walletService = Container.get(WalletService);
 
     new Worker(
-        "transaction-queue",
+        SUBSCRIPTION_WORKER,
         async (job) => {
-            if (job.name !== "process-subscription-renewals") return;
-
-            const now = new Date();
-
-            const [reminderStats, expiryStats, cancellationStats] = await Promise.all([
-                processReminders(paymentRepository, walletService, emailQueue, now),
-                processExpiries(paymentRepository, walletService, emailQueue, now),
-                processCancellations(emailQueue, now),
-            ]);
-
-            logStats(reminderStats);
-            logStats(expiryStats);
-            logStats(cancellationStats);
-        },
+            if (job.name === jobs.PROCESS_RENEWALS) {
+                const now = new Date();
+    
+                const [reminderStats, expiryStats, cancellationStats] = await Promise.all([
+                    processReminders(paymentRepository, walletService, emailQueue, now),
+                    processExpiries(paymentRepository, walletService, emailQueue, now),
+                    processCancellations(emailQueue, now),
+                ]);
+    
+                logStats(reminderStats);
+                logStats(expiryStats);
+                logStats(cancellationStats);
+            } else if (job.name === jobs.RECONCILE_STUCK_SUBSCRIPTIONS) {
+                const now = new Date();
+                const reconciliationStats = await reconcileStuckSubscriptions(now);
+                logStats(reconciliationStats);
+             }
+            },
         {
-            connection: redisConnection,
-            // BullMQ-level retry: retry up to 3 times with exponential back-off
-            // before the job is moved to the dead-letter (failed) queue.
-            settings: { backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000) },
-        }
-    );
-
-    new Worker(
-        "transaction-queue",
-        async (job) => {
-            if (job.name !== "reconcile-stuck-subscriptions") return;
-
-            const now = new Date();
-            const reconciliationStats = await reconcileStuckSubscriptions(now);
-
-            logStats(reconciliationStats);
-        },
-        {
-            connection: redisConnection,
+            connection: redisClient,
             // BullMQ-level retry: retry up to 3 times with exponential back-off
             // before the job is moved to the dead-letter (failed) queue.
             settings: { backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000) },

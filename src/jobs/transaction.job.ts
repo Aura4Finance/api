@@ -5,11 +5,12 @@ import { TransactionStatus } from "../../generated/prisma";
 import logger from "@/utils/logger";
 import { PaymentService } from "@/services/payment.service";
 import Container from "typedi";
-import { redisConnection } from "@/config/redis-config";
+import { redisClient } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
 import { EmailQueue } from "@/services/schedule.email.service";
-import { triggerWebhook } from "@/services/user/webhook.service";
 import { SubscriptionStatus, SubscriptionDuration } from "../../generated/prisma";
+import { jobs, TRANSACTION_WORKER } from "@/queues/transaction.queue";
+import { WebhookQueue } from "@/services/schedule.webhook.service";
 
 const EXPIRY_CONFIG = {
   concurrencyLimit: 10,
@@ -76,11 +77,12 @@ async function processExpiredPendingTransactions(paymentService: PaymentService)
 
 export const startTransactionWorker = () => {
   const paymentService = Container.get(PaymentService);
+  const webhookQueueSvc = Container.get(WebhookQueue);
 
   new Worker(
-    "transaction-queue",
+    TRANSACTION_WORKER,
     async (job) => {
-      if (job.name === "verify-payment") {
+      if (job.name === jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT) {
         const { paymentId, subscriptionId } = job.data;
         const emailQueue = Container.get(EmailQueue);
         try {
@@ -124,17 +126,17 @@ export const startTransactionWorker = () => {
                 },
                 include: { customer: true, plan: true },
               });
-
+              
               try {
-                await triggerWebhook(subscription.plan.profileId, {
+                await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
                   event: "subscription.active",
                   data: {
                     transactionId: subscription.id,
                     amount: subscription.plan.amount,
                     currency: subscription.plan.currency,
                     status: "active",
-                    occuredAt: new Date().toISOString(),
-                  },
+                    occuredAt: new Date().toISOString()
+                  }
                 });
               } catch {}
 
@@ -160,15 +162,15 @@ export const startTransactionWorker = () => {
               await db.subscription.update({ where: { id: subscription.id }, data: { status: "ABANDONED" as any } });
 
               try {
-                await triggerWebhook(subscription.plan.profileId, {
+                await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
                   event: "subscription.abandoned",
                   data: {
                     transactionId: subscription.id,
                     amount: subscription.plan.amount,
                     currency: subscription.plan.currency,
                     status: "abandoned",
-                    occuredAt: new Date().toISOString(),
-                  },
+                    occuredAt: new Date().toISOString()
+                  }
                 });
               } catch {}
 
@@ -187,7 +189,7 @@ export const startTransactionWorker = () => {
 
         return;
       }
-      if (job.name === "expire-pending-transactions") {
+      if (job.name === jobs.EXPIRE_PENDING) {
         try {
           logger.info("⏱ Transaction expiry job running");
 
@@ -200,7 +202,7 @@ export const startTransactionWorker = () => {
         }
         return;
       }
-      if (job.name === "transfer-usdt") {
+      if (job.name === jobs.SETTLE_PAYMENT) {
         const {
           walletPrivateKey,
           coinObjectId,
@@ -221,7 +223,7 @@ export const startTransactionWorker = () => {
       }
     },
     {
-      connection: redisConnection,
+      connection: redisClient,
       settings: {
         backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000),
       },

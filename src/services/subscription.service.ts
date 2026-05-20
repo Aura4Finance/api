@@ -6,7 +6,7 @@ import { UserRepository } from "@/repositories/user/user.repository";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { triggerWebhook } from "@/services/user/webhook.service";
 import { PaymentService } from "@/services/payment.service";
-import { transactionQueue } from "@/queues/transaction.queue";
+import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import {
   CreateSubscriptionDto,
   CreateSubscriptionPlanDto,
@@ -129,7 +129,7 @@ export class SubscriptionService {
       // schedule verification after 10 minutes
       txId = paymentResult.payload.transaction.id;
       await transactionQueue.add(
-        "verify-payment",
+        jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
         { paymentId: txId, subscriptionId: subscription.id },
         { delay: 10 * 60 * 1000, removeOnComplete: true }
       );
