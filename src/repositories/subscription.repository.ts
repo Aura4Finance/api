@@ -62,9 +62,6 @@ export class SubscriptionRepository {
 
     return db.subscriptionPlan.findMany({
       ...(where ? { where } : {}),
-      include: {
-        subscriptions: true,
-      },
       orderBy: {
         createdAt: "desc",
       },

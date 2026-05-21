@@ -76,7 +76,6 @@ export function getLimiter(
   const limiter = new Bottleneck({
     id: `limiter:${key}`,
     connection: getSharedLimiterConnection(),
-    timeout: DEFAULT_LIMITER_TIMEOUT_MS,
     maxConcurrent: defaults.maxConcurrent,
     minTime: defaults.minTime,
     ...options,
@@ -115,5 +114,7 @@ export function getLimiter(
 
 export function getLimiterForUrl(url: string) {
   const hostname = new URL(url).hostname;
-  return getLimiter(`domain:${hostname}`);
+  return getLimiter(`domain:${hostname}`, {
+    timeout: DEFAULT_LIMITER_TIMEOUT_MS,
+  });
 }
