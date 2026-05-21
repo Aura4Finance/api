@@ -15,6 +15,7 @@ import { Mode, PaymentMethod } from "../../generated/prisma";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { CreatePaymentDto } from "@/dto/payment.dto";
 import crypto from "crypto";
+import { EmailQueue } from "./schedule.email.service";
 
 @Service()
 export class SubscriptionService {
@@ -23,7 +24,8 @@ export class SubscriptionService {
     private readonly userRepository: UserRepository,
     private readonly customerRepository: CustomerRepository,
     private readonly paymentService: PaymentService,
-    private readonly webhookQueue: WebhookQueue
+    private readonly webhookQueue: WebhookQueue,
+    private readonly emailQueue: EmailQueue
   ) {}
 
   async createPlan(userId: string, input: CreateSubscriptionPlanDto) {
@@ -177,16 +179,28 @@ export class SubscriptionService {
 
     const canceled = await this.subscriptionRepository.cancelSubscription(subscriptionId);
 
-    await this.webhookQueue.addScheduler(profileId, {
-      event: "subscription.not_renew",
-      data: {
-        transactionId: subscription.id,
-        amount: subscription.plan.amount,
-        currency: subscription.plan.currency,
-        status: "cancelled",
-        occuredAt: new Date().toISOString(),
-      },
-    });
+    try{
+      await this.webhookQueue.addScheduler(profileId, {
+        event: "subscription.not_renew",
+        data: {
+          transactionId: subscription.id,
+          amount: subscription.plan.amount,
+          currency: subscription.plan.currency,
+          status: "cancelled",
+          occuredAt: new Date().toISOString(),
+        },
+      });
+
+      await this.emailQueue.addSubscriptionCancelledScheduler({
+          email: customer.email,
+          customerName: customer.firstname,
+          merchantName: profile.businessProfile?.businessName ??  "",
+          planName: subscription.plan.name,
+          duration: String(subscription.plan.duration),
+          cancelledAt: new Date().toISOString(),
+          expiresAt: subscription.endsAt?.toISOString() ?? "",
+      })
+    }catch{}
 
     return {
       message: "Subscription canceled",

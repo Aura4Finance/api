@@ -195,7 +195,7 @@ export class SubscriptionRepository {
        },
       include: {
         customer: true,
-        plan: true,
+        plan: true
       },
     });
   }
