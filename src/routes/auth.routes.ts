@@ -11,6 +11,13 @@ const router = express.Router();
 
 const authController = Container.get(AuthController);
 
+router.post(
+  "/logout",
+  verifyAccessToken,
+  asyncHandler((req: RequestAuth, res: Response) => 
+    authController.signOut(req, res))
+)
+
 router.use(verifyRequestBody);
 
 router.post(  
@@ -43,12 +50,6 @@ router.post(
     authController.continueWith2FA(req, res))
 );
 
-router.post(
-  "/logout",
-  verifyAccessToken,
-  asyncHandler((req: RequestAuth, res: Response) => 
-    authController.signOut(req, res))
-)
 router.post(
   "/exchange-code",
   asyncHandler((req: Request, res: Response) => 

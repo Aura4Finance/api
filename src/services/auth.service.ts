@@ -318,7 +318,6 @@ export class AuthService {
         });
 
       } catch (err: any) {
-        console.log(err)
         throw new APIError("Google sign-in failed. Please try again.", STATUS.bad);
       }
       const payload = ticket.getPayload();
