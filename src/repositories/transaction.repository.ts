@@ -53,6 +53,7 @@ export class TransactionRepository {
       network,
       token,
       date,
+      subscriptionId,
       customerId,
       limit = 20,
       cursor,
@@ -94,6 +95,7 @@ export class TransactionRepository {
           STATUS.conflict
         );
       where.payment.paymentLinkId = paymentLinkId;
+      where.payment.subscriptionId = subscriptionId;
     }
 
     // Filter: date interval

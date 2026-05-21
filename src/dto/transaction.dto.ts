@@ -33,6 +33,7 @@ export interface GetAllTransactionsDto {
     token: Token,
     date: TransactionDateFilter,
     customerId: string,
+    subscriptionId: string,
     paymentLinkId: string,
     paymentMethod: PaymentMethod,
     currency: String,

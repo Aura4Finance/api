@@ -77,6 +77,7 @@ export const transactionQuerySchemaValidation = (raw: any) => {
         network: Joi.valid("SUI").optional().messages({
           'any.only': 'Network must be SUI',
         }),
+        subscriptionId: Joi.string().optional(),
         limit: Joi.number().integer().positive().default(20).max(100).messages({
           'number.positive': 'Limit must be a positive number',
           'number.max': 'Limit cannot exceed 100 items',
