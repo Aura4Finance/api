@@ -5,6 +5,7 @@ export type CreateSubscriptionPlanDto = {
   duration: SubscriptionDuration;
   amount: number;
   currency: string;
+  trialDays?: number;
 };
 
 export type UpdateSubscriptionPlanDto = Partial<CreateSubscriptionPlanDto>;

@@ -137,6 +137,7 @@ model SubscriptionPlan {
   duration    SubscriptionDuration
   amount      Float
   currency    String
+  trialDays   Int                  @default(0)
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @default(now())
   subscriptions Subscription[]
@@ -152,6 +153,7 @@ model Subscription {
   plan      SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   status    SubscriptionStatus @default(ACTIVE)
   startsAt  DateTime         @default(now())
+  trialEndsAt DateTime?
   endsAt    DateTime?
   canceledAt DateTime?
   payments  Payment[]
@@ -168,6 +170,7 @@ enum SubscriptionDuration {
 
 enum SubscriptionStatus {
   PENDING
+  TRIALING
   ABANDONED
   ACTIVE
   CANCELLED

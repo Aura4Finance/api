@@ -146,7 +146,7 @@ export class PaymentService {
       message: "Payment created successfully",
       payload: {
         transaction,
-        checkoutUrl: `${process.env.ORAFI_CHECHOUT_URL}/${transaction.id}`,
+        checkoutUrl: `${process.env.ORAFI_CHECHOUT_URL ?? "https://checkout.orafi.app"}/${transaction.id}`,
       },
     };
   }

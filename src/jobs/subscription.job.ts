@@ -19,6 +19,7 @@
  *    so a follow-up job or alert can intervene.
  */
 
+import crypto from "crypto";
 import { Worker } from "bullmq";
 import Container from "typedi";
 import pLimit from "p-limit";
@@ -26,10 +27,13 @@ import logger from "@/utils/logger";
 import db from "@/config/db-config";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { WalletService } from "@/services/wallet.service";
+import { CreatePaymentDto } from "@/dto/payment.dto";
+import { PaymentService } from "@/services/payment.service";
 import { PaymentMethod, SubscriptionStatus } from "../../generated/prisma";
 import { PaymentRepository } from "@/repositories/payment.repository";
 import { redisConnection, redisClient } from "@/config/redis-config";
 import { jobs, SUBSCRIPTION_WORKER } from "@/queues/subscription.queue";
+import { jobs as transactionJobs, transactionQueue } from "@/queues/transaction.queue";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 
 // ---------------------------------------------------------------------------
@@ -41,6 +45,8 @@ const RENEWAL_CONFIG = {
     reminderDaysAhead: 3,
     /** How many days after expiry before a non-renewed subscription is cancelled. */
     gracePeriodDays: 2,
+    /** How many hours the customer gets to complete payment after a trial ends. */
+    trialGracePeriodHours: 24,
     /** Redis TTL (seconds) for idempotency keys – 10 days. */
     lockTtlSeconds: 10 * 24 * 60 * 60,
     /** Redis TTL (seconds) for the renewal-transaction cache entry – 5 days. */
@@ -48,7 +54,7 @@ const RENEWAL_CONFIG = {
     /** Maximum parallel subscription processing within a single job run. */
     concurrencyLimit: 10,
     /** Base URL for the customer checkout page. */
-    checkoutBaseUrl: process.env.CHECKOUT_BASE_URL ?? "https://checkout.orafi.app",
+    checkoutBaseUrl: process.env.CHECKOUT_BASE_URL ?? process.env.ORAFI_CHECHOUT_URL ?? "https://checkout.orafi.app",
 } as const;
 
 const DAY_MS = 1_000 * 60 * 60 * 24;
@@ -105,7 +111,7 @@ async function acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
 // Metrics / observability stub
 // ---------------------------------------------------------------------------
 interface BatchStats {
-    phase: "reminder" | "expiry" | "cancellation" | "reconciliation";
+    phase: "reminder" | "trial" | "expiry" | "cancellation" | "reconciliation";
     attempted: number;
     skipped: number;   // lock already held
     succeeded: number;
@@ -225,6 +231,37 @@ async function findOrCreateRenewalTransaction(
     }
 }
 
+async function findOrCreateTrialTransaction(
+    paymentRepository: PaymentRepository,
+    paymentService: PaymentService,
+    context: SubscriptionWithRelations,
+): Promise<{ paymentId: string; checkoutUrl: string }> {
+    const existing = await paymentRepository.findSubscriptionPaymentBySubscriptionId(context.id);
+    if (existing) {
+        return {
+            paymentId: existing.id,
+            checkoutUrl: `${RENEWAL_CONFIG.checkoutBaseUrl}/${existing.id}`,
+        };
+    }
+
+    const paymentData: CreatePaymentDto = {
+        amount: context.plan.amount,
+        customerId: context.customerId,
+        currency: context.plan.currency,
+        network: context.network,
+        txRef: `${crypto.randomBytes(4).toString("hex").slice(0, 7)}-${context.id}`,
+        type: PaymentMethod.SUBSCRIPTION,
+        subscriptionId: context.id,
+    };
+
+    const paymentResult = await paymentService.createPayment(paymentData, context.plan.profile.userId, context.mode);
+
+    return {
+        paymentId: paymentResult.payload.transaction.id,
+        checkoutUrl: paymentResult.payload.checkoutUrl ?? `${RENEWAL_CONFIG.checkoutBaseUrl}/${paymentResult.payload.transaction.id}`,
+    };
+}
+
 // ---------------------------------------------------------------------------
 // Type alias for the hydrated subscription shape used throughout
 // ---------------------------------------------------------------------------
@@ -288,6 +325,77 @@ async function processReminders(
                 } catch (err) {
                     stats.failed++;
                     logger.error(`[subscription-worker] reminder failed for ${sub.id}: ${err}`);
+                }
+            })
+        )
+    );
+
+    return stats;
+}
+
+async function processTrialExpirations(
+    paymentRepository: PaymentRepository,
+    paymentService: PaymentService,
+    emailQueue: EmailQueue,
+    now: Date,
+): Promise<BatchStats> {
+    const stats: BatchStats = { phase: "trial", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+
+    const subscriptions = await db.subscription.findMany({
+        where: { status: SubscriptionStatus.TRIALING, trialEndsAt: { lte: now } },
+        include: { customer: true, plan: { include: { profile: true } } },
+    });
+
+    const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
+
+    await Promise.all(
+        subscriptions.map((sub) =>
+            limit(async () => {
+                stats.attempted++;
+                const dedupeKey = `subscription:trial:${sub.id}:${dayKey(sub.trialEndsAt ?? now)}`;
+
+                const locked = await acquireLock(dedupeKey, RENEWAL_CONFIG.lockTtlSeconds);
+                if (!locked) { stats.skipped++; return; }
+
+                try {
+                    const checkout = await findOrCreateTrialTransaction(paymentRepository, paymentService, sub);
+
+                    await db.subscription.update({
+                        where: { id: sub.id },
+                        data: { status: SubscriptionStatus.PENDING },
+                    });
+
+                    await transactionQueue.add(
+                        transactionJobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
+                        {
+                            paymentId: checkout.paymentId,
+                            subscriptionId: sub.id,
+                            failureEmailTemplate: "cancelled",
+                        },
+                        {
+                            delay: RENEWAL_CONFIG.trialGracePeriodHours * 60 * 60 * 1000,
+                            removeOnComplete: true,
+                            removeOnFail: false,
+                            jobId: `verify-initial-subscription-payment:${sub.id}`,
+                        }
+                    );
+
+                    await emailQueue.addSubscriptionTrialEndedScheduler({
+                        email: sub.customer.email,
+                        customerName: `${sub.customer.firstname} ${sub.customer.lastname}`,
+                        merchantName: sub.plan.profile.businessName,
+                        planName: sub.plan.name,
+                        duration: String(sub.plan.duration),
+                        trialDays: Number(sub.plan.trialDays ?? 0),
+                        graceHours: RENEWAL_CONFIG.trialGracePeriodHours,
+                        trialEndedAt: sub.trialEndsAt?.toISOString() ?? now.toISOString(),
+                        checkoutUrl: checkout.checkoutUrl,
+                    });
+
+                    stats.succeeded++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] trial expiration failed for ${sub.id}: ${err}`);
                 }
             })
         )
@@ -533,6 +641,7 @@ export const startSubscriptionWorker = (): void => {
     const paymentRepository = Container.get(PaymentRepository);
     const emailQueue = Container.get(EmailQueue);
     const walletService = Container.get(WalletService);
+    const paymentService = Container.get(PaymentService);
 
     new Worker(
         SUBSCRIPTION_WORKER,
@@ -549,6 +658,10 @@ export const startSubscriptionWorker = (): void => {
                 logStats(reminderStats);
                 logStats(expiryStats);
                 logStats(cancellationStats);
+                } else if (job.name === jobs.PROCESS_TRIAL_SUBSCRIPTIONS) {
+                    const now = new Date();
+                    const trialStats = await processTrialExpirations(paymentRepository, paymentService, emailQueue, now);
+                    logStats(trialStats);
             } else if (job.name === jobs.RECONCILE_STUCK_SUBSCRIPTIONS) {
                 const now = new Date();
                 const reconciliationStats = await reconcileStuckSubscriptions(now);

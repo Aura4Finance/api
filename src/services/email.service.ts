@@ -353,6 +353,33 @@ async sendPaymentSuccessEmail(
     await this.queueEmail(payload);
   }
 
+  async sendSubscriptionTrialEndedEmail(
+    to: string,
+    variables: {
+      customerName: string;
+      merchantName: string;
+      planName: string;
+      duration: string;
+      trialDays: number;
+      graceHours: number;
+      trialEndedAt: string;
+      checkoutUrl?: string;
+    }
+  ): Promise<any> {
+    const payload = await this.buildEmailPayload(
+      to,
+      `${variables.planName} free trial has ended`,
+      "subscription-trial-ended",
+      {
+        ...variables,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
+
+    await this.queueEmail(payload);
+  }
+
   async sendSubscriptionCancelledEmail(
     to: string,
     variables: {

@@ -10,6 +10,7 @@ export const subscriptionQueue = new Queue(
 
 export const jobs = {
     PROCESS_RENEWALS: "process-subscription-renewals",
+    PROCESS_TRIAL_SUBSCRIPTIONS: "process-trial-subscriptions",
     RECONCILE_STUCK_SUBSCRIPTIONS: "reconcile-stuck-subscriptions",
 }
 
@@ -18,6 +19,7 @@ export const initializeSubscriptionJobs = async () => {
     for (const job of existingJobs) {
         if (
             job.name === jobs.PROCESS_RENEWALS ||
+            job.name === jobs.PROCESS_TRIAL_SUBSCRIPTIONS ||
             job.name === jobs.RECONCILE_STUCK_SUBSCRIPTIONS
         ) {
             await subscriptionQueue.removeJobScheduler(job.key);
@@ -28,6 +30,18 @@ export const initializeSubscriptionJobs = async () => {
         { every: 1000 * 60 * 60 * 24 },
         {
             name: jobs.PROCESS_RENEWALS,
+            data: {},
+            opts: {
+                removeOnComplete: true,
+                removeOnFail: false,
+            },
+        }
+    );
+    subscriptionQueue.upsertJobScheduler(
+        "process-trial-subscriptions-scheduler",
+        { every: 1000 * 60 * 60 },
+        {
+            name: jobs.PROCESS_TRIAL_SUBSCRIPTIONS,
             data: {},
             opts: {
                 removeOnComplete: true,

@@ -185,6 +185,22 @@ export const startEmailWorker = () => {
             });
             break;
 
+          case jobs.SUBSCRIPTION_TRIAL_ENDED:
+            await runTrackedEmailJob(jobs.SUBSCRIPTION_TRIAL_ENDED, async () => {
+              await emailService.sendSubscriptionTrialEndedEmail(email, {
+                customerName: recipientName,
+                merchantName: rest.merchantName,
+                planName: rest.planName,
+                duration: rest.duration,
+                trialDays: rest.trialDays,
+                graceHours: rest.graceHours,
+                trialEndedAt: rest.trialEndedAt,
+                checkoutUrl: rest.checkoutUrl,
+              });
+              logger.info("Subscription trial-ended email sent");
+            });
+            break;
+
           case jobs.SUBSCRIPTION_CANCELLED:
             await runTrackedEmailJob(jobs.SUBSCRIPTION_CANCELLED, async () => {
               await emailService.sendSubscriptionCancelledEmail(email, {

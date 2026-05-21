@@ -14,6 +14,7 @@ export const jobs = {
     PAYMENT_SUCCESS: "payment_success",
     SUBSCRIPTION_REMINDER: "subscription-reminder",
     SUBSCRIPTION_EXPIRED: "subscription-expired",
+    SUBSCRIPTION_TRIAL_ENDED: "subscription-trial-ended",
     SUBSCRIPTION_CANCELLED: "subscription-cancelled",
     SUBSCRIPTION_ACTIVE: "subscription-active",
     SUBSCRIPTION_ABANDONED: "subscription-abandoned",

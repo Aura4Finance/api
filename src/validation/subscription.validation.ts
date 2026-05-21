@@ -28,6 +28,10 @@ export const createSubscriptionPlanValidation = (data: CreateSubscriptionPlanDto
       'string.length': 'Currency must be a 3-letter code (e.g., USD, EUR)',
       'any.required': 'Currency is required',
     }),
+    trialDays: Joi.number().integer().min(0).default(0).messages({
+      'number.integer': 'Trial days must be a whole number',
+      'number.min': 'Trial days cannot be negative',
+    }),
   });
 
   return schema.validate(data);
@@ -49,6 +53,10 @@ export const updateSubscriptionPlanValidation = (data: UpdateSubscriptionPlanDto
     }),
     currency: Joi.string().length(3).uppercase().messages({
       'string.length': 'Currency must be a 3-letter code (e.g., USD, EUR)',
+    }),
+    trialDays: Joi.number().integer().min(0).messages({
+      'number.integer': 'Trial days must be a whole number',
+      'number.min': 'Trial days cannot be negative',
     }),
   });
 

@@ -17,6 +17,8 @@ import { CreatePaymentDto } from "@/dto/payment.dto";
 import crypto from "crypto";
 import { EmailQueue } from "./schedule.email.service";
 
+const CHECKOUT_BASE_URL = process.env.ORAFI_CHECHOUT_URL ?? "https://checkout.orafi.app";
+
 @Service()
 export class SubscriptionService {
   constructor(
@@ -112,32 +114,39 @@ export class SubscriptionService {
     }
 
     const subscription = await this.subscriptionRepository.createSubscription(input, mode);
+    const hasTrial = Number(plan.trialDays ?? 0) > 0;
 
     let txId: string = "";
-    // Create an initial subscription payment transaction and schedule verification
-    try {
-      const paymentData: CreatePaymentDto = {
-        amount: plan.amount,
-        customerId: input.customerId,
-        currency: plan.currency,
-        network: input.network,
-        txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}-${subscription.id}`,
-        type: PaymentMethod.SUBSCRIPTION,
-        subscriptionId: subscription.id,
-      };
+    if (!hasTrial) {
+      // Create an initial subscription payment transaction and schedule verification
+      try {
+        const paymentData: CreatePaymentDto = {
+          amount: plan.amount,
+          customerId: input.customerId,
+          currency: plan.currency,
+          network: input.network,
+          txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}-${subscription.id}`,
+          type: PaymentMethod.SUBSCRIPTION,
+          subscriptionId: subscription.id,
+        };
 
-      const paymentResult = await this.paymentService.createPayment(paymentData, userId, mode);
+        const paymentResult = await this.paymentService.createPayment(paymentData, userId, mode);
 
-      // schedule verification after 10 minutes
-      txId = paymentResult.payload.transaction.id;
-      await transactionQueue.add(
-        jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
-        { paymentId: txId, subscriptionId: subscription.id },
-        { delay: 10 * 60 * 1000, removeOnComplete: true }
-      );
-    } catch (err) {
-      // Payment creation shouldn't block subscription creation; log and continue
-      // (service layer has no logger here; swallow silently)
+        // schedule verification after 10 minutes
+        txId = paymentResult.payload.transaction.id;
+        await transactionQueue.add(
+          jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
+          { paymentId: txId, subscriptionId: subscription.id, failureEmailTemplate: "abandoned" },
+          {
+            delay: 10 * 60 * 1000,
+            removeOnComplete: true,
+            jobId: `verify-initial-subscription-payment:${subscription.id}`,
+          }
+        );
+      } catch (err) {
+        // Payment creation shouldn't block subscription creation; log and continue
+        // (service layer has no logger here; swallow silently)
+      }
     }
     try {
       await this.webhookQueue.addScheduler(profileId, {
@@ -155,10 +164,12 @@ export class SubscriptionService {
     }
 
     return {
-      message: "Subscription created. Complete transaction to active subscription.",
+      message: hasTrial
+        ? "Subscription created. Free trial started."
+        : "Subscription created. Complete transaction to active subscription.",
       payload: {
         subscription,
-        checkoutUrl: `https://checkout.orafi.app/${txId}`
+        ...(txId ? { checkoutUrl: `${CHECKOUT_BASE_URL}/${txId}` } : {}),
       },
     };
   }

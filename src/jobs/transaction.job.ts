@@ -83,7 +83,7 @@ export const startTransactionWorker = () => {
     TRANSACTION_WORKER,
     async (job) => {
       if (job.name === jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT) {
-        const { paymentId, subscriptionId } = job.data;
+        const { paymentId, subscriptionId, failureEmailTemplate } = job.data;
         const emailQueue = Container.get(EmailQueue);
         try {
           const result = await paymentService.verifyPayment({ paymentId });
@@ -175,12 +175,24 @@ export const startTransactionWorker = () => {
               } catch {}
 
               const emailQueueSvc = Container.get(EmailQueue);
-              await emailQueueSvc.addSubscriptionAbandonedScheduler({
-                email: subscription.customer.email,
-                customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
-                merchantName: subscription.plan.profile?.businessName ?? "",
-                planName: subscription.plan.name,
-              });
+              if (failureEmailTemplate === "cancelled") {
+                await emailQueueSvc.addSubscriptionCancelledScheduler({
+                  email: subscription.customer.email,
+                  customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
+                  merchantName: subscription.plan.profile?.businessName ?? "",
+                  planName: subscription.plan.name,
+                  duration: String(subscription.plan.duration),
+                  cancelledAt: new Date().toISOString(),
+                  expiresAt: subscription.trialEndsAt?.toISOString() ?? "",
+                });
+              } else {
+                await emailQueueSvc.addSubscriptionAbandonedScheduler({
+                  email: subscription.customer.email,
+                  customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
+                  merchantName: subscription.plan.profile?.businessName ?? "",
+                  planName: subscription.plan.name,
+                });
+              }
             }
           } catch (e) {
             // swallow

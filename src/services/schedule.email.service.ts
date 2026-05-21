@@ -164,6 +164,28 @@ export class EmailQueue {
         );
     }
 
+    async addSubscriptionTrialEndedScheduler(data: {
+        email: string;
+        customerName: string;
+        merchantName: string;
+        planName: string;
+        duration: string;
+        trialDays: number;
+        graceHours: number;
+        trialEndedAt: string;
+        checkoutUrl?: string;
+    }) {
+        await emailQueue.add(
+            jobs.SUBSCRIPTION_TRIAL_ENDED,
+            data,
+            {
+                delay: 1000 * 10,
+                removeOnComplete: true,
+                removeOnFail: false,
+            }
+        );
+    }
+
     async addSubscriptionCancelledScheduler(data: {
         email: string;
         customerName: string;

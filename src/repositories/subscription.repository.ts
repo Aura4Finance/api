@@ -5,6 +5,12 @@ import { Service } from "typedi";
 import { STATUS } from "@/constants/status.constant";
 import { CreateSubscriptionDto } from "@/dto/subscription.dto";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
 export type CreateSubscriptionPlanInput = {
   name: string;
   duration: SubscriptionDuration;
@@ -124,14 +130,18 @@ export class SubscriptionRepository {
       if (existingSubscription.status == SubscriptionStatus.ACTIVE) {
         throw new APIError("Customer already has an active subscription for this plan", STATUS.conflict);
       }else {
+        const trialDays = Number(plan.trialDays ?? 0);
+        const trialEndsAt = trialDays > 0 ? addDays(new Date(), trialDays) : null;
         return db.subscription.update({
           where: { id: existingSubscription.id },
           data: {
             network,
             mode,
-            status: SubscriptionStatus.PENDING,
+            status: trialDays > 0 ? SubscriptionStatus.TRIALING : SubscriptionStatus.PENDING,
             updatedAt: new Date(),
             startsAt: new Date(),
+            trialEndsAt,
+            endsAt: null,
             canceledAt: null,
         },
         include: {
@@ -142,6 +152,8 @@ export class SubscriptionRepository {
     }
 
     // Create as PENDING — activation happens after payment verification
+    const trialDays = Number(plan.trialDays ?? 0);
+    const trialEndsAt = trialDays > 0 ? addDays(new Date(), trialDays) : null;
     return db.subscription.create({
       data: {
         customerId,
@@ -149,7 +161,8 @@ export class SubscriptionRepository {
         network,
         mode,
         // startsAt will default to now (schema default). endsAt left null until activation.
-        status: SubscriptionStatus.PENDING,
+        status: trialDays > 0 ? SubscriptionStatus.TRIALING : SubscriptionStatus.PENDING,
+        ...(trialEndsAt ? { trialEndsAt } : {}),
       },
       include: {
         customer: true,

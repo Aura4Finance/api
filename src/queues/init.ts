@@ -16,6 +16,7 @@ export async function executeInits() {
 
     logger.info("Transaction expiry scheduler initialized!");
     logger.info("Subscription renewal scheduler initialized!");
+    logger.info("Subscription trial scheduler initialized!");
     logger.info("Subscription reconciliation scheduler initialized!");
     logger.info("Email onboard scheduler initialized!");
     logger.info("Webhook dead letter scheduler initialized!");
