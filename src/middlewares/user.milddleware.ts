@@ -43,7 +43,7 @@ export const verifyAccessToken = async (
       throw new APIError("User account is not authorized for this request.", STATUS.unauthorized);
     }
 
-    (req as any).user = user.businessProfile;
+    (req as any).user = user;
     (req as any).jti = decoded.jti;
     (req as any).exp = (decoded as any).exp;
     (req as any).mode = user.businessProfile?.isLive ? "live" : "test";

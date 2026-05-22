@@ -1,8 +1,6 @@
 import { GetAllTransactionsDto } from "@/dto/transaction.dto";
 import { Service } from "typedi";
 import db from "@/config/db-config";
-import { APIError } from "@/utils/error-handler";
-import { STATUS } from "@/constants/status.constant";
 import { Mode, TransactionStatus } from "../../generated/prisma";
 
 @Service()
@@ -80,22 +78,15 @@ export class TransactionRepository {
     // Filter: customerId or profileId
     if (customerId) where.customerId = customerId;
     if (profileId) where.profileId = profileId;
-    if (paymentMethod) {
-      if (type !== "PAYMENT")
-        throw new APIError(
-          "Payment method filter is only valid for payment transactions.",
-          STATUS.conflict
-        );
-      where.payment.paymentMethod = paymentMethod;
-    }
-    if (paymentMethod) {
-      if (type !== "PAYMENT")
-        throw new APIError(
-          "Payment method filter is only valid for payment transactions.",
-          STATUS.conflict
-        );
+    if(paymentMethod) where.payment.paymentMethod = paymentMethod;
+    if(subscriptionId) {
+      where.payment.paymentMethod = "SUBSCRIPTION";
+      where.payment.subscriptionId = subscriptionId
+    };
+
+    if(paymentLinkId) {
+      where.payment.paymentMethod = "PAYMENT_LINK";
       where.payment.paymentLinkId = paymentLinkId;
-      where.payment.subscriptionId = subscriptionId;
     }
 
     // Filter: date interval

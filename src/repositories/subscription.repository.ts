@@ -144,7 +144,7 @@ async getPlanById(planId: string, profileId?: string) {
     });
 
     if(existingSubscription){
-      if (existingSubscription.status == SubscriptionStatus.ACTIVE) {
+      if (existingSubscription.status == SubscriptionStatus.ACTIVE || existingSubscription.status == SubscriptionStatus.TRIALING) {
         throw new APIError("Customer already has an active subscription for this plan", STATUS.conflict);
       }else {
         const trialDays = Number(plan.trialDays ?? 0);

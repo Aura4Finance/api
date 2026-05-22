@@ -49,6 +49,7 @@ export class UserRepository {
             wallet: {
               select: {
                 address: true,
+                derivationIndex: true,
               },
             },
           },
