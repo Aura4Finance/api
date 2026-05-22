@@ -16,7 +16,7 @@ export class WebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
   async registerWebhook(req: RequestAuth, res: Response) {
-    const businessProfileId = req.user.businessProfile.id;
+    const businessProfileId = req.user.id;
 
     const { error, value } = registerWebhhookValidation(req.body);
 

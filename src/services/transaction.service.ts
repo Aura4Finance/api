@@ -68,15 +68,11 @@ export class TransactionService {
     async getAllTransactions(
         query: GetAllTransactionsDto,
         mode: Mode,
-        userId?: string
+        profileId?: string
     ) {
         let transactions;
-        if (userId) {
-            const profile = await this.userRepository.findUserById(userId);
-            if (!profile) {
-                throw new APIError("User account not found.", STATUS.bad);
-            }
-            transactions = await this.transactionRepository.getAllTransactions(query, mode, profile?.businessProfile?.id);
+        if (profileId) {
+            transactions = await this.transactionRepository.getAllTransactions(query, mode, profileId);
         } else {
             transactions = await this.transactionRepository.getAllTransactions(query, mode);
         }

@@ -23,11 +23,11 @@ export class CustomerController {
     }
 
     const body: CreateCustomerDto = value as CreateCustomerDto;
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
  
     const { payload, message } = await this.cusomerService.createCustomer(
       body,
-      userId,
+      profileId,
       req.mode
     );
 
@@ -39,7 +39,7 @@ export class CustomerController {
   }
 
   async getCustomers(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const { value, error } = getCustomerQueryValidation(req.query as any);
     if (error) {
       return res.status(STATUS.bad).json({
@@ -48,7 +48,7 @@ export class CustomerController {
       })
     }
     const query: GetCustomersQueryDto = value as GetCustomersQueryDto;
-    const { message, payload } = await this.cusomerService.getAllCustomers(query, req.mode, userId);
+    const { message, payload } = await this.cusomerService.getAllCustomers(query, req.mode, profileId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -58,7 +58,7 @@ export class CustomerController {
   }
 
   async getCustomer(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const {error , value } = getACustomerQueryValidation(req.params as any);
 
     if(error) {
@@ -73,7 +73,7 @@ export class CustomerController {
       throw new APIError("Customer id is required.", STATUS.bad);
     }
 
-    const { message, payload } = await this.cusomerService.getSingleCustomer(customerId.customerId, req.mode, userId);
+    const { message, payload } = await this.cusomerService.getSingleCustomer(customerId.customerId, req.mode, profileId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -83,7 +83,7 @@ export class CustomerController {
   }
 
   async deleteCustomer(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id;
     const {error , value } = getACustomerQueryValidation(req.params as any);
 
     if(error) {
@@ -99,7 +99,7 @@ export class CustomerController {
     }
     
     const { message, payload } = await this.cusomerService.deleteCustomer(
-      userId,
+      profileId,
       customerId.customerId
     );
 

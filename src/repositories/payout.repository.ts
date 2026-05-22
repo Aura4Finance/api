@@ -11,7 +11,7 @@ export class PayoutRepository {
     amountInUSDC: number,
     method: PayOutMethod,
     walletAddress: string,
-    userId: string,
+    profileId: string,
     mode: Mode,
     settlementAccountId?: string,
     fiatAccountId?: string
@@ -26,7 +26,7 @@ export class PayoutRepository {
         amountInUSDC,
         token: "USDC",
         profile: {
-          connect: { id: userId },
+          connect: { id: profileId },
         },
         payout: {
           create: {

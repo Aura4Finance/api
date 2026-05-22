@@ -78,7 +78,7 @@ export class PaylinkController {
   }
 
   async createPaylink(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = createPaylinkValidation(
       JSON.parse(req.body.payload)
     );
@@ -97,7 +97,7 @@ export class PaylinkController {
       images,
     };
     const { message, payload } =
-      await this.paylinkService.createPaylink(userId, body, req.mode);
+      await this.paylinkService.createPaylink(profileId, body, req.mode);
 
     return res.status(STATUS.created).json({
       success: true,
@@ -127,10 +127,11 @@ export class PaylinkController {
   }
 
   async getAllPaylinks(req: RequestAuth, res: Response) {
-    const userId = req.user.id as string;
+    const profileId = req.user?.businessProfile.id as string;
+    const isLive = req.user.businessProfile.isLive;
 
     const { message, payload } =
-      await this.paylinkService.getAllPaylink(userId);
+      await this.paylinkService.getAllPaylink(profileId, isLive);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -140,7 +141,7 @@ export class PaylinkController {
   }
 
   async deletePaymentLink(req: RequestAuth, res: Response) {
-    const userId = req.user.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = paymentLinkReferenceValidation(req.params as any);
 
     if (error) {
@@ -151,7 +152,7 @@ export class PaylinkController {
     }
 
     const { message, payload } =
-      await this.paylinkService.deletePaylink(userId, value.paylinkId);
+      await this.paylinkService.deletePaylink(profileId, value.paylinkId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -161,7 +162,7 @@ export class PaylinkController {
   }
 
   async removeImageFromPaylink(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
    const { error, value } = editPaymentLinkImageValidation(<any>req.params);
 
     if (error) {
@@ -170,7 +171,7 @@ export class PaylinkController {
         message: formatErrorValidation(error),
       });
     }
-    await this.paylinkService.deleteImage(userId, <string>value.imageId, req.mode);
+    await this.paylinkService.deleteImage(profileId, <string>value.imageId, req.mode);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -180,7 +181,7 @@ export class PaylinkController {
   }
 
   async editPaylink(req: RequestAuth, res: Response) {
-    const userId = req.user.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const { error: refError, value: refValue } = paymentLinkReferenceValidation(req.params as any);
 
     if (refError) {
@@ -212,7 +213,7 @@ export class PaylinkController {
 
     const { message, payload } =
       await this.paylinkService.editPaylink(
-        userId,
+        profileId,
         refValue.paylinkId,
         body
       );

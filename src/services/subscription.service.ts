@@ -2,7 +2,6 @@ import { STATUS } from "@/constants/status.constant";
 import { Service } from "typedi";
 import { APIError } from "@/utils/error-handler";
 import { SubscriptionRepository } from "@/repositories/subscription.repository";
-import { UserRepository } from "@/repositories/user/user.repository";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { PaymentService } from "@/services/payment.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
@@ -23,22 +22,14 @@ const CHECKOUT_BASE_URL = process.env.ORAFI_CHECHOUT_URL ?? "https://checkout.or
 export class SubscriptionService {
   constructor(
     private readonly subscriptionRepository: SubscriptionRepository,
-    private readonly userRepository: UserRepository,
     private readonly customerRepository: CustomerRepository,
     private readonly paymentService: PaymentService,
     private readonly webhookQueue: WebhookQueue,
     private readonly emailQueue: EmailQueue
   ) {}
 
-  async createPlan(userId: string, input: CreateSubscriptionPlanDto) {
-    const profile = await this.userRepository.findUserById(userId);
-    const profileId = profile?.businessProfile?.id;
-
-    if (!profileId) {
-      throw new APIError("Profile not found", STATUS.notFound);
-    }
-
-    const plan = await this.subscriptionRepository.createPlan(profileId, input);
+  async createPlan(profileId: string, data: CreateSubscriptionPlanDto) {
+    const plan = await this.subscriptionRepository.createPlan(profileId, data);
 
     return {
       message: "Subscription plan created",
@@ -46,14 +37,7 @@ export class SubscriptionService {
     };
   }
 
-  async updatePlan(userId: string, planId: string, input: UpdateSubscriptionPlanDto) {
-    const profile = await this.userRepository.findUserById(userId);
-    const profileId = profile?.businessProfile?.id;
-
-    if (!profileId) {
-      throw new APIError("Profile not found", STATUS.notFound);
-    }
-
+  async updatePlan(profileId: string, planId: string, input: UpdateSubscriptionPlanDto) {
     const plan = await this.subscriptionRepository.updatePlan(profileId, planId, input);
 
     return {
@@ -62,17 +46,16 @@ export class SubscriptionService {
     };
   }
 
-  async getPlans() {
-    const plans = await this.subscriptionRepository.getPlans();
-
+  async getPlans(profileId: string) {
+    const plans = await this.subscriptionRepository.getPlans(profileId);
     return {
       message: "Plans retrieved",
       payload: plans,
     };
   }
 
-  async getPlan(planId: string) {
-    const plan = await this.subscriptionRepository.getPlanById(planId);
+  async getPlan(profileId: string, planId: string) {
+    const plan = await this.subscriptionRepository.getPlanById(planId, profileId);
     if (!plan) throw new APIError("Plan not found", STATUS.notFound);
 
     return {
@@ -81,14 +64,7 @@ export class SubscriptionService {
     };
   }
 
-  async deletePlan(userId: string, planId: string) {
-    const profile = await this.userRepository.findUserById(userId);
-    const profileId = profile?.businessProfile?.id;
-
-    if (!profileId) {
-      throw new APIError("Profile not found", STATUS.notFound);
-    }
-
+  async deletePlan(profileId: string, planId: string) {
     await this.subscriptionRepository.deletePlan(planId, profileId);
 
     return {
@@ -97,12 +73,7 @@ export class SubscriptionService {
     };
   }
 
-  async createSubscription(userId: string, input: CreateSubscriptionDto, mode: Mode) {
-    const profile = await this.userRepository.findUserById(userId);
-    const profileId = profile?.businessProfile?.id;
-
-    if (!profileId) throw new APIError("Profile not found", STATUS.notFound);
-
+  async createSubscription(profileId: string, input: CreateSubscriptionDto, mode: Mode) {
     const customer = await this.customerRepository.findCustomerById(input.customerId, profileId);
 
     if (!customer) throw new APIError("Customer not found for profile", STATUS.notFound);
@@ -121,16 +92,16 @@ export class SubscriptionService {
       // Create an initial subscription payment transaction and schedule verification
       try {
         const paymentData: CreatePaymentDto = {
-          amount: plan.amount,
+          amount: <number>plan.amount,
           customerId: input.customerId,
-          currency: plan.currency,
+          currency: <string>plan.currency,
           network: input.network,
           txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}-${subscription.id}`,
           type: PaymentMethod.SUBSCRIPTION,
           subscriptionId: subscription.id,
         };
 
-        const paymentResult = await this.paymentService.createPayment(paymentData, userId, mode);
+        const paymentResult = await this.paymentService.createPayment(paymentData, profileId, mode);
 
         // schedule verification after 10 minutes
         txId = paymentResult.payload.transaction.id;
@@ -153,8 +124,8 @@ export class SubscriptionService {
         event: "subscription.create",
         data: {
           transactionId: subscription.id,
-          amount: plan.amount,
-          currency: plan.currency,
+          amount: <number>plan.amount,
+          currency: <string>plan.currency,
           status: "created",
           occuredAt: new Date().toISOString(),
         },
@@ -174,13 +145,8 @@ export class SubscriptionService {
     };
   }
 
-  async cancelSubscription(userId: string, subscriptionId: string, mode: Mode) {
-    const profile = await this.userRepository.findUserById(userId);
-    const profileId = profile?.businessProfile?.id;
-
-    if (!profileId) throw new APIError("Profile not found", STATUS.notFound);
-
-    const subscription = await this.subscriptionRepository.getSubscription(mode, subscriptionId);
+  async cancelSubscription(profileId: string, subscriptionId: string, mode: Mode) {
+    const subscription = await this.subscriptionRepository.getSubscription(mode, subscriptionId, profileId);
 
     if (!subscription) throw new APIError("Subscription not found", STATUS.notFound);
 
@@ -205,7 +171,7 @@ export class SubscriptionService {
       await this.emailQueue.addSubscriptionCancelledScheduler({
           email: customer.email,
           customerName: customer.firstname,
-          merchantName: profile.businessProfile?.businessName ??  "",
+          merchantName: subscription.plan.profile?.businessName ??  "",
           planName: subscription.plan.name,
           duration: String(subscription.plan.duration),
           cancelledAt: new Date().toISOString(),
@@ -219,8 +185,8 @@ export class SubscriptionService {
     };
   }
 
-  async getSubscription(mode: Mode, subscriptionId: string) {
-    const subscription = await this.subscriptionRepository.getSubscription(mode, subscriptionId);
+  async getSubscription(mode: Mode, subscriptionId: string, profileId?: string) {
+    const subscription = await this.subscriptionRepository.getSubscription(mode, subscriptionId, profileId);
     if (!subscription) throw new APIError("Subscription not found", STATUS.notFound);
 
     return {
@@ -229,8 +195,8 @@ export class SubscriptionService {
     };
   }
 
-  async getSubscriptionsByCustomer(mode: Mode, customerId: string, planId?: string) {
-    const subscriptions = await this.subscriptionRepository.getSubscriptionsByCustomer(mode, customerId, planId);
+  async getSubscriptionsByCustomer(mode: Mode, customerId: string, planId?: string, profileId?: string) {
+    const subscriptions = await this.subscriptionRepository.getSubscriptionsByCustomer(mode, customerId, profileId, planId);
 
     return {
       message: "Subscriptions retrieved",

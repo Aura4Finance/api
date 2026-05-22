@@ -22,7 +22,6 @@ import { redisClient } from "@/config/redis-config";
 export class PaymentController {
   constructor(
     private readonly paymentService: PaymentService
-
   ) { }
 
   async createPayment(req: RequestAuth, res: Response) {
@@ -40,8 +39,11 @@ export class PaymentController {
     if (req.payLink) {
       body.payLink = req.payLink as Paylink;
     }
-    const userId = req.user.id as string;
-    const { message, payload } = await this.paymentService.createPayment(body, userId, req.mode);
+    const profileId = req.user.businessProfile.id as string
+    const { message, payload } = await this.paymentService.createPayment(
+      body, 
+      profileId,
+      req.mode);
 
     return res.status(STATUS.created).json({
       success: true,

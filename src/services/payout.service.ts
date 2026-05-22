@@ -1,22 +1,17 @@
 import { Service } from "typedi";
 import { getFullnodeUrl, SuiClient, type SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { UserRepository } from "@/repositories/user/user.repository";
 import { WalletService } from "./wallet.service";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType, Network, Mode, Wallet, Prisma } from "../../generated/prisma";
+import { TransactionStatus, TransactionType, Network, Mode, Wallet } from "../../generated/prisma";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "./user/fiat.service";
 import { FiatRepository } from "@/repositories/user/fiat.repository";
 import logger from "@/utils/logger";
-
-type UserWithProfile = Prisma.UserGetPayload<{
-  include: { businessProfile: { include: { wallet: true } } }
-}>;
 
 @Service()
 export class PayoutService {
@@ -28,7 +23,6 @@ export class PayoutService {
     private walletCache: Map<string, { coinObjects: string[]; totalBalance: number }> = new Map();
 
     constructor(
-        private readonly userRepository: UserRepository,
         private readonly walletService: WalletService,
         private readonly payoutRepository: PayoutRepository,
         private readonly fiatRepository: FiatRepository,
@@ -80,18 +74,7 @@ export class PayoutService {
     /**
      * Gets total balance for a user.
      */
-    async getBalances(userId: string, mode: Mode) {
-        const user = await this.userRepository.findUserById(userId);
-        const profile = user?.businessProfile;
-
-        if (!profile) {
-            throw new APIError("Merchant profile not found.", STATUS.notFound);
-        }
-
-        const walletAddress = profile.wallet[0]?.address;
-        if (!walletAddress) {
-            throw new APIError("Merchant wallet address not found.", STATUS.bad);
-        }
+    async getBalances(walletAddress: string, mode: Mode) {
         await this.setActiveNetwork(mode);
         const cache: any = await this.fetchCoins(walletAddress);
 
@@ -208,20 +191,16 @@ export class PayoutService {
 
     async initiateCryptoPayout(
         body: CryptoPayOutDto,
-        userId: string,
+        wallet: Wallet,
+        profileId: string,
         mode: Mode
     ) {
         await this.setActiveNetwork(mode);
-        const keys = await this.userRepository.findUserById(userId);
-        const profile = keys?.businessProfile;
-        if (!profile) {
-            throw new Error("Merchant or business profile not found");
-        }
         let to: string;
         let network: Network;
         let cryptoAccountId: string | undefined = undefined;
         if (body.cryptoSettlementAccountId) {
-            const settlementAccount = await this.settlementRepository.findSettlemtAccountById(body.cryptoSettlementAccountId, profile.id);
+            const settlementAccount = await this.settlementRepository.findSettlementAccountById(body.cryptoSettlementAccountId, profileId);
             if (!settlementAccount) {
                 throw new APIError("Settlement account not found.", STATUS.bad);
             }
@@ -234,12 +213,12 @@ export class PayoutService {
                 network = body.network;
                 if (body.save) {
                     if (!body.alias) throw new APIError("Alias is required to save this wallet address.", STATUS.bad);
-                    cryptoAccountId = (await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profile.id)).id;
+                    cryptoAccountId = (await this.settlementRepository.addSettlementAccount(body.walletAddress, body.network, body.alias, profileId)).id;
                 }
             } else {
                 throw new APIError("Provide a settlement account or a wallet address and network.", STATUS.bad);
             }
-        this.primaryCoin = await this.getPrimaryCoin(<Wallet>keys?.businessProfile?.wallet[0], mode);
+        this.primaryCoin = await this.getPrimaryCoin(wallet, mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createPayout(
             network,
@@ -247,15 +226,15 @@ export class PayoutService {
             body.amount,
             "CRYPTO",
             to,
-            <string>keys?.businessProfile?.id,
+            profileId,
             mode,
             cryptoAccountId
         );
-        return this.finalizeCryptoPayout(<Wallet>keys?.businessProfile?.wallet[0], body.amount, to, payout.id, mode);
+        return this.finalizeCryptoPayout(wallet, body.amount, to, payout.id, mode);
     }
 
     private async finalizeFiatPayout(
-        user: any,
+        wallet: Wallet,
         amount: number,
         accountIdentifier: string,
         bankCode: string,
@@ -263,12 +242,11 @@ export class PayoutService {
         payoutId: string,
         mode: Mode
     ) {
-        const walletIndex = user?.businessProfile?.wallet[0]?.derivationIndex;
-        const wallet = await deriveWallet(<number>walletIndex);
-        const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(wallet);
+        const walletBuffer = await deriveWallet(wallet.derivationIndex);
+        const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(walletBuffer);
         let tx: SuiTransactionBlockResponse;
         try {
-            const primaryCoinObjectId = await this.getPrimaryCoin(<Wallet>user?.businessProfile?.wallet[0], mode);
+            const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
             
             tx = await this.walletService.offrampSmartContractCall(
                 BigInt((amount.toFixed(6).replace(".", ""))),
@@ -338,7 +316,8 @@ export class PayoutService {
     }
 
     private async retryFiatPayout(
-        user: UserWithProfile,
+        profileId: string,
+        wallet: Wallet,
         transactionId: string,
         mode: Mode,
         amount: number,
@@ -350,7 +329,7 @@ export class PayoutService {
 
         // Try to get fiat account from payout transaction
         if (fiatAccountId) {
-            const fiatAccount = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, fiatAccountId);
+            const fiatAccount = await this.fiatRepository.findAccountById(profileId, fiatAccountId);
             if (fiatAccount) {
                 accountIdentifier = fiatAccount.accountNumber;
                 bankCode = fiatAccount.bankCode;
@@ -360,7 +339,7 @@ export class PayoutService {
             }
         } else {
             // Fallback to user's primary fiat account
-            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id);
+            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(profileId);
             if (!primaryFiatAccount) {
                 throw new APIError("No fiat account found for this payout. Please provide account details.", STATUS.notFound);
             }
@@ -371,7 +350,7 @@ export class PayoutService {
         }
 
         return await this.finalizeFiatPayout(
-            user,
+            wallet,
             amount,
             accountIdentifier,
             bankCode,
@@ -383,12 +362,12 @@ export class PayoutService {
 
     //using Linq or our custom API service
     async initiateFiatPayout(
-        userId: string,
+        profileId: string,
+        wallet: Wallet,
+        body: InitiatePayoutDto,
         mode: Mode,
-        body: InitiatePayoutDto
     ) {
         await this.setActiveNetwork(mode);
-        const user = await this.userRepository.findUserById(userId);
         let {
             amount,
             accountId,
@@ -399,7 +378,7 @@ export class PayoutService {
         let accountName: string;
         let fiatAccountId: string | undefined = undefined;
         if (accountId) {
-            const account = await this.fiatRepository.findAccountById(<string>user?.businessProfile?.id, accountId);
+            const account = await this.fiatRepository.findAccountById(profileId, accountId);
             if (!account) {
                 throw new APIError("Fiat account not found.", STATUS.notFound);
             }
@@ -414,12 +393,12 @@ export class PayoutService {
             }
             accountName = resolvedAccount.payload.accountName;
             if (save) {
-               fiatAccountId = (await this.fiatService.addBankAccount(accountIdentifier, bankCode, false, userId)).id;
+               fiatAccountId = (await this.fiatService.addBankAccount(accountIdentifier, bankCode, false, profileId)).id;
             } else {
                fiatAccountId = undefined;
             }  
         } else {
-            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(<string>user?.businessProfile?.id);
+            const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(profileId);
             if (!primaryFiatAccount) throw new APIError("Provide accountId or accountIdentifier and bankCode.", STATUS.bad);
         
             accountIdentifier = primaryFiatAccount.accountNumber;
@@ -433,15 +412,15 @@ export class PayoutService {
             amount,
             amount,
             "FIAT",
-            <string>user?.businessProfile?.wallet[0]?.address,
-            <string>user?.businessProfile?.id,
+            wallet.address,
+            profileId,
             mode,
             undefined,
             fiatAccountId      
         );
 
         return this.finalizeFiatPayout(
-            user,
+            wallet,
             amount,
             accountIdentifier,
             bankCode,
@@ -453,12 +432,12 @@ export class PayoutService {
 
     async retryPayout(
         transactionId: string,
-        userId: string,
+        profileId: string,
+        wallet: Wallet,
         mode: Mode
     ){
         await this.setActiveNetwork(mode);
-        const user = await this.userRepository.findUserById(userId);
-        const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, <string>user?.businessProfile?.id);
+        const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, profileId);
         if (
             !payoutTransaction ||
             payoutTransaction.confirmedAt ||
@@ -467,8 +446,6 @@ export class PayoutService {
         ) {
             throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
         }
-
-        const wallet = <Wallet>user?.businessProfile?.wallet[0];
 
         if(payoutTransaction?.payout?.method === "CRYPTO" ){
             return await this.retryCryptoPayout(
@@ -480,7 +457,8 @@ export class PayoutService {
             );
         }else {
             return await this.retryFiatPayout(
-                <UserWithProfile>user,
+                profileId,
+                wallet,
                 transactionId,
                 mode,
                 payoutTransaction.amountInUSDC,

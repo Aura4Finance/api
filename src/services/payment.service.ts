@@ -5,9 +5,8 @@ import { WalletService } from "./wallet.service";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
-import { UserRepository } from "@/repositories/user/user.repository";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { Customer, Mode, PaymentMethod, Prisma, Token } from "../../generated/prisma";
+import { Customer, Mode, PaymentMethod, Token } from "../../generated/prisma";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "./schedule.email.service";
@@ -17,10 +16,6 @@ import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 
-type UserWithProfile = Prisma.UserGetPayload<{
-  include: { businessProfile: { include: { wallet: true } } }
-}>;
-
 @Service()
 export class PaymentService {
   private client!: SuiClient;
@@ -29,7 +24,6 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly walletService: WalletService,
     private readonly customerRepository: CustomerRepository,
-    private readonly userRepository: UserRepository,
     private readonly webhookQueue: WebhookQueue,
     private readonly emailQueue: EmailQueue
   ) { }
@@ -39,7 +33,7 @@ export class PaymentService {
   }
 
   private async resolveCustomer(
-    businessProfileId: string,
+    profileId: string,
     mode: Mode,
     customerId: string | undefined,
     customerDetails: CreatePaymentDto["customer"]
@@ -70,7 +64,7 @@ export class PaymentService {
         customerFirstname,
         customerLastname,
         email,
-        businessProfileId,
+        profileId,
         mode
       );
     }
@@ -79,7 +73,7 @@ export class PaymentService {
   }
 
   private async finalizePaymentCreation({
-    user,
+    profileId,
     mode,
     customer,
     amount,
@@ -92,7 +86,7 @@ export class PaymentService {
     paylinkId,
     subscriptionId,
   }: {
-    user: UserWithProfile;
+    profileId: string;
     mode: Mode;
     customer: Customer;
     amount: number;
@@ -106,29 +100,29 @@ export class PaymentService {
     subscriptionId?: string;
   }) {
     const transaction = await this.
-    paymentRepository.createPayment(
-      amount,
-      amountToPay,
-      currency,
-      network,
-      customer,
-      txRef,
-      <string>user?.businessProfile?.id,
-      mode,
-      paymentMethod === "HOSTED_CHECKOUT"
-        ? {
-          paymentMethod,
-          redirectUrl: redirectUrl as string,
-        } : paymentMethod === "PAYMENT_LINK"
-        ? {
-          paymentMethod,
-          paylinkId: paylinkId as string,
-        } : {
-          paymentMethod,
-          subscriptionId: subscriptionId as string,
-          billingCycleKey: subscriptionId as string,
-        }
-    );
+      paymentRepository.createPayment(
+        amount,
+        amountToPay,
+        currency,
+        network,
+        customer,
+        txRef,
+        profileId,
+        mode,
+        paymentMethod === "HOSTED_CHECKOUT"
+          ? {
+            paymentMethod,
+            redirectUrl: redirectUrl as string,
+          } : paymentMethod === "PAYMENT_LINK"
+            ? {
+              paymentMethod,
+              paylinkId: paylinkId as string,
+            } : {
+              paymentMethod,
+              subscriptionId: subscriptionId as string,
+              billingCycleKey: subscriptionId as string,
+            }
+      );
 
     await redisClient.set(transaction.id, JSON.stringify(
       {
@@ -151,64 +145,58 @@ export class PaymentService {
     };
   }
 
-  async createPayment(data: CreatePaymentDto, userId: string, mode: Mode) {
+  async createPayment(
+    data: CreatePaymentDto,
+    profileId: string,
+    mode: Mode
+  ) {
     await this.setActiveNetwork(mode);
-    const user = (await this.userRepository.findUserById(userId)) as UserWithProfile;
-    if (!user) {
-      throw new APIError("User not found.", STATUS.notFound);
-    }
-        const customer = await this.resolveCustomer(<string>user?.businessProfile?.id, mode, data.customerId, data.customer);
-        await this.customerRepository.addModeToCustomer(customer.id, mode);
-        
-        const merchantAddress = user?.businessProfile?.wallet[0]?.address;
-        if (!merchantAddress) {
-          throw new APIError("Merchant wallet address is not configured.", STATUS.bad);
-        }
+    const customer = await this.resolveCustomer(profileId, mode, data.customerId, data.customer);
+    await this.customerRepository.addModeToCustomer(customer.id, mode);
+    let amount: number;
+    let paymentMethod: PaymentMethod;
+    let currency: string;
+    let redirectUrl: string | undefined = undefined;
+    let paylinkId: string | undefined = undefined;
+    let subscriptionId: string | undefined = undefined;
+    try {
+      if (data.type === PaymentMethod.HOSTED_CHECKOUT) {
+        amount = data.amount;
+        paymentMethod = PaymentMethod.HOSTED_CHECKOUT;
+        currency = data.currency;
+        redirectUrl = data.redirectUrl
+      } else if (data.type == PaymentMethod.PAYMENT_LINK) {
+        paymentMethod = PaymentMethod.PAYMENT_LINK;
+        amount = <number>data.payLink?.amount
+        currency = <string>data.payLink?.currency
+        paylinkId = data.payLink?.id
+      } else {
+        paymentMethod = PaymentMethod.SUBSCRIPTION;
+        subscriptionId = data.subscriptionId;
+        amount = data.amount;
+        currency = data.currency;
+      }
+      const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
+        amount,
+        currency,
+        "to_USDT"
+      );
 
-        let amount: number;
-        let paymentMethod: PaymentMethod; 
-        let currency: string;
-        let redirectUrl: string | undefined = undefined;
-        let paylinkId: string | undefined = undefined;
-        let subscriptionId: string | undefined = undefined;
-        try {
-          if (data.type === PaymentMethod.HOSTED_CHECKOUT) {
-            amount = data.amount;
-            paymentMethod = PaymentMethod.HOSTED_CHECKOUT;
-            currency = data.currency;
-            redirectUrl = data.redirectUrl
-          }else if(data.type == PaymentMethod.PAYMENT_LINK) {
-            paymentMethod = PaymentMethod.PAYMENT_LINK;
-            amount = <number>data.payLink?.amount
-            currency = <string>data.payLink?.currency
-            paylinkId = data.payLink?.id
-          }else {
-            paymentMethod = PaymentMethod.SUBSCRIPTION;
-            subscriptionId = data.subscriptionId;
-            amount = data.amount;
-            currency = data.currency;
-          }
-          const amountToPay = await this.walletService.convertBetweenCurrencyAndUSDT(
-            amount,
-            currency,
-            "to_USDT"
-          );
-
-          const finalizeArgs = {
-            user,
-            mode,
-            customer,
-            amount,
-            amountToPay,
-            currency,
-            network: data.network,
-            txRef: data.txRef,
-            paymentMethod,
-            ...(redirectUrl ? { redirectUrl } : {}),
-            ...(paylinkId ? { paylinkId } : {}),
-            ...(subscriptionId ? { subscriptionId } : {}),
-          };
-          return this.finalizePaymentCreation(finalizeArgs)
+      const finalizeArgs = {
+        profileId,
+        mode,
+        customer,
+        amount,
+        amountToPay,
+        currency,
+        network: data.network,
+        txRef: data.txRef,
+        paymentMethod,
+        ...(redirectUrl ? { redirectUrl } : {}),
+        ...(paylinkId ? { paylinkId } : {}),
+        ...(subscriptionId ? { subscriptionId } : {}),
+      };
+      return this.finalizePaymentCreation(finalizeArgs)
 
     } catch (error: unknown) {
       const typedError = error as { message?: string; status?: number };
@@ -221,65 +209,65 @@ export class PaymentService {
 
   async generateDepositAddressForPaymentCompletion(
     transactionId: string,
-    token: Token=Token.USDC
-  ){
+    token: Token = Token.USDC
+  ) {
     const tx = await this.paymentRepository.findPaymentById(transactionId);
 
-    if(!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING"){
+    if (!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING") {
       throw new APIError("Payment transaction not found!", STATUS.notFound);
     }
 
-    if(tx.payment?.depositAddress){
-      return  {
-      message: "Deposit address created successfully!",
-      payload: tx.payment.depositAddress,
-      }
-    }
-      let tokenPrice: number;
-      if(token == Token.USDC){
-        tokenPrice = tx.amountInUSDC;
-      }else{
-        const rate = await getTokenPrice(getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet")!);
-        if(!rate){
-          throw new APIError("Unsupported token.", STATUS.bad);
-        }
-        tokenPrice = tx.amountInUSDC / rate;
-      }
-
-      const depositAddress = await this.walletService.generatePaymentWallet(
-        <string>tx.profile.wallet[0]?.address,
-        tokenPrice,
-        token,
-        tx.mode
-      );
-  
-      await this.paymentRepository.addDepositAddressToPayment(
-        tx.id,
-        depositAddress,
-        token
-      )
-  
+    if (tx.payment?.depositAddress) {
       return {
         message: "Deposit address created successfully!",
-        payload: depositAddress,
+        payload: tx.payment.depositAddress,
       }
+    }
+    let tokenPrice: number;
+    if (token == Token.USDC) {
+      tokenPrice = tx.amountInUSDC;
+    } else {
+      const rate = await getTokenPrice(getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet")!);
+      if (!rate) {
+        throw new APIError("Unsupported token.", STATUS.bad);
+      }
+      tokenPrice = tx.amountInUSDC / rate;
+    }
+
+    const depositAddress = await this.walletService.generatePaymentWallet(
+      <string>tx.profile.wallet[0]?.address,
+      tokenPrice,
+      token,
+      tx.mode
+    );
+
+    await this.paymentRepository.addDepositAddressToPayment(
+      tx.id,
+      depositAddress,
+      token
+    )
+
+    return {
+      message: "Deposit address created successfully!",
+      payload: depositAddress,
+    }
   }
 
   async generateTransferAddressForPaymentCompletiion(
     transactionId: string
-  ){
+  ) {
     const tx = await this.paymentRepository.findPaymentById(transactionId);
 
-    if(!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING"){
+    if (!tx || tx.type !== "PAYMENT" || tx.status !== "PENDING") {
       throw new APIError("Payment transaction not found!", STATUS.notFound);
     }
 
     const existingPaymentWallet = tx.payment?.wallet?.[0];
     if (existingPaymentWallet) {
       return {
-      message: "Transfer address created successfully!",
-      payload: existingPaymentWallet.address,
-    }
+        message: "Transfer address created successfully!",
+        payload: existingPaymentWallet.address,
+      }
     }
 
     const wallet = await this.walletService.createWallet();
@@ -468,30 +456,30 @@ export class PaymentService {
 
   async verifyTransfer(data: VerifyPaymentDto) {
     let { paymentId, token } = data;
-    if(!token) token = Token.USDC;
+    if (!token) token = Token.USDC;
     const tx = await this.paymentRepository.findPaymentById(paymentId);
 
     if (!tx) {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
     const paymentWallet = tx.payment?.wallet?.[0];
-    if(!paymentWallet?.address){
+    if (!paymentWallet?.address) {
       throw new APIError("No transfer address found for this payment", STATUS.notFound);
     }
     await this.setActiveNetwork(tx.mode);
 
     const { amountInUSDC } = tx;
     const coinType = getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet");
-    if(!coinType){
+    if (!coinType) {
       throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
     }
 
     let target;
-    if(token == Token.USDC){
+    if (token == Token.USDC) {
       target = BigInt(Math.floor(Number(amountInUSDC) * getCoinDecimal(token)));
-    }else {
+    } else {
       const rate = await getTokenPrice(coinType);
-      if(!rate){
+      if (!rate) {
         throw new APIError("Failed to fetch token price.", STATUS.bad);
       }
       target = BigInt(Math.floor(Number(amountInUSDC / rate) * getCoinDecimal(token)));
@@ -544,7 +532,7 @@ export class PaymentService {
 
     const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex as number);
     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
-    
+
     await transactionQueue.add(jobs.SETTLE_PAYMENT, {
       walletPrivateKey: secretKey,
       coinObjectId: matchingCoin.coinObjectId,
@@ -552,11 +540,11 @@ export class PaymentService {
       toAddress: tx?.profile.wallet[0]?.address as string,
       token,
       mode: tx.mode,
-    }, 
-    {
-      removeOnComplete: true,
-    }
-  )
+    },
+      {
+        removeOnComplete: true,
+      }
+    )
 
     await this.confirmPayment(
       tx.id,

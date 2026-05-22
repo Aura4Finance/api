@@ -23,9 +23,7 @@ export class WebhookService {
   ) { }
 
   async registerWebhook(url: string, profileId: string) {
-    const existingWebhook = await this.webhookRepository.findWebhookByProfileId(
-      profileId
-    );
+    const existingWebhook = await this.webhookRepository.findWebhookByProfileId(profileId);
 
     if (!existingWebhook) {
       const secret = `whsec_${crypto.randomBytes(32).toString("hex")}`

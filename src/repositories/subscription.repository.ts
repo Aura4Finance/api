@@ -74,14 +74,25 @@ export class SubscriptionRepository {
     });
   }
 
-  async getPlanById(planId: string, profileId?: string) {
-    return db.subscriptionPlan.findFirst({
+async getPlanById(planId: string, profileId?: string) {
+  const [plan, subscriptionCount] = await Promise.all([
+    db.subscriptionPlan.findFirst({
       where: profileId ? { id: planId, profileId } : { id: planId },
       include: {
-        subscriptions: true,
+        subscriptions: {
+          include: {
+            customer: true
+          }
+        },
       },
-    });
-  }
+    }),
+    db.subscription.count({
+      where: { planId }
+    })
+  ]);
+
+  return { ...plan, subscriptionCount };
+}
 
   async deletePlan(planId: string, profileId?: string) {
     const existingPlan = await db.subscriptionPlan.findFirst({
@@ -97,14 +108,17 @@ export class SubscriptionRepository {
     });
   }
 
-  async createSubscription(data: CreateSubscriptionDto, mode: Mode) {
+  async createSubscription(data: CreateSubscriptionDto, mode: Mode, profileId?: string) {
     const { 
       planId,
       customerId,
       network
     } = data;
     const plan = await db.subscriptionPlan.findUnique({
-      where: { id: planId },
+      where: { 
+        id: planId,
+        ...(profileId ? { profileId } : {})
+      },
     });
 
     if (!plan) {
@@ -123,6 +137,9 @@ export class SubscriptionRepository {
       where: {
         customerId,
         planId,
+        plan: {
+          ...(profileId ? { profileId } : {})
+        }
       },
     });
 
@@ -133,7 +150,13 @@ export class SubscriptionRepository {
         const trialDays = Number(plan.trialDays ?? 0);
         const trialEndsAt = trialDays > 0 ? addDays(new Date(), trialDays) : null;
         return db.subscription.update({
-          where: { id: existingSubscription.id },
+          where: { 
+            id: existingSubscription.id,
+            mode,
+            plan: {
+              ...(profileId ? { profileId } : {})
+            }
+           },
           data: {
             network,
             mode,
@@ -171,9 +194,16 @@ export class SubscriptionRepository {
     });
   }
 
-  async cancelSubscription(subscriptionId: string) {
+  async cancelSubscription(subscriptionId: string, profileId?: string) {
     const subscription = await db.subscription.findUnique({
-      where: { id: subscriptionId },
+      where: { 
+        id: subscriptionId,
+        ...(profileId ? { plan: { profileId } } : {})
+       },
+      include: {
+        customer: true,
+        plan: true,
+       },
     });
 
     if (!subscription) {
@@ -197,25 +227,39 @@ export class SubscriptionRepository {
     });
   }
 
-  async getSubscription(mode: Mode, subscriptionId: string) {
+  async getSubscription(mode: Mode, subscriptionId: string, profileId?: string) {
     return db.subscription.findUnique({
       where: { 
         id: subscriptionId,
+        plan: {
+          ...(profileId && { profileId })
+        },
         mode
        },
       include: {
         customer: true,
-        plan: true
+        plan: {
+          include: {
+            profile: {
+              select: {
+                businessName: true
+              }
+            }
+          }
+        }
       },
     });
   }
 
-  async getSubscriptionsByCustomer(mode: Mode, customerId: string, planId?: string) {
+  async getSubscriptionsByCustomer(mode: Mode, customerId: string, profileId?: string, planId?: string) {
     return db.subscription.findMany({
       where: { 
         customerId,
         mode,
         ...(planId ? { planId } : {}),
+        plan: {
+          ...(profileId ? { profileId } : {})
+        }
       },
       include: {
         customer: true,
@@ -227,9 +271,14 @@ export class SubscriptionRepository {
     });
   }
 
-  async getSubscriptionsByPlan(planId: string) {
+  async getSubscriptionsByPlan(planId: string, profileId?: string) {
     return db.subscription.findMany({
-      where: { planId },
+      where: { 
+        planId,
+        plan: {
+          ...(profileId ? { profileId } : {})
+        }
+      },
       include: {
         customer: true,
         plan: true,
@@ -240,9 +289,12 @@ export class SubscriptionRepository {
     });
   }
 
-  async getActiveSubscriptions() {
+  async getActiveSubscriptions(profileId: string) {
     return db.subscription.findMany({
       where: {
+        plan: {
+          profileId
+        },
         status: SubscriptionStatus.ACTIVE,
       },
       include: {

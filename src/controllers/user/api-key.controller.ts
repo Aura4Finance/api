@@ -3,7 +3,6 @@ import { ApiKeyService } from "../../services/user/api-key.service";
 import { Response } from "express";
 import { STATUS } from "@/constants/status.constant";
 import { RequestAuth } from "@/@types/request";
-import { UserService } from "@/services/user/user.service";
 import { rotateApiKeySchema } from "@/validation/key.validation";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { RotateApiKeyDto } from "@/dto/api-key.dto";
@@ -12,21 +11,18 @@ import { RotateApiKeyDto } from "@/dto/api-key.dto";
 export class ApiKeyController {
   constructor(
     private readonly apiKeyService: ApiKeyService,
-    private readonly userService: UserService
   ) {}
   private MAX_API_KEYS = 1; 
   async generateApiKeys(req: RequestAuth, res: Response) {
+    const userId = req.user?.id as string;
     if(req.mode !== "live") {
       return res.status(STATUS.bad).json({
         success: false,
         message: "API key generation is only available in live mode.",
       });
     }
-    const user = await this.userService.getUserById(req.user.id);
 
-    const keys = await this.apiKeyService.getApiKeys(
-      <string>user!.businessProfile?.id
-    );
+    const keys = await this.apiKeyService.getApiKeys(userId);
     if(keys.payload.length >= this.MAX_API_KEYS) {
       return res.status(STATUS.bad).json({
         success: false,
@@ -34,9 +30,7 @@ export class ApiKeyController {
       });
     }
 
-    const { message, payload } = await this.apiKeyService.generateApiKeys(
-      <string>user!.businessProfile?.id
-    );
+    const { message, payload } = await this.apiKeyService.generateApiKeys(userId);
 
     return res.status(STATUS.created).json({
       success: true,
@@ -46,13 +40,13 @@ export class ApiKeyController {
   }
 
   async regenerateApiKeys(req: RequestAuth, res: Response) {
+    const userId = req.user?.id as string;
     if(req.mode !== "live") {
       return res.status(STATUS.bad).json({
         success: false,
         message: "API key regeneration is only available in live mode.",
       });
     }
-    const user = await this.userService.getUserById(req.user.id);
     const { value, error} = rotateApiKeySchema(req.body);
 
     if(error) {
@@ -64,7 +58,7 @@ export class ApiKeyController {
 
     const body = value as RotateApiKeyDto
     const { message, payload } = await this.apiKeyService.regenerateApikeys(
-      <string>user!.businessProfile?.id,
+      userId,
       body.keyId
     );
 
@@ -76,11 +70,8 @@ export class ApiKeyController {
   }
 
   async getApiKeys(req: RequestAuth, res: Response) {
-    const user = await this.userService.getUserById(req.user.id);
-
-    const { message, payload } = await this.apiKeyService.getApiKeys(
-      <string>user!.businessProfile?.id
-    );
+    const userId = req.user?.id as string;
+    const { message, payload } = await this.apiKeyService.getApiKeys(userId);
     payload.forEach((key: any) => key.liveKey = key.liveKey ? "lk_********************" + key.liveKey.slice(-4) : null);
     return res.status(STATUS.ok).json({
       success: true,

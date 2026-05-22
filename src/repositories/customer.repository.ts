@@ -131,7 +131,7 @@ export class CustomerRepository {
   async getAllCustomers(
     query: GetCustomersQueryDto,
     mode: Mode,
-    userId?: string,
+    profileId?: string,
   ) {
     const {
       amountSpent,
@@ -147,16 +147,16 @@ export class CustomerRepository {
     const include: any = {};
 
     // Scope customer to user
-    if (userId) {
+    if (profileId) {
       where.userCustomers = {
         some: {
-          profileId: userId,
+          profileId,
         },
       };
 
       include.userCustomers = {
         where: {
-          profileId: userId
+          profileId
         },
         select: {
           createdAt: true,
@@ -282,18 +282,18 @@ export class CustomerRepository {
   }
 
 
-  async disconnectCustomerFromUser(userId: string, customerId: string) {
+  async disconnectCustomerFromUser(profileId: string, customerId: string) {
     await db.userCustomer.delete({
       where: {
         profileId_customerId: {
-          profileId: userId,
+          profileId,
           customerId,
         },
       },
     });
   }
 
-  async deleteCustomer(customerId: string, userId: string) {
+  async deleteCustomer(customerId: string, profileId: string) {
     await db.$transaction(async (tx) => {
       const currentCount = await tx.userCustomer.count({
         where: { customerId },
@@ -302,7 +302,7 @@ export class CustomerRepository {
       // always attempt to delete the relation safely
       await tx.userCustomer.deleteMany({
         where: {
-          profileId: userId,
+          profileId,
           customerId,
         },
       });
@@ -331,7 +331,7 @@ export class CustomerRepository {
 
   }
 
-  async countCustomers(mode: Mode = Mode.live, userId?: string) {
+  async countCustomers(mode: Mode = Mode.live, profileId?: string) {
     const now = new Date();
 
     // Current month
@@ -348,10 +348,10 @@ export class CustomerRepository {
       }
     };
 
-    if (userId) {
+    if (profileId) {
       where.userCustomers = {
         some: {
-          profileId: userId,
+          profileId,
         },
       };
     }

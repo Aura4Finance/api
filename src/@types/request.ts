@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { Paylink, PaymentMethod } from "../../generated/prisma";
+import { Paylink, PaymentMethod, Wallet } from "../../generated/prisma";
 export interface RequestAuth extends Request {
   user: {
     id: string,
@@ -9,6 +9,7 @@ export interface RequestAuth extends Request {
     businessProfile: {
       id: string,
       isLive: boolean;
+      wallet: Wallet[]
     }
   }
   userId?: string;

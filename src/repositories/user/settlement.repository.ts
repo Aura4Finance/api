@@ -7,19 +7,19 @@ export class SettlementRepository {
   async findSettlemtAccountByAddress(
     walletAddress: string,
     network: Network,
-    businessProfileId: string
+    profileId: string
   ) {
     return await db.cryptoAccount.findFirst({
       where: {
-        AND: [{ walletAddress }, { profileId: businessProfileId }, { network }],
+        AND: [{ walletAddress }, { profileId }, { network }],
       },
     });
   }
 
-  async findSettlemtAccountById(accountId: string, businessProfileId: string) {
+  async findSettlementAccountById(accountId: string, profileId: string) {
     return await db.cryptoAccount.findFirst({
       where: {
-        AND: [{ id: accountId }, { profileId: businessProfileId }],
+        AND: [{ id: accountId }, { profileId }],
       },
       select: {
         id: true,
@@ -33,7 +33,7 @@ export class SettlementRepository {
     walletAddress: string, 
     network: Network, 
     alias: string,
-    businessProfileId: string) {
+    profileId: string) {
    return  await db.cryptoAccount.create({
       data: {
         walletAddress,
@@ -41,7 +41,7 @@ export class SettlementRepository {
         network,
         profile: {
           connect: {
-            id: businessProfileId,
+            id: profileId,
           },
         },
       },
@@ -53,18 +53,19 @@ export class SettlementRepository {
     });
   }
 
-  async getAllSettlementAccounts(businessProfileId: string) {
+  async getAllSettlementAccounts(profileId: string) {
     return await db.cryptoAccount.findMany({
       where: {
-        profileId: businessProfileId,
+        profileId,
       },
     });
   }
 
-  async deleteSettlementAccount(accountId: string) {
+  async deleteSettlementAccount(accountId: string, profileId: string) {
     await db.cryptoAccount.delete({
       where: {
         id: accountId,
+        profileId
       },
     });
   }

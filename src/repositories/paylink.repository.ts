@@ -124,10 +124,13 @@ export class PaylinkRepository {
     return result;
   }
 
-  async deleteImage(imageId: string) {
+  async deleteImage(imageId: string, profileId: string) {
     await db.images.delete({
       where: {
         id: imageId,
+        paylink: {
+          profileId
+        }
       },
     });
   }

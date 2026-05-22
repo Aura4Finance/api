@@ -14,7 +14,7 @@ export class TransactionController {
     ) {}
 
     async getTransactionById(req: RequestAuth, res: Response) {
-        const userId = req.user?.id as string;
+        const profileId = req.user?.businessProfile.id as string;
         const { error, value } = transactionIdSchemaValidation(req.params as any);
 
         if (error) {
@@ -24,7 +24,7 @@ export class TransactionController {
             });
         }
         const params: GetATransactionDto = value;
-        const { message, payload } = await this.transactionService.getTransactionById(params.txId, req.mode, userId);
+        const { message, payload } = await this.transactionService.getTransactionById(params.txId, req.mode, profileId);
 
         return res.status(STATUS.ok).json({
             success: true,
@@ -34,7 +34,7 @@ export class TransactionController {
 }   
 
     async getAllTransactions(req: RequestAuth, res: Response) {
-        const userId = req.user?.id as string;
+        const profileId = req.user?.businessProfile.id as string;
         const {error, value} = transactionQuerySchemaValidation(req.query);
 
         if (error) {
@@ -44,7 +44,7 @@ export class TransactionController {
             });
         }
         const query: GetAllTransactionsDto = value;
-        const { message, payload } = await this.transactionService.getAllTransactions(query, req.mode, userId);
+        const { message, payload } = await this.transactionService.getAllTransactions(query, req.mode, profileId);
 
         return res.status(200).json({
             success: true,

@@ -23,10 +23,10 @@ export class SettlementController {
     }
 
     const body: AddSettlementAccountDto = value as AddSettlementAccountDto;
-    const userId = req.user.id;
+    const profileId = req.user.businessProfile.id;
 
     const { message, payload } =
-      await this.settlementService.addSettlementAccount(userId, body);
+      await this.settlementService.addSettlementAccount(profileId, body);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -36,10 +36,10 @@ export class SettlementController {
   }
 
   async getAllSettlementAccounts(req: RequestAuth, res: Response) {
-    const userId = req.user.id;
+    const profileId = req.user.businessProfile.id;
 
     const { message, payload } =
-      await this.settlementService.getAllSettlementAccount(userId);
+      await this.settlementService.getAllSettlementAccount(profileId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -49,7 +49,7 @@ export class SettlementController {
   }
 
   async deleteSettlementAccount(req: RequestAuth, res: Response) {
-    const userId = req.user.id;
+    const profileId = req.user.businessProfile.id;
     const accountId = req.params.id as string;
 
     if (!accountId || accountId.trim() === "") {
@@ -57,7 +57,7 @@ export class SettlementController {
     }
 
     const { message, payload } =
-      await this.settlementService.deleteSettlementAccount(userId, accountId);
+      await this.settlementService.deleteSettlementAccount(profileId, accountId);
 
     return res.status(STATUS.ok).json({
       success: true,

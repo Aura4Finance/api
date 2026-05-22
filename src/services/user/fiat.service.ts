@@ -3,13 +3,11 @@ import { FiatRepository } from "@/repositories/user/fiat.repository";
 import { STATUS } from "@/constants/status.constant";
 import payfricaClient from "@/config/payfricaClient-config";
 import { APIError } from "@/utils/error-handler";
-import { UserRepository } from "@/repositories/user/user.repository";
 
 @Service()
 export class FiatService {
     constructor(
         private readonly fiatRepository: FiatRepository,
-        private readonly userRepository: UserRepository
     ) { }
 
     async getRates(currency: string) {
@@ -66,7 +64,7 @@ export class FiatService {
         accountNumber: string,
         bankCode: string,
         isPrimary: boolean,
-        userId: string
+        profileId: string
     ) {
 
         const resolvedAccount = await this.resolveAccountName(accountNumber, bankCode);
@@ -76,11 +74,6 @@ export class FiatService {
 
         const { payload: banks } = await this.getBanks();
         const resolvedBank = banks.find(bank => bank.bankCode == bankCode);
-
-        const profileId = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile?.id);
-
         const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(<string>accountNumber, bankCode, <string>profileId);
 
         if (existingAccount) {
@@ -88,8 +81,8 @@ export class FiatService {
         }
 
         const [existingAccounts, primaryAccount] = await Promise.all([
-            this.fiatRepository.getAccounts(<string>profileId),
-            this.fiatRepository.getPrimaryAccount(<string>profileId)
+            this.fiatRepository.getAccounts(profileId),
+            this.fiatRepository.getPrimaryAccount(profileId)
         ]);
 
         // If no existing accounts, force this as primary
@@ -145,12 +138,9 @@ export class FiatService {
 
     async getAllAccounts(
         userId: string
-    ) {
-        const profileId = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile?.id);
-
-        const accounts = await this.fiatRepository.getAccounts(String(profileId));
+    ) {;
+    
+        const accounts = await this.fiatRepository.getAccounts(userId);
         return {
             message: "Fiat accounts retrieved successfully",
             payload: accounts
@@ -161,18 +151,14 @@ export class FiatService {
         id: string,
         userId: string
     ) {
-        const profileId = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile?.id);
-
-        const account = await this.fiatRepository.findAccountById(<string>profileId, id);
+        const account = await this.fiatRepository.findAccountById(userId, id);
         if (!account) {
             throw new APIError("Fiat account not found.", STATUS.notFound);
         }
         if (account.isPrimary) {
             throw new APIError("You cannot delete the primary account. Set another account as primary first.", STATUS.conflict);
         }
-        await this.fiatRepository.deleteAccount(id, profileId as string);
+        await this.fiatRepository.deleteAccount(id, userId);
     }
 
     async updateAccount(
@@ -180,15 +166,7 @@ export class FiatService {
         userId: string,
         isPrimary: boolean
     ) {
-        const profileId = await this.userRepository
-            .findUserById(userId)
-            .then((user) => user?.businessProfile?.id);
-
-        if (!profileId) {
-            throw new APIError("Business profile not found.", STATUS.notFound);
-        }
-
-        const account = await this.fiatRepository.findAccountById(<string>profileId, id);
+        const account = await this.fiatRepository.findAccountById(userId, id);
         if (!account) {
             throw new APIError("Fiat account not found.", STATUS.notFound);
         }
@@ -200,7 +178,7 @@ export class FiatService {
             );
         }
 
-        const accounts = await this.fiatRepository.getAccounts(profileId);
+        const accounts = await this.fiatRepository.getAccounts(userId);
         if (
             accounts.length === 1 &&
             account.isPrimary === true &&
@@ -212,7 +190,7 @@ export class FiatService {
             );
         }
 
-        await this.fiatRepository.updateAccount(id, profileId, isPrimary);
+        await this.fiatRepository.updateAccount(id, userId, isPrimary);
     }
 
     async initiatePayout(

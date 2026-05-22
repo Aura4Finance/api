@@ -66,7 +66,7 @@ export const transactionQuerySchemaValidation = (raw: any) => {
         }).optional(),
 
         paymentLinkId: Joi.string().optional(),
-        paymentMethod: Joi.string().valid('PAYMENT_LINK', 'HOSTED_CHECKOUT').optional().messages({
+        paymentMethod: Joi.string().valid('PAYMENT_LINK', 'HOSTED_CHECKOUT', 'SUBSCRIPTION').optional().messages({
           'any.only': 'Payment method must be either PAYMENT_LINK or HOSTED_CHECKOUT',
         }),
         customerId: Joi.string().optional(),

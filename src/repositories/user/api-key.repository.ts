@@ -6,7 +6,7 @@ export class ApiKeyRepository {
   async generateApiKeys(
     liveApiKey: string,
     testApiKey: string,
-    businessProfileId: string,
+    userId: string,
   ) {
     await db.apiKey.create({
       data: {
@@ -14,25 +14,30 @@ export class ApiKeyRepository {
         testKey: testApiKey,
         profile: {
           connect: {
-            id: businessProfileId,
+            userId,
           },
         },
       },
     });
   }
 
-  async findApiKeyByBusinessProfileId(businessProfileId: string) {
+  async findApiKeyByUserId(userId: string) {
     return await db.apiKey.findMany({
       where: {
-        profileId: businessProfileId,
+        profile: {
+          userId
+        },
       },
     });
   }
 
-  async deleteApiKeys(id: string) {
+  async deleteApiKeys(id: string, userId: string) {
     await db.apiKey.delete({
       where: {
         id,
+        profile: {
+          userId
+        }
       },
     });
   }

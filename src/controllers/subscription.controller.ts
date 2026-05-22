@@ -34,8 +34,8 @@ export class SubscriptionController {
     }
 
     const body = value as CreateSubscriptionPlanDto;
-    const userId = req.user?.id as string;
-    const { message, payload } = await this.subscriptionService.createPlan(userId, body);
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.subscriptionService.createPlan(profileId, body);
     return res.status(STATUS.created).json({ success: true, message, data: payload });
   }
 
@@ -60,17 +60,19 @@ export class SubscriptionController {
 
     const planId = planValue.planId as string;
     const body = value as UpdateSubscriptionPlanDto;
-    const userId = req.user?.id as string;
-    const { message, payload } = await this.subscriptionService.updatePlan(userId, planId, body);
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.subscriptionService.updatePlan(profileId, planId, body);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
-  async getPlans(_: RequestAuth, res: Response) {
-    const { message, payload } = await this.subscriptionService.getPlans();
+  async getPlans(req: RequestAuth, res: Response) {
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.subscriptionService.getPlans(profileId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
   async getPlan(req: RequestAuth, res: Response) {
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = planIdValidation(req.params as any);
 
     if (error) {
@@ -81,7 +83,7 @@ export class SubscriptionController {
     }
 
     const planId = value.planId as string;
-    const { message, payload } = await this.subscriptionService.getPlan(planId);
+    const { message, payload } = await this.subscriptionService.getPlan(profileId, planId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
@@ -96,13 +98,13 @@ export class SubscriptionController {
     }
 
     const planId = value.planId as string;
-    const userId = req.user?.id as string;
-    const { message, payload } = await this.subscriptionService.deletePlan(userId, planId);
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.subscriptionService.deletePlan(profileId, planId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
   async createSubscription(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = createSubscriptionValidation(req.body);
 
     if (error) {
@@ -113,12 +115,12 @@ export class SubscriptionController {
     }
 
     const body = value as CreateSubscriptionDto;
-    const { message, payload } = await this.subscriptionService.createSubscription(userId, body, req.mode);
+    const { message, payload } = await this.subscriptionService.createSubscription(profileId, body, req.mode);
     return res.status(STATUS.created).json({ success: true, message, data: payload });
   }
 
   async cancelSubscription(req: RequestAuth, res: Response) {
-    const userId = req.user?.id as string;
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = subscriptionIdValidation(req.params as any);
 
     if (error) {
@@ -129,7 +131,7 @@ export class SubscriptionController {
     }
 
     const subscriptionId = value.subscriptionId as string;
-    const { message, payload } = await this.subscriptionService.cancelSubscription(userId, subscriptionId, req.mode);
+    const { message, payload } = await this.subscriptionService.cancelSubscription(profileId, subscriptionId, req.mode);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
@@ -144,7 +146,8 @@ export class SubscriptionController {
     }
 
     const subscriptionId = value.subscriptionId as string;
-    const { message, payload } = await this.subscriptionService.getSubscription(req.mode, subscriptionId);
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.subscriptionService.getSubscription(req.mode, subscriptionId, profileId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
@@ -162,7 +165,8 @@ export class SubscriptionController {
     }
 
     const {customerId, planId} = value as GetSubscriptionsDto;
-    const { message, payload } = await this.subscriptionService.getSubscriptionsByCustomer(req.mode, customerId, planId);
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.subscriptionService.getSubscriptionsByCustomer(req.mode, customerId, planId, profileId);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 }

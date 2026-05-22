@@ -1,7 +1,6 @@
 import { STATUS } from "@/constants/status.constant";
 import { AddSettlementAccountDto } from "@/dto/settlement.dto";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
-import { UserRepository } from "@/repositories/user/user.repository";
 import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
 import { isValidSuiAddress } from "@mysten/sui/utils";
@@ -9,20 +8,18 @@ import { isValidSuiAddress } from "@mysten/sui/utils";
 @Service()
 export class SettlementService {
   constructor(
-    private readonly userRepository: UserRepository,
     private readonly settlementRepository: SettlementRepository
   ) {}
 
-  async addSettlementAccount(userId: string, body: AddSettlementAccountDto) {
+  async addSettlementAccount(profileId: string, body: AddSettlementAccountDto) {
 
     if(!isValidSuiAddress(body.walletAddress)){
       throw new APIError("Wallet address is invalid.", STATUS.bad);
     }
-    const user = await this.userRepository.findUserById(userId);
     const existingAccount = await this.settlementRepository.findSettlemtAccountByAddress(
         body.walletAddress,
         body.network,
-        <string>user?.businessProfile?.id
+        profileId
       );
 
     if (existingAccount) {
@@ -33,7 +30,7 @@ export class SettlementService {
       body.walletAddress,
       body.network,
       body.alias,
-      <string>user?.businessProfile?.id
+      profileId
     );
 
     return {
@@ -42,16 +39,8 @@ export class SettlementService {
     };
   }
 
-  async getAllSettlementAccount(userId: string) {
-    const user = await this.userRepository.findUserById(userId);
-
-    if (!user) {
-      throw new APIError("User account not found.", STATUS.notFound);
-    }
-
-    const accounts = await this.settlementRepository.getAllSettlementAccounts(
-      <string>user.businessProfile?.id
-    );
+  async getAllSettlementAccount(profileId: string) {
+    const accounts = await this.settlementRepository.getAllSettlementAccounts(profileId);
 
     return {
       message: "Settlement accounts retrieved successfully",
@@ -59,23 +48,17 @@ export class SettlementService {
     };
   }
 
-  async deleteSettlementAccount(userId: string, accountId: string) {
-    const user = await this.userRepository.findUserById(userId);
-
-    if (!user) {
-      throw new APIError("User account not found.", STATUS.notFound);
-    }
-
-    const account = await this.settlementRepository.findSettlemtAccountById(
+  async deleteSettlementAccount(profileId: string, accountId: string) {
+    const account = await this.settlementRepository.findSettlementAccountById(
       accountId,
-      <string>user.businessProfile?.id
+      profileId
     );
 
     if (!account) {
       throw new APIError("Settlement account not found.", STATUS.notFound);
     }
 
-    await this.settlementRepository.deleteSettlementAccount(accountId);
+    await this.settlementRepository.deleteSettlementAccount(accountId, profileId);
 
     return {
       message: "Account deleted successfully",

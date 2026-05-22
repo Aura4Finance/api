@@ -80,7 +80,7 @@ export class FiatController {
             body.accountNumber,
             body.bankCode,
             body.isPrimary,
-            req.user.id
+            req.user.businessProfile.id
         );
         return res.status(STATUS.created).json({
             success: true,

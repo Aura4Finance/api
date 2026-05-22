@@ -8,13 +8,13 @@ import { ApiKeyRepository } from "@/repositories/user/api-key.repository";
 export class ApiKeyService {
   constructor(private readonly apiKeyRepository: ApiKeyRepository) {}
 
-  async generateApiKeys(businessProfileId: string, f = false) {
+  async generateApiKeys(userId: string, f = false) {
     const liveApiKey = crypto.randomBytes(32).toString("hex");
     const testApiKey = crypto.randomBytes(32).toString("hex");
     this.apiKeyRepository.generateApiKeys(
       !f ? `lk_${liveApiKey}` : "",
       `tk_${testApiKey}`,
-      businessProfileId
+      userId
     );
 
     return {
@@ -26,26 +26,22 @@ export class ApiKeyService {
     };
   }
 
-  async regenerateApikeys(businessProfileId: string, keyId: string) {
-    const apiKeys = await this.apiKeyRepository.findApiKeyByBusinessProfileId(
-      businessProfileId
-    );
+  async regenerateApikeys(userId: string, keyId: string) {
+    const apiKeys = await this.apiKeyRepository.findApiKeyByUserId(userId);
 
     if (!apiKeys) {
-      return await this.generateApiKeys(businessProfileId);
+      return await this.generateApiKeys(userId);
+    }else{
+      await this.apiKeyRepository.deleteApiKeys(keyId, userId);
+      return await this.generateApiKeys(userId);
     }
 
-    await this.apiKeyRepository.deleteApiKeys(keyId);
-
-    return await this.generateApiKeys(businessProfileId);
   }
 
-  async getApiKeys(businessProfileId: string) {
-    const keys = await this.apiKeyRepository.findApiKeyByBusinessProfileId(
-      businessProfileId
-    );
+  async getApiKeys(userId: string) {
+    const keys = await this.apiKeyRepository.findApiKeyByUserId(userId);
     if (!keys.length) {
-      await this.generateApiKeys(businessProfileId, true);
+      await this.generateApiKeys(userId, true);
     }
 
     return {

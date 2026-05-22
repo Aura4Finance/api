@@ -6,7 +6,7 @@ export class WebhookRepository {
   async findWebhookByProfileId(profileId: string) {
     return await db.webhook.findFirst({
       where: {
-        profileId,
+        profileId
       },
     });
   }
