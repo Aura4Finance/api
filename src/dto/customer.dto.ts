@@ -15,6 +15,7 @@ export type AmountSpentUSDT =
   | "ABOVE500USDT";
 
 export interface GetCustomersQueryDto {
+  sortOrder?: "asc" | "desc"; 
   userId?: string,
   mode?: Mode,
   amountSpent?: AmountSpentUSDT;

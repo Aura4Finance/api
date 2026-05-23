@@ -134,6 +134,7 @@ export class CustomerRepository {
     profileId?: string,
   ) {
     const {
+      sortOrder = "asc",
       amountSpent,
       limit = 20,
       cursor
@@ -178,6 +179,7 @@ export class CustomerRepository {
 
     const customers = await db.customer.findMany({
       where,
+      orderBy: { createdAt: sortOrder },
       take: Number(limit + 1),
       ...(cursor && {
         cursor: { id: cursor },

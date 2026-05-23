@@ -51,6 +51,9 @@ export const getCustomerQueryValidation = (data: GetCustomersQueryDto) => {
       'any.only': 'Mode must be either "live" or "test"',
     }),
     userId: Joi.string().optional(),
+    sortOrder: Joi.string().valid("asc", "desc").optional().messages({
+      'any.only': 'Sort order must be either "asc" or "desc"',
+    }),
     limit: Joi.number().integer().positive().default(20).max(100).messages({
       'number.positive': 'Limit must be a positive number',
       'number.max': 'Limit cannot exceed 100 items',
