@@ -88,7 +88,7 @@ export const verifyApiKey = async (
   next: NextFunction
 ) => {
   const publicRoutes = [
-    { method: "GET", path: /^\/paylink\/[^/]+$/ }, // GET /paylink/:id
+    { method: "GET", path: /^\/paylinks\/[^/]+$/ }, // GET /paylink/:id
   ];
 
   const isPublic = publicRoutes.some(route =>
