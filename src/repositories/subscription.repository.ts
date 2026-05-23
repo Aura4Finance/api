@@ -74,10 +74,19 @@ export class SubscriptionRepository {
     });
   }
 
-async getPlanById(planId: string, profileId?: string) {
+async getPlanById(planId: string, mode: Mode, profileId?: string) {
   const [plan, subscriptionCount] = await Promise.all([
     db.subscriptionPlan.findFirst({
-      where: profileId ? { id: planId, profileId } : { id: planId },
+      where: profileId ? 
+      { id: planId, 
+        profileId,
+        subscriptions: {
+          some: {
+            mode
+          }
+        }
+       } : 
+      { id: planId },
       include: {
         subscriptions: {
           include: {
@@ -87,7 +96,10 @@ async getPlanById(planId: string, profileId?: string) {
       },
     }),
     db.subscription.count({
-      where: { planId }
+      where: { 
+        planId,
+        mode
+       }
     })
   ]);
 

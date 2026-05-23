@@ -24,7 +24,6 @@ router.post(
 router.post(
   "/",
   checkIfUserIsDisabled,
-  verifyRequestBody,
   upload.array("images", 10),
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.createPaylink(req, res)
@@ -64,7 +63,6 @@ router.delete(
 router.patch(
   "/:paylinkId",
   checkIfUserIsDisabled,
-  verifyRequestBody,
   upload.array("images", 10),
   asyncHandler((req: RequestAuth, res: Response) =>
     paylinkController.editPaylink(req, res)

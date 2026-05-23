@@ -54,8 +54,8 @@ export class SubscriptionService {
     };
   }
 
-  async getPlan(profileId: string, planId: string) {
-    const plan = await this.subscriptionRepository.getPlanById(planId, profileId);
+  async getPlan(profileId: string, planId: string, mode: Mode) {
+    const plan = await this.subscriptionRepository.getPlanById(planId, mode, profileId);
     if (!plan) throw new APIError("Plan not found", STATUS.notFound);
 
     return {
@@ -78,7 +78,7 @@ export class SubscriptionService {
 
     if (!customer) throw new APIError("Customer not found for profile", STATUS.notFound);
 
-    const plan = await this.subscriptionRepository.getPlanById(input.planId, profileId);
+    const plan = await this.subscriptionRepository.getPlanById(input.planId, mode, profileId);
 
     if (!plan) {
       throw new APIError("Subscription plan not found for profile", STATUS.notFound);

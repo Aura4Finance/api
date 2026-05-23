@@ -83,7 +83,7 @@ export class SubscriptionController {
     }
 
     const planId = value.planId as string;
-    const { message, payload } = await this.subscriptionService.getPlan(profileId, planId);
+    const { message, payload } = await this.subscriptionService.getPlan(profileId, planId, req.mode);
     return res.status(STATUS.ok).json({ success: true, message, data: payload });
   }
 
