@@ -77,18 +77,12 @@ export class SubscriptionRepository {
 async getPlanById(planId: string, mode: Mode, profileId?: string) {
   const [plan, subscriptionCount] = await Promise.all([
     db.subscriptionPlan.findFirst({
-      where: profileId ? 
-      { id: planId, 
-        profileId,
-        subscriptions: {
-          some: {
-            mode
-          }
-        }
-       } : 
-      { id: planId },
+      where: profileId ? { id: planId, profileId } : { id: planId },
       include: {
         subscriptions: {
+          where: {
+            mode
+          },
           include: {
             customer: true
           }
@@ -99,7 +93,7 @@ async getPlanById(planId: string, mode: Mode, profileId?: string) {
       where: { 
         planId,
         mode
-       }
+      }
     })
   ]);
 
