@@ -152,7 +152,9 @@ async getPlanById(planId: string, mode: Mode, profileId?: string) {
     if(existingSubscription){
       if (existingSubscription.status == SubscriptionStatus.ACTIVE || existingSubscription.status == SubscriptionStatus.TRIALING) {
         throw new APIError("Customer already has an active subscription for this plan", STATUS.conflict);
-      }else {
+      }else if(existingSubscription.status == SubscriptionStatus.PENDING){
+        throw new APIError("Customer has a pending subscription for this plan", STATUS.conflict)
+      } else {
         const trialDays = Number(plan.trialDays ?? 0);
         const trialEndsAt = trialDays > 0 ? addDays(new Date(), trialDays) : null;
         return db.subscription.update({

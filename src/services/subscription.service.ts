@@ -112,10 +112,11 @@ export class SubscriptionService {
           {
             delay: 10 * 60 * 1000,
             removeOnComplete: true,
-            jobId: `verify-initial-subscription-payment:${subscription.id}`,
+            jobId: `verify-initial-subscription-payment_${subscription.id}`,
           }
         );
       } catch (err) {
+        console.log(err)
         logger.error(`Failed to create initial payment transaction for subscription: ${subscription.id}`)
       }
     }
