@@ -67,18 +67,17 @@ export class FiatService {
         profileId: string
     ) {
 
+        
+        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(<string>accountNumber, bankCode, <string>profileId);
+        if (existingAccount) {
+            throw new APIError("Bank account already exists.", STATUS.conflict);
+        }
         const resolvedAccount = await this.resolveAccountName(accountNumber, bankCode);
         if (!resolvedAccount.payload) {
             throw new APIError("Unable to resolve account name. Please check the account details.", STATUS.bad);
         }
-
         const { payload: banks } = await this.getBanks();
         const resolvedBank = banks.find(bank => bank.bankCode == bankCode);
-        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(<string>accountNumber, bankCode, <string>profileId);
-
-        if (existingAccount) {
-            throw new APIError("Bank account already exists.", STATUS.conflict);
-        }
 
         const [existingAccounts, primaryAccount] = await Promise.all([
             this.fiatRepository.getAccounts(profileId),

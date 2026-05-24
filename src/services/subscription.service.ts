@@ -15,8 +15,9 @@ import { WebhookQueue } from "./schedule.webhook.service";
 import { CreatePaymentDto } from "@/dto/payment.dto";
 import crypto from "crypto";
 import { EmailQueue } from "./schedule.email.service";
+import logger from "@/utils/logger";
 
-const CHECKOUT_BASE_URL = process.env.ORAFI_CHECHOUT_URL ?? "https://checkout.orafi.app";
+const CHECKOUT_BASE_URL = "https://checkout.orafi.app";
 
 @Service()
 export class SubscriptionService {
@@ -115,8 +116,7 @@ export class SubscriptionService {
           }
         );
       } catch (err) {
-        // Payment creation shouldn't block subscription creation; log and continue
-        // (service layer has no logger here; swallow silently)
+        logger.error(`Failed to create initial payment transaction for subscription: ${subscription.id}`)
       }
     }
     try {
