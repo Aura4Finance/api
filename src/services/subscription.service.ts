@@ -115,9 +115,8 @@ export class SubscriptionService {
             jobId: `verify-initial-subscription-payment_${subscription.id}`,
           }
         );
-      } catch (err) {
-        console.log(err)
-        logger.error(`Failed to create initial payment transaction for subscription: ${subscription.id}`)
+      } catch (err: any) {
+        logger.error(`Failed to create initial payment transaction for subscription(${subscription.id}). Reason: ${err?.message}`)
       }
     }
     try {
