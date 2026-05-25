@@ -3,7 +3,6 @@ import { STATUS } from "@/constants/status.constant";
 import { SUPPORTED_NETWORKS } from "@/constants/networks.constant";
 import { APIError } from "@/utils/error-handler";
 import { TransactionRepository } from "@/repositories/transaction.repository";
-import { UserRepository } from "@/repositories/user/user.repository";
 import { GetAllTransactionsDto } from "@/dto/transaction.dto";
 import { Mode, Token } from "../../generated/prisma";
 
@@ -12,7 +11,6 @@ export class TransactionService {
 
     constructor(
         private readonly transactionRepository: TransactionRepository,
-        private readonly userRepository: UserRepository
     ) { }
 
     private getNetworkLogoUrl(network?: string): string | null {
@@ -44,18 +42,9 @@ export class TransactionService {
     async getTransactionById(
         txId: string,
         mode: Mode,
-        userId?: string
+        profileId?: string
     ) {
-        let transaction;
-        if (userId) {
-            const profile = await this.userRepository.findUserById(userId);
-            if (!profile) {
-                throw new APIError("User account not found.", STATUS.bad);
-            }
-            transaction = await this.transactionRepository.getTransactionById(txId, mode, profile.businessProfile?.id);
-        } else {
-            transaction = await this.transactionRepository.getTransactionById(txId, mode);
-        }
+        let transaction = await this.transactionRepository.getTransactionById(txId, mode, profileId);
         if (!transaction) {
             throw new APIError("Transaction not found", STATUS.notFound);
         }
@@ -70,12 +59,7 @@ export class TransactionService {
         mode: Mode,
         profileId?: string
     ) {
-        let transactions;
-        if (profileId) {
-            transactions = await this.transactionRepository.getAllTransactions(query, mode, profileId);
-        } else {
-            transactions = await this.transactionRepository.getAllTransactions(query, mode);
-        }
+        let transactions = await this.transactionRepository.getAllTransactions(query, mode, profileId);
 
         if (!transactions) {
             throw new APIError("No transactions found for this account.", STATUS.notFound);
