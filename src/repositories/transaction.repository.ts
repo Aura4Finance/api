@@ -86,7 +86,7 @@ export class TransactionRepository {
 
     if(paymentLinkId) {
       where.payment.paymentMethod = "PAYMENT_LINK";
-      where.payment.paymentLinkId = paymentLinkId;
+      where.payment.paylinkId = paymentLinkId;
     }
 
     // Filter: date interval
