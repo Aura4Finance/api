@@ -68,7 +68,10 @@ export class FiatService {
     ) {
 
         
-        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(<string>accountNumber, bankCode, <string>profileId);
+        const existingAccount = await this.fiatRepository.getAccountByBankCodeAndNumber(
+            accountNumber, 
+            bankCode, 
+            profileId);
         if (existingAccount) {
             throw new APIError("Bank account already exists.", STATUS.conflict);
         }
@@ -100,7 +103,7 @@ export class FiatService {
             resolvedAccount.payload.accountName,
             bankCode,
             isPrimary,
-            <string>profileId
+            profileId
         );
 
         return createdAccount;

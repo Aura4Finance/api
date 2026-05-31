@@ -66,6 +66,7 @@ export class FiatController {
     }
 
     async addBankAccount(req: RequestAuth, res: Response) {
+    const profileId = req.user?.businessProfile.id as string;
         const { error, value } = addBankAccountSchemaValidation(req.body);
         if (error) {
             return res.status(STATUS.bad).json({
@@ -80,7 +81,7 @@ export class FiatController {
             body.accountNumber,
             body.bankCode,
             body.isPrimary,
-            req.user.businessProfile.id
+            profileId
         );
         return res.status(STATUS.created).json({
             success: true,
@@ -92,8 +93,8 @@ export class FiatController {
     }
 
     async getAllAccounts(req: RequestAuth, res: Response) {
-        const userId = req.user?.id as string;
-        const { payload, message } = await this.fiatService.getAllAccounts(userId);
+        const profileId = req.user?.businessProfile.id as string;
+        const { payload, message } = await this.fiatService.getAllAccounts(profileId);
         return res.status(STATUS.ok).json({
             status: true,
             message,
@@ -102,6 +103,7 @@ export class FiatController {
     }
 
     async deleteAccount(req: RequestAuth, res: Response) {
+        const profileId = req.user?.businessProfile.id as string;
         const { error, value } = deleteAccountSchemaValidation(req.params as any);
         if (error) {
             return res.status(STATUS.bad).json({
@@ -111,7 +113,7 @@ export class FiatController {
             })
         }
         const { id } = value;
-        await this.fiatService.deleteAccount(id, req.user.id);
+        await this.fiatService.deleteAccount(id, profileId);
         return res.status(STATUS.ok).json({
             status: true,
             message: "Fiat account deleted successfully!",
@@ -120,8 +122,11 @@ export class FiatController {
     }
 
     async updateAccount(req: RequestAuth, res: Response) {
-        const { id } = req.params;
-        const { error, value } = updateAccountSchemaValidation(req.body);
+        const profileId = req.user?.businessProfile.id as string;
+        const { error, value } = updateAccountSchemaValidation({
+            ...req.body,
+            ...req.params
+        });
 
         if (error) {
             return res.status(STATUS.bad).json({
@@ -130,7 +135,7 @@ export class FiatController {
             })
         }
         const body: UpdateAccountDto = value;
-        await this.fiatService.updateAccount(id as string, req.user.id, body.isPrimary);
+        await this.fiatService.updateAccount(body.id, profileId, body.isPrimary);
         return res.status(STATUS.ok).json({
             status: true,
             message: "Fiat account updated successfully!",

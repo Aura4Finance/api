@@ -51,6 +51,9 @@ export const deleteAccountSchemaValidation = (data: { id: string }) => {
 
 export const updateAccountSchemaValidation = ( data: UpdateAccountDto) => {
     const schema = Joi.object({
+        id: Joi.string().required().messages({
+          'any.required': 'Account ID is required',
+        }),
         isPrimary: Joi.boolean().optional()
     })
     return schema.validate(data);

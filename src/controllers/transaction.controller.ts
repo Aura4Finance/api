@@ -14,7 +14,7 @@ export class TransactionController {
     ) {}
 
     async getTransactionById(req: RequestAuth, res: Response) {
-        const profileId = req.user?.businessProfile.id as string;
+        const profileId = req.user?.businessProfile.id;
         const { error, value } = transactionIdSchemaValidation(req.params as any);
 
         if (error) {

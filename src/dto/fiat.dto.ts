@@ -5,6 +5,7 @@ export interface CreateAccountDto {
 }
 
 export interface UpdateAccountDto {
+    id: string
     isPrimary: boolean
 }
 
