@@ -7,6 +7,7 @@ export interface RequestAuth extends Request {
     role: "ADMIN" | "MERCHANT",
     disabled: boolean,
     businessProfile: {
+      onboarded: boolean,
       id: string,
       isLive: boolean;
       wallet: Wallet[]

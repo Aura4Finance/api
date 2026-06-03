@@ -46,6 +46,7 @@ export class UserRepository {
           select: {
             id: true,
             isLive: true,
+            onboarded: true,
             wallet: {
               select: {
                 address: true,

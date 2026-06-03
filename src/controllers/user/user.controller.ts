@@ -22,9 +22,9 @@ export class UserController {
     }
 
     const body: OnboardUserDto = value as OnboardUserDto;
-    const userId = req.user.id;
+    const user = req.user;
 
-    const { payload, message } = await this.userService.onboarduser(body, userId);
+    const { payload, message } = await this.userService.onboarduser(body, user);
 
     return res.status(STATUS.created).json({
       success: true,

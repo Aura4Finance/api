@@ -455,4 +455,19 @@ async sendPaymentSuccessEmail(
     await this.queueEmail(payload);
   }
 
+  async sendWaitlistEmail(
+    to: string,
+  ): Promise<void>{
+    const payload = await this.buildEmailPayload(
+      to,
+      `You've been added to the OraFi waitlist!`,
+      "waitlist_confirmation",
+      {
+        to
+      },
+      false
+    );
+    await this.queueEmail(payload);
+  }
+
 }

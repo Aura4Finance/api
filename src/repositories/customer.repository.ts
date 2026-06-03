@@ -4,6 +4,8 @@ import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
 import { Mode } from "../../generated/prisma";
 import { GetCustomersQueryDto } from "@/dto/customer.dto";
+import { resend, segments } from "@/config/resend-config";
+import logger from "@/utils/logger";
 
 @Service()
 export class CustomerRepository {
@@ -11,17 +13,17 @@ export class CustomerRepository {
 
     const where: any = {
       customer: {
-          OR: [
-            { email: emailOrId },
-            { id: emailOrId },
-          ],
-          mode: {
+        OR: [
+          { email: emailOrId },
+          { id: emailOrId },
+        ],
+        mode: {
           has: mode
         }
       },
     }
 
-    if(profileId){
+    if (profileId) {
       where.profileId = profileId
     }
 
@@ -96,6 +98,24 @@ export class CustomerRepository {
         },
       },
     });
+
+    try {
+      const { data: contact } = await resend.contacts.create({
+        email: result.email,
+        firstName: result.firstname,
+        lastName: result.lastname,
+        unsubscribed: false,
+      });
+      if(!contact) {
+        logger.info(`Adding customer to resend failed. Customerid: ${result.id}`);
+      }
+      await resend.contacts.segments.add({
+        contactId: <string>contact?.id,
+        segmentId: segments.customer.id
+      })
+    } catch (error: any) {
+      logger.info(`Error adding customer to resend!: ${error?.message}`);
+    }
 
     return result;
   }
