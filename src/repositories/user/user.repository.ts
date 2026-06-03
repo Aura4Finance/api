@@ -47,6 +47,10 @@ export class UserRepository {
             id: true,
             isLive: true,
             onboarded: true,
+            businessName: true,
+            businessSector: true,
+            country: true,
+            websiteLink: true,
             wallet: {
               select: {
                 address: true,
