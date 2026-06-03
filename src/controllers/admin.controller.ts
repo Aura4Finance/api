@@ -21,7 +21,6 @@ import { getACustomerQueryValidation, getCustomerQueryValidation } from "@/valid
 import { GetACustomerQueryDto, GetCustomersQueryDto } from "@/dto/customer.dto";
 import { CustomerService } from "@/services/customer.service";
 import { Metrics } from "@/services/metrics.service";
-import { UserService } from "@/services/user/user.service";
 import { chechAdminMode } from "@/validation/user.validation";
 
 @Service()
@@ -29,7 +28,6 @@ export class AdminController {
   constructor(
     private readonly authController: AuthController,
     private readonly authService: AuthService,
-    private readonly userService: UserService,
     private readonly merchantManagementService: MerchantManagementService,
     private readonly transactionService: TransactionService,
     private readonly customerService: CustomerService,
@@ -120,8 +118,7 @@ export class AdminController {
   }
 
   async getProfile(req: RequestAuth, res: Response) {
-    const userId = req?.user?.id;
-    const profile = await this.userService.getUserById(<string>userId);
+    const profile = req.user;
 
     if (!profile) {
       return res.status(STATUS.bad).json({
