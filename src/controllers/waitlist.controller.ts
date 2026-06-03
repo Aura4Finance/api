@@ -1,4 +1,3 @@
-import { RequestAuth } from "@/@types/request";
 import { STATUS } from "@/constants/status.constant";
 import { CreateWaitlistDto } from "@/dto/waitlist.dto";
 import { EmailService } from "@/services/email.service";
@@ -6,14 +5,14 @@ import { APIError } from "@/utils/error-handler";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { createWaitlistValidation } from "@/validation/waitlist.validation";
 import { resend, segments } from "@/config/resend-config";
-import { Response } from "express";
+import { Response, Request } from "express";
 import { Service } from "typedi";
 
 @Service()
 export class WaitlistController {
     constructor(private readonly emailService: EmailService) { }
 
-    async createWaitlist(req: RequestAuth, res: Response) {
+    async addToWaitlist(req: Request, res: Response) {
         const { error, value } = createWaitlistValidation(req.body);
         if (error) {
             return res.status(STATUS.bad).json({

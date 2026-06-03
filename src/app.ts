@@ -10,6 +10,7 @@ import CORS_OPTIONS from "./config/cors-config";
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "@/routes/admin.routes";
 import routes  from "./routes";
+import waitlistRoutes from "@/routes/waitlist.routes";
 import { limiter } from "./middlewares/rate-limit.middleware";
 
 dotenv.config();
@@ -26,7 +27,16 @@ app.use(limiter);
 app.use(helmet());
 app.use(cors(CORS_OPTIONS));
 app.use(morgan("common"));
+app.use(
+  "/v1/waitlist",
+  cors({
+    origin: "https://orafi.app",
+    methods: ["POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
+router.use("/waitlist", waitlistRoutes);
 router.use("/admin", adminRoutes);
 router.use("/auth", authRoutes);
 router.use("/", routes);
