@@ -30,7 +30,7 @@ app.use(morgan("common"));
 app.use(
   "/v1/waitlist",
   cors({
-    origin: "https://orafi.app",
+    origin: "http://localhost:5173",
     methods: ["POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })

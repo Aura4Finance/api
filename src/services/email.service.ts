@@ -461,7 +461,7 @@ async sendPaymentSuccessEmail(
     const payload = await this.buildEmailPayload(
       to,
       `You've been added to the OraFi waitlist!`,
-      "waitlist_confirmation",
+      "waitlist-email",
       {
         to
       },
