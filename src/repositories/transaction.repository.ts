@@ -30,7 +30,13 @@ export class TransactionRepository {
             },
           },
         },
-        payment: true,
+        payment: {
+          wallet: {
+            select: {
+              address: true
+            }
+          }
+        },
         payout: true,
         refund: true,
       },
