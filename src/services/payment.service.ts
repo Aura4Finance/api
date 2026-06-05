@@ -506,24 +506,16 @@ export class PaymentService {
     );
 
     if (receivedTotal < target) {
-
-      // Customer has not sent the required amount yet (or sent nothing at all)
       throw new APIError(
         "Payment not received yet.",
         STATUS.paymentRequired
       );
     }
-
-    // select the best coin object for the forwarding transfer
-    // Prefer the smallest single coin object that still covers the target
-    // so we avoid splitting large objects unnecessarily.
     const matchingCoin = allCoins
       .filter(coin => BigInt(coin.balance) >= target)
       .sort((a, b) => (BigInt(a.balance) < BigInt(b.balance) ? -1 : 1))[0] ?? null;
 
     if (!matchingCoin) {
-      // Total balance is sufficient but fragmented across several small coin objects.
-      // The job layer must merge them before it can forward a single transfer.
       throw new APIError(
         "Payment received but split across multiple coin objects. Please retry shortly.",
         STATUS.paymentRequired

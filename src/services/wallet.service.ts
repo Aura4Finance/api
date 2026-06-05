@@ -99,10 +99,14 @@ export class WalletService {
     throw new APIError("Deposit wallet creation failed!.", STATUS.unprocessableEntity);
   }
 
-  private async sponsoredTransaction(
+   async sponsoredTransaction(
     tx: Transaction,
     merchantSecretKey: string,
+    client?: SuiClient
   ) {
+    if(client){
+      this.client = client;
+    }
     // Merchant builds the transaction kind (no gas)
     const merchant_keypair = Ed25519Keypair.fromSecretKey(merchantSecretKey);
     const merchant_address = merchant_keypair.getPublicKey().toSuiAddress();
