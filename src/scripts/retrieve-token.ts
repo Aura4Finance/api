@@ -28,4 +28,4 @@ const claimToken = async (paymentWallet: { derivationIndex: number }) => {
     });
 }
 
-claimToken({ derivationIndex: 4 }).catch(console.error);
+claimToken({ derivationIndex: 5 }).catch(console.error);
