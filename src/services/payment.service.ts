@@ -262,7 +262,7 @@ export class PaymentService {
       throw new APIError("Payment transaction not found!", STATUS.notFound);
     }
 
-    const existingPaymentWallet = tx.payment?.wallet?.[0];
+    const existingPaymentWallet = tx.payment?.wallet;
     if (existingPaymentWallet) {
       return {
         message: "Transfer address created successfully!",
@@ -462,7 +462,7 @@ export class PaymentService {
     if (!tx) {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
-    const paymentWallet = tx.payment?.wallet?.[0];
+    const paymentWallet = tx.payment?.wallet;
     if (!paymentWallet?.address) {
       throw new APIError("No transfer address found for this payment", STATUS.notFound);
     }

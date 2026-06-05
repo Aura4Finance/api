@@ -94,8 +94,8 @@ model Wallet {
   derivationIndex   Int
   profile           BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
   profileId         String?
-  paymentId         String?
-  payment           Payment? @relation("PaymentWallets", fields: [paymentId], references: [id])
+  paymentId         String?  @unique
+  payment           Payment? @relation("PaymentWallet", fields: [paymentId], references: [id])
   createdAt         DateTime @default(now())
 }
 
@@ -307,7 +307,7 @@ model Payment {
   id              String        @id @default(cuid()) @map("_id")
   refunded        Boolean       @default(false)
   depositAddress  String?       
-  wallet          Wallet[]      @relation("PaymentWallets")
+  wallet          Wallet?      @relation("PaymentWallet")
   txRef           String        @unique @default(cuid())
   paymentMethod   PaymentMethod
   redirectUrl     String?       
