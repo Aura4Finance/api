@@ -97,7 +97,6 @@ model Wallet {
   paymentId         String?  @unique
   payment           Payment? @relation("PaymentWallet", fields: [paymentId], references: [id])
   createdAt         DateTime @default(now())
-  
 }
 
 model WalletCounter {
@@ -319,7 +318,6 @@ model Payment {
   subscription    Subscription? @relation(fields: [subscriptionId], references: [id])
   transactionId   String        @unique
   transaction     Transaction   @relation(fields: [transactionId], references: [id])
-  @@unique([subscriptionId, billingCycleKey])
 }
 
 model FiatAccount {

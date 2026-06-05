@@ -10,7 +10,6 @@ import {
   Token
 } from "../../generated/prisma";
 
-
 type PaymentOptions =
   {
     paymentMethod: PaymentMethod;

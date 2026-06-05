@@ -530,7 +530,7 @@ export class PaymentService {
       coinObjectId: matchingCoin.coinObjectId,
       amount: target.toString(),
       toAddress: tx?.profile.wallet[0]?.address as string,
-      token,
+      coinType,
       mode: tx.mode,
     },
       {

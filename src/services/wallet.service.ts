@@ -279,11 +279,10 @@ export class WalletService {
   primaryCoinObjectId: string,
   amount: string, // amount in smallest unit (u64)
   to: string,
-  tokenType: Token,
+  coinTypeIn: string,
   mode: Mode
 ) {
   await this.setActiveNetwork(mode);
-
   const coinObject = await this.client.getObject({
     id: primaryCoinObjectId,
     options: { showOwner: true, showContent: true, showType: true }
@@ -294,13 +293,13 @@ export class WalletService {
   } 
 
   const totalAmount = BigInt(amount);
-  const coinTypeIn = getCoinType(tokenType, mode === "live" ? "mainnet" : "testnet")!; 
   const tx = new Transaction();
   let coinOut: TransactionObjectArgument;
   const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
+  let coinTypeOut = getCoinType(Token.USDC, mode === "live" ? "mainnet" : "testnet")!
 
   let bestQuote: MetaQuote | undefined = undefined;
-  if (tokenType === "USDC") {
+  if (coinTypeIn === coinTypeOut) {
     // Wrap the existing coin object into the PTB
     coinOut = tx.object(coinObject.data.objectId);
   } else {
@@ -308,7 +307,7 @@ export class WalletService {
     const quotes = await metaAg.quote({
       amountIn: totalAmount.toString(),
       coinTypeIn,
-      coinTypeOut: getCoinType("USDC", mode === "live" ? "mainnet" : "testnet")!,
+      coinTypeOut
     });
 
     bestQuote = quotes.sort(
@@ -331,7 +330,7 @@ export class WalletService {
   }
 
   // CRITICAL FIX: Calculate fee based on the actual USDC object inside the PTB.
-  const totalUsdcAmount = tokenType === "USDC" ? totalAmount : BigInt(bestQuote!.amountOut);
+  const totalUsdcAmount = coinTypeIn === coinTypeOut ? totalAmount : BigInt(bestQuote!.amountOut);
   const platformFee = totalUsdcAmount / 100n; // Clean 1% of the actual USDC received
 
   // Split the platform fee out of the USDC coin object

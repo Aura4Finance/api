@@ -235,10 +235,11 @@ export const startTransactionWorker = () => {
           coinObjectId,
           amount,
           toAddress,
-          tokenType,
+          coinType,
           mode
         } = job.data;
-        logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${tokenType}`);
+        console.log(job.data)
+        logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${coinType}`);
         const walletService = Container.get(WalletService);
         try{
           await walletService.splitSendToMerchantsAndAdmin(
@@ -246,11 +247,12 @@ export const startTransactionWorker = () => {
             coinObjectId,
             amount,
             toAddress,
-            tokenType,
+            coinType,
             mode
           )
         }catch(error: unknown){
           logger.error(`[transaction-worker] settle payment job error: ${error}`);
+          console.log(error)
           throw error;
         }
       }
