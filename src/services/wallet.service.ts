@@ -275,84 +275,85 @@ export class WalletService {
   }
 
   async splitSendToMerchantsAndAdmin(
-    secret_key: string,
-    primaryCoinObjectId: string,
-    amount: string, // amount in smallest unit (u64)
-    to: string,
-    tokenType: Token,
-    mode: Mode
-  ) {
-    await this.setActiveNetwork(mode);
+  secret_key: string,
+  primaryCoinObjectId: string,
+  amount: string, // amount in smallest unit (u64)
+  to: string,
+  tokenType: Token,
+  mode: Mode
+) {
+  await this.setActiveNetwork(mode);
 
-    // Fetch the latest coin object with current version to avoid stale version errors
-    const coinObject = await this.client.getObject({
-      id: primaryCoinObjectId,
-      options: { showOwner: true, showContent: true, showType: true }
+  const coinObject = await this.client.getObject({
+    id: primaryCoinObjectId,
+    options: { showOwner: true, showContent: true, showType: true }
+  });
+
+  if (!coinObject.data) {
+    throw new APIError("Coin object not found or unavailable.", STATUS.bad);
+  } 
+
+  const totalAmount = BigInt(amount);
+  const coinTypeIn = getCoinType(tokenType, mode === "live" ? "mainnet" : "testnet")!; 
+  const tx = new Transaction();
+  let coinOut: TransactionObjectArgument;
+  const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
+
+  if (tokenType === "USDC") {
+    // Wrap the existing coin object into the PTB
+    coinOut = tx.object(coinObject.data.objectId);
+  } else {
+    const metaAg = new MetaAg();
+    const quotes = await metaAg.quote({
+      amountIn: totalAmount.toString(),
+      coinTypeIn,
+      coinTypeOut: getCoinType("USDC", mode === "live" ? "mainnet" : "testnet")!,
     });
 
-    if (!coinObject.data) {
-      throw new APIError("Coin object not found or unavailable.", STATUS.bad);
-    } 
-    const totalAmount = BigInt(amount);
-    const platformFee = totalAmount / 100n;
-    const coinTypeIn = getCoinType(tokenType, mode === "live" ? "mainnet" : "testnet")!; 
-    const tx = new Transaction();
-    let coinOut: TransactionObjectArgument;
-    const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
-    if(tokenType == "USDC"){
-      // For USDC, we can skip the swap and directly split the coins
-     coinOut = tx.object(coinObject.data.objectId);
-    }else{
-      const metaAg = new MetaAg();
-      const quotes = await metaAg.quote({
-        amountIn: totalAmount.toString(),
-        coinTypeIn,
-        coinTypeOut:
-          "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC",
-      });
-  
-      const bestQuote = quotes.sort(
-        (a, b) =>
-          Number(b.simulatedAmountOut || b.amountOut) -
-          Number(a.simulatedAmountOut || a.amountOut),
-      )[0];
-  
-      // Build swap transaction
-      coinOut = await metaAg.swap(
-        {
-          quote: bestQuote!,
-          signer,
-          coinIn: coinWithBalance({
-            balance: totalAmount,
-            type: coinTypeIn,
-          }),
-          tx,
-        },
-        100, // Optional: 1% slippage (overrides global setting)
-      );
+    const bestQuote = quotes.sort(
+      (a, b) => Number(b.simulatedAmountOut || b.amountOut) - Number(a.simulatedAmountOut || a.amountOut),
+    )[0];
 
-    }
-    const [platformCoin] = tx.splitCoins(
-      coinOut,
-      [tx.pure.u64(platformFee.toString())]
+    // coinOut here is now the resulting USDC transaction object from the swap
+    coinOut = await metaAg.swap(
+      {
+        quote: bestQuote!,
+        signer,
+        coinIn: coinWithBalance({
+          balance: totalAmount,
+          type: coinTypeIn,
+        }),
+        tx,
+      },
+      100, 
     );
-
-    // Send platform fee
-    tx.transferObjects(
-      [platformCoin],
-      tx.pure.address(String(process.env.PLATFORM_PUBLIC_KEY))
-    );
-
-    // Send remaining balance to merchant
-    tx.transferObjects(
-      [coinOut],
-      tx.pure.address(to)
-    );
-
-    const result = await this.sponsoredTransaction(tx, secret_key);
-    return result;
   }
 
+  // CRITICAL FIX: Calculate fee based on the actual USDC object inside the PTB.
+  const totalUsdcAmount = tokenType === "USDC" ? totalAmount : BigInt(bestQuote!.amountOut);
+  const platformFee = totalUsdcAmount / 100n; // Clean 1% of the actual USDC received
+
+  // Split the platform fee out of the USDC coin object
+  const [platformCoin] = tx.splitCoins(
+    coinOut,
+    [tx.pure.u64(platformFee.toString())] 
+  );
+
+  // Send platform fee
+  tx.transferObjects(
+    [platformCoin],
+    tx.pure.address(String(process.env.PLATFORM_PUBLIC_KEY))
+  );
+
+  // Send remaining USDC balance to merchant
+  tx.transferObjects(
+    [coinOut],
+    tx.pure.address(to)
+  );
+
+  const result = await this.sponsoredTransaction(tx, secret_key);
+  return result;
+}
 
   async convertBetweenCurrencyAndUSDT(
     amount: number,
