@@ -238,6 +238,7 @@ export const startTransactionWorker = () => {
           tokenType,
           mode
         } = job.data;
+        logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${tokenType}`);
         const walletService = Container.get(WalletService);
         try{
           await walletService.splitSendToMerchantsAndAdmin(
