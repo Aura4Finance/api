@@ -31,9 +31,11 @@ export class TransactionRepository {
           },
         },
         payment: {
-          wallet: {
-            select: {
-              address: true
+          include: {
+            wallet: {
+              select: {
+                address: true,
+              }
             }
           }
         },
