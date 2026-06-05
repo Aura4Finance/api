@@ -93,10 +93,11 @@ model Wallet {
   address           String
   derivationIndex   Int
   profile           BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
-  profileId         String?
+  profileId         String?  @unique
   paymentId         String?  @unique
   payment           Payment? @relation("PaymentWallet", fields: [paymentId], references: [id])
   createdAt         DateTime @default(now())
+  
 }
 
 model WalletCounter {

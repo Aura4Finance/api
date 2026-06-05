@@ -9,7 +9,7 @@ import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
 import { Mode, Token } from "../../generated/prisma";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
-import { MetaAg } from "@7kprotocol/sdk-ts";
+import { MetaAg, MetaQuote } from "@7kprotocol/sdk-ts";
 
 type CoinMarketPriceConversionResponse = {
   status: {
@@ -299,6 +299,7 @@ export class WalletService {
   let coinOut: TransactionObjectArgument;
   const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
 
+  let bestQuote: MetaQuote | undefined = undefined;
   if (tokenType === "USDC") {
     // Wrap the existing coin object into the PTB
     coinOut = tx.object(coinObject.data.objectId);
@@ -310,7 +311,7 @@ export class WalletService {
       coinTypeOut: getCoinType("USDC", mode === "live" ? "mainnet" : "testnet")!,
     });
 
-    const bestQuote = quotes.sort(
+    bestQuote = quotes.sort(
       (a, b) => Number(b.simulatedAmountOut || b.amountOut) - Number(a.simulatedAmountOut || a.amountOut),
     )[0];
 
