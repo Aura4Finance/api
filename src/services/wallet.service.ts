@@ -25,7 +25,6 @@ type ConversionDirection = 'to_USDT' | 'from_USDT';
 export class WalletService {
   private PAYFRICA_ID = "0x4378b5bf4c21d313150634d529218ea11166ca113a2869a31c88deb4bb8c2417";
   private PAYFRICA_CONFIG_ID = "0x50eee353064aa82f120bfc212486acf9bd9acf5b3a3b5aadea8284ce30a20f84";
-  private USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
   private client!: SuiClient;
   admin_secret_key: string;
   constructor(
@@ -404,7 +403,7 @@ export class WalletService {
       throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad)
     }
     const tx = new Transaction();
-    const coinType = this.USDC_COIN_TYPE; // or SUI_COIN_TYPE
+    const coinType = getCoinType(Token.USDC, "mainnet")!; // or SUI_COIN_TYPE
 
     // Split the coin to cover amount + fee, then pass to off_ramp
     const [splitCoin] = tx.splitCoins(tx.object(primaryCoinObjectId), [amount]);
