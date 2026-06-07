@@ -70,8 +70,8 @@ export class WalletService {
       target: `${smart_contract_address}::main::generatePaymentWallet`,
       arguments: [
         tx.pure.address(merchantAddress),
+        tx.pure.u64(Math.round(amount * getCoinDecimal(token))),
         tx.pure.string(transactionId),
-        tx.pure.u64(Math.round(amount * getCoinDecimal(token)))
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
     });
