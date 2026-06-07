@@ -31,8 +31,10 @@ export class TransactionRepository {
           },
         },
         payment: {
-          include: {
+          select: {
             indexerIdentifier: false,
+          },
+          include: {
             wallet: {
               select: {
                 address: true,
@@ -129,8 +131,10 @@ export class TransactionRepository {
           },
         },
         payment: {
-          include: {
+          select: {
             indexerIdentifier: false,
+          },
+          include: {
             wallet: {
               select: {
                 address: true,
