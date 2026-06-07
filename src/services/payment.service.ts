@@ -237,6 +237,7 @@ export class PaymentService {
     const depositAddress = await this.walletService.generatePaymentWallet(
       <string>tx.profile.wallet[0]?.address,
       tokenPrice,
+      tx.id,
       token,
       tx.mode
     );
