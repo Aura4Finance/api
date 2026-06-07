@@ -15,3 +15,8 @@ export const SUPPORTED_NETWORKS = [
     logoUrl: "https://res.cloudinary.com/dlhnwgcbe/image/upload/v1772482383/sui_jigntr.jpg",
   },
 ];
+
+export const getSmartContractId = (env: "mainnet" | "testnet") => {
+  const network = SUPPORTED_NETWORKS[0]; // Assuming only one network for now
+  return network?.smartContractPackageId[env];
+}

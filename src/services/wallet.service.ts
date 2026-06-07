@@ -9,6 +9,7 @@ import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
 import { Mode, Token } from "../../generated/prisma";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
+import { getSmartContractId } from "@/constants/networks.constant";
 import { MetaAg, MetaQuote } from "@7kprotocol/sdk-ts";
 
 type CoinMarketPriceConversionResponse = {
@@ -22,8 +23,6 @@ type CoinMarketPriceConversionResponse = {
 type ConversionDirection = 'to_USDT' | 'from_USDT';
 @Service()
 export class WalletService {
-  private TESTNET_SMART_CONTRACT_ADDRESS: string;
-  private MAINNET_SMART_CONTRACT_ADDRESS: string;
   private PAYFRICA_ID = "0x4378b5bf4c21d313150634d529218ea11166ca113a2869a31c88deb4bb8c2417";
   private PAYFRICA_CONFIG_ID = "0x50eee353064aa82f120bfc212486acf9bd9acf5b3a3b5aadea8284ce30a20f84";
   private USDC_COIN_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
@@ -33,13 +32,11 @@ export class WalletService {
     private readonly systemRepository: SystemRepository
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
-    this.TESTNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_TESTNET as string;
-    this.MAINNET_SMART_CONTRACT_ADDRESS = process.env.ORAFI_SMART_CONTRACT_ADDRESS_MAINNET as string;
   }
 
   private async setActiveNetwork(mode: Mode) {
     this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
-    return mode === "live" ? this.MAINNET_SMART_CONTRACT_ADDRESS : this.TESTNET_SMART_CONTRACT_ADDRESS;
+    return getSmartContractId(mode === "live" ? "mainnet" : "testnet");
   }
 
   async createWallet() {

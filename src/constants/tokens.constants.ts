@@ -59,7 +59,7 @@ export const TOKENS = {
       coinType: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
     },
     testnet: {
-      coinType: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
+      coinType: "0x3914a2fbfd53956bf3f345862d8563503f19e4871de7bc2ef47e6ba39d564fa7::deep::DEEP",
     },
     logoUrl: "https://images.deepbook.tech/icon.svg",
   },
