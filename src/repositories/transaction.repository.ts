@@ -31,15 +31,15 @@ export class TransactionRepository {
           },
         },
         payment: {
-          select: {
-            indexerIdentifier: false,
-          },
           include: {
             wallet: {
               select: {
                 address: true,
               }
             }
+          },
+          omit: {
+            indexerIdentifier: true,
           }
         },
         payout: true,
@@ -131,15 +131,15 @@ export class TransactionRepository {
           },
         },
         payment: {
-          select: {
-            indexerIdentifier: false,
-          },
           include: {
             wallet: {
               select: {
                 address: true,
               },
             }
+          },
+          omit: {
+            indexerIdentifier: true,
           }
         },
         payout: true,
