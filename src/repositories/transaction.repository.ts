@@ -37,9 +37,6 @@ export class TransactionRepository {
                 address: true,
               }
             }
-          },
-          omit: {
-            indexerIdentifier: true,
           }
         },
         payout: true,
@@ -137,9 +134,6 @@ export class TransactionRepository {
                 address: true,
               },
             }
-          },
-          omit: {
-            indexerIdentifier: true,
           }
         },
         payout: true,

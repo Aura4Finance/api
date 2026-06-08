@@ -28,14 +28,6 @@ export class PaymentService {
     private readonly emailQueue: EmailQueue
   ) { }
 
-  private cuidToU64(cuid: string): bigint {
-    let hash = 0n;
-    for (let i = 0; i < cuid.length; i++) {
-      hash = (hash * 31n + BigInt(cuid.charCodeAt(i))) & 0xFFFFFFFFFFFFFFFFn;
-    }
-    return hash;
-  }
-
   private async setActiveNetwork(mode: Mode) {
     this.client = new SuiClient({ url: getFullnodeUrl(`${mode === "live" ? "mainnet" : "testnet"}`) });
   }
@@ -241,11 +233,10 @@ export class PaymentService {
       }
       tokenPrice = tx.amountInUSDC / rate;
     }
-    const indexerIdentifier = this.cuidToU64(tx.id);
     const depositAddress = await this.walletService.generatePaymentWallet(
       <string>tx.profile.wallet[0]?.address,
       tokenPrice,
-      indexerIdentifier,
+      tx.id,
       token,
       tx.mode
     );
@@ -253,7 +244,6 @@ export class PaymentService {
     await this.paymentRepository.addDepositAddressToPayment(
       tx.id,
       depositAddress,
-      indexerIdentifier,
       token
     )
 

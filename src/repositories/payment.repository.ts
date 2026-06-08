@@ -192,7 +192,6 @@ export class PaymentRepository {
   async addDepositAddressToPayment(
     txId: string,
     depositAddress: string,
-    indexerIdentifier: bigint,
     token: Token
   ) {
     await db.transaction.update({
@@ -203,7 +202,6 @@ export class PaymentRepository {
         token,
         payment: {
           update: {
-            indexerIdentifier,
             depositAddress
           }
         }

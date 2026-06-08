@@ -57,7 +57,7 @@ export class WalletService {
   async generatePaymentWallet(
     merchantAddress: string,
     amount: number,
-    indexerIdentifier: bigint,
+    indexerIdentifier: string,
     token: Token,
     mode: Mode
   ) {
@@ -71,7 +71,7 @@ export class WalletService {
       arguments: [
         tx.pure.address(merchantAddress),
         tx.pure.u64(Math.round(amount * getCoinDecimal(token))),
-        tx.pure.u64(indexerIdentifier),
+        tx.pure.string(indexerIdentifier),
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
     });
