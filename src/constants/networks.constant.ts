@@ -8,8 +8,8 @@ export const SUPPORTED_NETWORKS = [
     isActive: true,
     supportedTokens: Object.values(TOKENS),
     smartContractPackageId: {
-      testnet: "0x81b54465396696d1cbfccff0a69e55cc121d5ab4ecfebfb99544f8b33d35e141",
-      mainnet: "0x0de361ffdda051426f0a0310dcb9e95a443a879ae6a8b6092e24bb57b633a3bd"
+      testnet: "0x114e10d9996399e8b95b22a70163e9d0189b34d2e437c20b561372b5c581727f",
+      mainnet: "0x48e0d4fe8ac8441bcf154dbff739c462708b33e183cbff493538f2364650a16f"
     },
     explorerUrl: "https://suiexplorer.com",
     logoUrl: "https://res.cloudinary.com/dlhnwgcbe/image/upload/v1772482383/sui_jigntr.jpg",
