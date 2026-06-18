@@ -15,6 +15,7 @@ import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
+import logger from "@/utils/logger";
 
 @Service()
 export class PaymentService {
@@ -229,6 +230,7 @@ export class PaymentService {
     } else {
       const rate = await getTokenPrice(getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet")!);
       if (!rate) {
+        logger.error(`7K-agg failed to return token price for ${token}`)
         throw new APIError("Unsupported token.", STATUS.bad);
       }
       tokenPrice = tx.amountInUSDC / rate;

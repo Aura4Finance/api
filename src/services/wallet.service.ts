@@ -1,6 +1,6 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Service } from "typedi";
-import { Transaction, TransactionObjectArgument, coinWithBalance } from "@mysten/sui/transactions";
+import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { getFullnodeUrl, SuiClient, SuiObjectChange } from "@mysten/sui/client";
@@ -10,7 +10,9 @@ import { SystemRepository } from "@/repositories/system.repository";
 import { Mode, Token } from "../../generated/prisma";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getSmartContractId } from "@/constants/networks.constant";
-import { MetaAg, MetaQuote } from "@7kprotocol/sdk-ts";
+import logger from "@/utils/logger";
+import { SevenKAggService } from "./7k-agg.service";
+import { MetaQuote } from "@7kprotocol/sdk-ts";
 
 type CoinMarketPriceConversionResponse = {
   status: {
@@ -28,7 +30,8 @@ export class WalletService {
   private client!: SuiClient;
   admin_secret_key: string;
   constructor(
-    private readonly systemRepository: SystemRepository
+    private readonly systemRepository: SystemRepository,
+    private readonly sevenKAggService: SevenKAggService
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
   }
@@ -94,6 +97,7 @@ export class WalletService {
       return createdWallet.objectId;
     }
 
+    logger.error(`Failed to create payment wallet. Transaction result: ${JSON.stringify(result)}`);
     throw new APIError("Deposit wallet creation failed!.", STATUS.unprocessableEntity);
   }
 
@@ -126,6 +130,7 @@ export class WalletService {
 
     const sponsorCoin = sponsorCoins.data[0];
     if (!sponsorCoin) {
+      logger.error(`No sponsor gas coin found for address: ${sponsor_address}`);
       throw new APIError("Unable to retrieve sponsor gas coin.", STATUS.serverError);
     }
 
@@ -176,6 +181,7 @@ export class WalletService {
     });
 
     if (!primaryCoin.data) {
+      logger.info(`Primary coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
     }
 
@@ -194,6 +200,7 @@ export class WalletService {
       .map((target) => target.data!.objectId);
 
     if (validMergeTargets.length === 0) {
+      logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
       throw new APIError("No additional coin objects available to merge.", STATUS.bad);
     }
 
@@ -229,6 +236,7 @@ export class WalletService {
     });
 
     if (!coinObject.data) {
+      logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
 
@@ -261,6 +269,7 @@ export class WalletService {
     });
 
     if (!coinObject.data) {
+      logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
 
@@ -287,6 +296,7 @@ export class WalletService {
   });
 
   if (!coinObject.data) {
+    logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
     throw new APIError("Coin object not found or unavailable.", STATUS.bad);
   } 
 
@@ -295,36 +305,22 @@ export class WalletService {
   let coinOut: TransactionObjectArgument;
   const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
   let coinTypeOut = getCoinType(Token.USDC, mode === "live" ? "mainnet" : "testnet")!
-
+  
   let bestQuote: MetaQuote | undefined = undefined;
   if (coinTypeIn === coinTypeOut) {
     // Wrap the existing coin object into the PTB
     coinOut = tx.object(coinObject.data.objectId);
   } else {
-    const metaAg = new MetaAg();
-    const quotes = await metaAg.quote({
-      amountIn: totalAmount.toString(),
+    // Perform swap to get USDC using 7K Agg
+    const swapResult = await this.sevenKAggService.swapTokens(
+      totalAmount,
       coinTypeIn,
-      coinTypeOut
-    });
-
-    bestQuote = quotes.sort(
-      (a, b) => Number(b.simulatedAmountOut || b.amountOut) - Number(a.simulatedAmountOut || a.amountOut),
-    )[0];
-
-    // coinOut here is now the resulting USDC transaction object from the swap
-    coinOut = await metaAg.swap(
-      {
-        quote: bestQuote!,
-        signer,
-        coinIn: coinWithBalance({
-          balance: totalAmount,
-          type: coinTypeIn,
-        }),
-        tx,
-      },
-      100, 
+      coinTypeOut,
+      signer,
+      tx
     );
+    coinOut = swapResult.coinOut;
+    bestQuote = swapResult.bestQuote;
   }
 
   // CRITICAL FIX: Calculate fee based on the actual USDC object inside the PTB.

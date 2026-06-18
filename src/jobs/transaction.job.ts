@@ -252,7 +252,6 @@ export const startTransactionWorker = () => {
           )
         }catch(error: unknown){
           logger.error(`[transaction-worker] settle payment job error: ${error}`);
-          console.log(error)
           throw error;
         }
       }
