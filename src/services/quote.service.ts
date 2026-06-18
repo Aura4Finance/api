@@ -4,6 +4,7 @@ import { CetusService } from "./cetus.service";
 import { STATUS } from "@/constants/status.constant";
 import { APIError } from "@/utils/error-handler";
 import { Token, Mode } from "../../generated/prisma";
+import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import logger from "@/utils/logger";
 
 @Service()
@@ -32,6 +33,47 @@ export class QuoteService {
     
         logger.error("Both 7K and Cetus failed to resolve token price");
         throw new APIError("Couldn't resolve price for selected token", STATUS.serverUnavailable);
+      }
+
+       async swap(
+        totalAmount: bigint,
+        coinTypeIn: string,
+        coinTypeOut: string,
+        coinObjectId: string,
+        signer: string,
+        tx: Transaction
+      ): Promise<{ coinOut: TransactionObjectArgument; amountOut: string }> {
+        const sevenKAgg = await this.sevenKAggService.swapTokens(
+          totalAmount,
+          coinTypeIn,
+          coinTypeOut,
+          signer,
+          tx
+        );
+      
+        if (sevenKAgg) {
+          return {
+            coinOut: sevenKAgg.coinOut,
+            amountOut: sevenKAgg.bestQuote.amountOut,
+          };
+        }
+      
+        const cetus = await this.cetusService.swapTokens(
+          totalAmount,
+          coinTypeIn,
+          coinTypeOut,
+          tx.object(coinObjectId),
+          tx
+        );
+      
+        if (cetus) {
+          return {
+            coinOut: cetus.coinOut,
+            amountOut: cetus.bestQuote.amountOut,
+          };
+        }
+      
+        throw new APIError("Failed to swap token: no route found via 7K or Cetus", STATUS.serverError);
       }
     
 }

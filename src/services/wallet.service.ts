@@ -11,8 +11,8 @@ import { Mode, Token } from "../../generated/prisma";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
-import { SevenKAggService } from "./7k-agg.service";
-import { CetusService } from "./cetus.service";
+import { QuoteService } from "./quote.service";
+
 
 type CoinMarketPriceConversionResponse = {
   status: {
@@ -31,8 +31,7 @@ export class WalletService {
   admin_secret_key: string;
   constructor(
     private readonly systemRepository: SystemRepository,
-    private readonly sevenKAggService: SevenKAggService,
-    private readonly cetusService: CetusService
+    private readonly quoteService: QuoteService
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
   }
@@ -316,7 +315,7 @@ async splitSendToMerchantsAndAdmin(
     coinOut = tx.object(coinObject.data.objectId);
     totalUsdcAmount = totalAmount;
   } else {
-    const swapResult = await this.resolveSwap(
+    const swapResult = await this.quoteService.swap(
       totalAmount,
       coinTypeIn,
       coinTypeOut,
@@ -341,46 +340,6 @@ async splitSendToMerchantsAndAdmin(
   return this.sponsoredTransaction(tx, secret_key);
 }
 
-private async resolveSwap(
-  totalAmount: bigint,
-  coinTypeIn: string,
-  coinTypeOut: string,
-  coinObjectId: string,
-  signer: string,
-  tx: Transaction
-): Promise<{ coinOut: TransactionObjectArgument; amountOut: string }> {
-  const sevenKAgg = await this.sevenKAggService.swapTokens(
-    totalAmount,
-    coinTypeIn,
-    coinTypeOut,
-    signer,
-    tx
-  );
-
-  if (sevenKAgg) {
-    return {
-      coinOut: sevenKAgg.coinOut,
-      amountOut: sevenKAgg.bestQuote.amountOut,
-    };
-  }
-
-  const cetus = await this.cetusService.swapTokens(
-    totalAmount,
-    coinTypeIn,
-    coinTypeOut,
-    tx.object(coinObjectId),
-    tx
-  );
-
-  if (cetus) {
-    return {
-      coinOut: cetus.coinOut,
-      amountOut: cetus.bestQuote.amountOut,
-    };
-  }
-
-  throw new APIError("Failed to swap token: no route found via 7K or Cetus", STATUS.serverError);
-}
   async convertBetweenCurrencyAndUSDT(
     amount: number,
     currency: string,
