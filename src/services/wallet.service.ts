@@ -12,7 +12,7 @@ import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
 import { SevenKAggService } from "./7k-agg.service";
-import { MetaQuote } from "@7kprotocol/sdk-ts";
+import { CetusService } from "./cetus.service";
 
 type CoinMarketPriceConversionResponse = {
   status: {
@@ -31,7 +31,8 @@ export class WalletService {
   admin_secret_key: string;
   constructor(
     private readonly systemRepository: SystemRepository,
-    private readonly sevenKAggService: SevenKAggService
+    private readonly sevenKAggService: SevenKAggService,
+    private readonly cetusService: CetusService
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
   }
@@ -253,102 +254,133 @@ export class WalletService {
     return result;
   }
 
-  async splitAndSend(
-    secret_key: string,
-    primaryCoinObjectId: string,
-    amount: number,
-    to: string,
-    mode: Mode
-  ) {
-    await this.setActiveNetwork(mode);
-
-    // Fetch the latest coin object with current version to avoid stale version errors
-    const coinObject = await this.client.getObject({
-      id: primaryCoinObjectId,
-      options: { showOwner: true, showContent: true, showType: true }
-    });
-
-    if (!coinObject.data) {
-      logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
-      throw new APIError("Coin object not found or unavailable.", STATUS.bad);
-    }
-
-    const tx = new Transaction();
-    const [new_coin] = tx.splitCoins(coinObject.data.objectId, [tx.pure.u64(Math.round(amount * 1000000))]);
-    tx.transferObjects([new_coin], tx.pure.address(to));
-
-    const result = await this.sponsoredTransaction(tx, secret_key);
-    return result;
-  }
-
-  async splitSendToMerchantsAndAdmin(
+ async splitAndSend(
   secret_key: string,
   primaryCoinObjectId: string,
-  amount: string, // amount in smallest unit (u64)
+  amount: number,
+  to: string,
+  mode: Mode
+) {
+  await this.setActiveNetwork(mode);
+
+  const coinObject = await this.client.getObject({
+    id: primaryCoinObjectId,
+    options: { showOwner: true, showContent: true, showType: true },
+  });
+
+  if (!coinObject.data) {
+    throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
+  }
+
+  const amountU64 = BigInt(Math.round(amount * 1_000_000));
+  const tx = new Transaction();
+  const [splitCoin] = tx.splitCoins(coinObject.data.objectId, [tx.pure.u64(amountU64)]);
+  tx.transferObjects([splitCoin], tx.pure.address(to));
+
+  return this.sponsoredTransaction(tx, secret_key);
+}
+
+async splitSendToMerchantsAndAdmin(
+  secret_key: string,
+  primaryCoinObjectId: string,
+  amount: string,
   to: string,
   coinTypeIn: string,
   mode: Mode
 ) {
   await this.setActiveNetwork(mode);
+
   const coinObject = await this.client.getObject({
     id: primaryCoinObjectId,
-    options: { showOwner: true, showContent: true, showType: true }
+    options: { showOwner: true, showContent: true, showType: true },
   });
 
   if (!coinObject.data) {
-    logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
-    throw new APIError("Coin object not found or unavailable.", STATUS.bad);
-  } 
+    throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
+  }
+
+  const network = mode === "live" ? "mainnet" : "testnet";
+  const coinTypeOut = getCoinType(Token.USDC, network);
+  if (!coinTypeOut) {
+    throw new APIError(`Could not resolve USDC coin type for network: ${network}`, STATUS.serverError);
+  }
 
   const totalAmount = BigInt(amount);
   const tx = new Transaction();
-  let coinOut: TransactionObjectArgument;
   const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
-  let coinTypeOut = getCoinType(Token.USDC, mode === "live" ? "mainnet" : "testnet")!
-  
-  let bestQuote: MetaQuote | undefined = undefined;
+
+  let coinOut: TransactionObjectArgument;
+  let totalUsdcAmount: bigint;
+
   if (coinTypeIn === coinTypeOut) {
-    // Wrap the existing coin object into the PTB
     coinOut = tx.object(coinObject.data.objectId);
+    totalUsdcAmount = totalAmount;
   } else {
-    // Perform swap to get USDC using 7K Agg
-    const swapResult = await this.sevenKAggService.swapTokens(
+    const swapResult = await this.resolveSwap(
       totalAmount,
       coinTypeIn,
       coinTypeOut,
+      coinObject.data.objectId,
       signer,
       tx
     );
     coinOut = swapResult.coinOut;
-    bestQuote = swapResult.bestQuote;
+    totalUsdcAmount = BigInt(swapResult.amountOut);
   }
 
-  // CRITICAL FIX: Calculate fee based on the actual USDC object inside the PTB.
-  const totalUsdcAmount = coinTypeIn === coinTypeOut ? totalAmount : BigInt(bestQuote!.amountOut);
-  const platformFee = totalUsdcAmount / 100n; // Clean 1% of the actual USDC received
+  const platformFee = totalUsdcAmount / 100n; // 1%
+  const platformKey = process.env.PLATFORM_PUBLIC_KEY;
+  if (!platformKey) {
+    throw new APIError("PLATFORM_PUBLIC_KEY is not configured", STATUS.serverError);
+  }
 
-  // Split the platform fee out of the USDC coin object
-  const [platformCoin] = tx.splitCoins(
-    coinOut,
-    [tx.pure.u64(platformFee.toString())] 
-  );
+  const [platformCoin] = tx.splitCoins(coinOut, [tx.pure.u64(platformFee)]);
+  tx.transferObjects([platformCoin], tx.pure.address(platformKey));
+  tx.transferObjects([coinOut], tx.pure.address(to));
 
-  // Send platform fee
-  tx.transferObjects(
-    [platformCoin],
-    tx.pure.address(String(process.env.PLATFORM_PUBLIC_KEY))
-  );
-
-  // Send remaining USDC balance to merchant
-  tx.transferObjects(
-    [coinOut],
-    tx.pure.address(to)
-  );
-
-  const result = await this.sponsoredTransaction(tx, secret_key);
-  return result;
+  return this.sponsoredTransaction(tx, secret_key);
 }
 
+private async resolveSwap(
+  totalAmount: bigint,
+  coinTypeIn: string,
+  coinTypeOut: string,
+  coinObjectId: string,
+  signer: string,
+  tx: Transaction
+): Promise<{ coinOut: TransactionObjectArgument; amountOut: string }> {
+  const sevenKAgg = await this.sevenKAggService.swapTokens(
+    totalAmount,
+    coinTypeIn,
+    coinTypeOut,
+    signer,
+    tx
+  );
+
+  if (sevenKAgg) {
+    return {
+      coinOut: sevenKAgg.coinOut,
+      amountOut: sevenKAgg.bestQuote.amountOut,
+    };
+  }
+
+  const cetus = await this.cetusService.swapTokens(
+    totalAmount,
+    coinTypeIn,
+    coinTypeOut,
+    tx.object(coinObjectId),
+    tx
+  );
+
+  if (cetus) {
+    return {
+      coinOut: cetus.coinOut,
+      amountOut: cetus.bestQuote.amountOut,
+    };
+  }
+
+  throw new APIError("Failed to swap token: no route found via 7K or Cetus", STATUS.serverError);
+}
   async convertBetweenCurrencyAndUSDT(
     amount: number,
     currency: string,

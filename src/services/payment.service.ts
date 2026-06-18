@@ -16,6 +16,7 @@ import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
+import { QuoteService } from "./quote.service";
 
 @Service()
 export class PaymentService {
@@ -26,7 +27,8 @@ export class PaymentService {
     private readonly walletService: WalletService,
     private readonly customerRepository: CustomerRepository,
     private readonly webhookQueue: WebhookQueue,
-    private readonly emailQueue: EmailQueue
+    private readonly emailQueue: EmailQueue,
+    private readonly quoteService: QuoteService,
   ) { }
 
   private async setActiveNetwork(mode: Mode) {
@@ -476,18 +478,12 @@ export class PaymentService {
       throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
     }
 
-    let target;
-    if (token == Token.USDC) {
+    let target: bigint;
+    if (token === Token.USDC) {
       target = BigInt(Math.floor(Number(amountInUSDC) * getCoinDecimal(token)));
     } else {
-      const rate = await getTokenPrice(coinType);
-      if (!rate) {
-        throw new APIError("Failed to fetch token price.", STATUS.bad);
-      }
-      target = BigInt(Math.floor(Number(amountInUSDC / rate) * getCoinDecimal(token)));
+      target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
-
-
     // Fetch every coin object in the deposit wallet across all pages
     const allCoins: Awaited<ReturnType<SuiClient["getCoins"]>>["data"] = [];
     let cursor: string | null | undefined = undefined;
@@ -562,5 +558,4 @@ export class PaymentService {
       }
     };
   }
-
 }

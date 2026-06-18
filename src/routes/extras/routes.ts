@@ -4,10 +4,12 @@ import { SUPPORTED_NETWORKS } from "@/constants/networks.constant";
 import { FiatController } from "@/controllers/user/fiat.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Request, Response } from "express";
+import { QuoteController } from "@/controllers/quote.controller";
 import Container from "typedi";
 
 const router = express.Router();
 const fiatController = Container.get(FiatController);
+const quoteController = Container.get(QuoteController);
 
 type CoinMarketFiat = {
   id: number;
@@ -83,6 +85,13 @@ router.get(
       data: SUPPORTED_NETWORKS,
     });
   })
+);
+
+router.get(
+    "/quotes",
+    asyncHandler((req: express.Request, res: Response) =>        
+        quoteController.getTokenPrice(req, res)
+    )
 );
 
 export default router;

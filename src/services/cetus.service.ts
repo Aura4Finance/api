@@ -12,6 +12,10 @@ import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 export class CetusService {
     private aggregatorClient!: AggregatorClient;
 
+    /**
+     * Initializes the Cetus aggregator client based on the mode (test or live).
+     * @param mode The mode for which to initialize the client.
+     */
     initializeClient(mode: Mode) {
         this.aggregatorClient = new AggregatorClient({
             env: mode === "live" ? Env.Mainnet : Env.Testnet
@@ -24,7 +28,7 @@ export class CetusService {
   * @param amount Amount of input token (decimal)
   * @returns The exchange rate (how much of token for 1 USDC)
   */
-    async getTokenPrice(amount: number, token: Token, mode: Mode): Promise<number> {
+    async getTokenPrice(amount: number, token: Token, mode: Mode): Promise<bigint | null> {
         this.initializeClient(mode);
         const coinType = getCoinType(token, mode === "live" ? "mainnet" : "testnet");
         const usdcType = getCoinType("USDC", mode === "live" ? "mainnet" : "testnet");
@@ -33,16 +37,15 @@ export class CetusService {
             throw new APIError("Coin type not found", STATUS.notFound);
         }
 
-        const target = BigInt(Math.floor(Number(amount) * getCoinDecimal(token)));
+        const target = BigInt(Math.floor(Number(amount) * getCoinDecimal(Token.USDC)));
 
-        const route = await this.getQuote(coinType, usdcType, target.toString());
+        const route = await this.getQuote(usdcType, coinType, target.toString());
 
         if (!route || route.insufficientLiquidity) {
             logger.error(`No quote found for fromCoinType: ${token} and toCoinType: ${usdcType}`);
-            throw new APIError("No quote found", STATUS.notFound);
+            return null;
         }
-
-        return amount / route.amountOut;
+        return BigInt(Math.floor(Number(route.amountOut)))
     }
 
 
@@ -86,7 +89,7 @@ export class CetusService {
     ): Promise<{
         coinOut: TransactionObjectArgument;
         bestQuote: RouterDataV3;
-    }> {
+    } |null> {
         this.initializeClient("live");
         try {
             const bestQuote = await this.getQuote(coinTypeIn, coinTypeOut, amount.toString());
@@ -106,7 +109,7 @@ export class CetusService {
             return { coinOut: coinOut as any, bestQuote };
         } catch (error: any) {
             logger.error(`Cetus swapTokens failed: ${error.message}`);
-            throw new APIError("Failed to swap tokens using Cetus", STATUS.serverError);
+            return null;
         }
     }
 }
