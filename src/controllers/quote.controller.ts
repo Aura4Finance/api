@@ -20,6 +20,13 @@ export class QuoteController {
         }
         const body = value as { amountInUSDC: number, token: Token, mode: Mode };
             const quotePrice = await this.quoteService.getTokenPrice(body.amountInUSDC, body.token, body.mode);
-            return quotePrice.toString();
+            return res.status(STATUS.ok).json({
+                    success: true,
+                    message: "Token price retrieved successfully!",
+                    data: {
+                        price: quotePrice.toString(),
+                        timeStamp: new Date().toISOString(),
+                    },
+                });
         }
     }

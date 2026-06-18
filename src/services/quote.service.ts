@@ -20,6 +20,9 @@ export class QuoteService {
      * @returns A promise resolving to the token price in USDC.
      */
     async getTokenPrice(amountInUSDC: number, token: Token, mode: Mode): Promise<bigint> {
+        if(token === "USDC"){
+            throw new APIError("Input token cannot be USDC!", STATUS.bad);
+        }
         const sevenK = await this.sevenKAggService.getTokenPrice(amountInUSDC, token, mode);
         if (sevenK) return sevenK;
     
