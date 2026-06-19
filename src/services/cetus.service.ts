@@ -96,7 +96,7 @@ export class CetusService {
 
             if (!bestQuote || bestQuote.insufficientLiquidity) {
                 logger.error(`No quote found for fromCoinType: ${coinTypeIn} and toCoinType: ${coinTypeOut}`);
-                throw new APIError("No quote found", STATUS.notFound);
+                return null;
             }
 
             const coinOut = await this.aggregatorClient.routerSwap({
