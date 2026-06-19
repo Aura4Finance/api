@@ -5,7 +5,8 @@ import { WalletService } from "./wallet.service";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
+import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc"
 import { Customer, Mode, PaymentMethod, Token } from "../../generated/prisma";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
@@ -20,7 +21,7 @@ import { QuoteService } from "./quote.service";
 
 @Service()
 export class PaymentService {
-  private client!: SuiClient;
+  private client!: SuiGrpcClient;
 
   constructor(
     private readonly paymentRepository: PaymentRepository,
@@ -32,7 +33,11 @@ export class PaymentService {
   ) { }
 
   private async setActiveNetwork(mode: Mode) {
-    this.client = new SuiClient({ url: getFullnodeUrl(`${mode === "live" ? "mainnet" : "testnet"}`) });
+    const network = mode === "live" ? "mainnet" : "testnet";
+    this.client = new SuiGrpcClient({
+      network,
+      baseUrl: getJsonRpcFullnodeUrl(network)
+    });
   }
 
   private async resolveCustomer(
@@ -385,12 +390,14 @@ export class PaymentService {
     // 🔄 still pending → check chain
     else {
       try {
-        const walletObject = await this.client.getObject({
-          id: String(tx.payment?.depositAddress),
-          options: { showContent: true },
+        const { object } = await this.client.getObject({
+          objectId: <string>tx.payment?.depositAddress,
+          include: {
+            content: true,
+          }
         });
 
-        if (!walletObject.data) {
+        if (!object.content) {
           await this.confirmPayment(
             tx.id,
             String(tx.customerId),
@@ -484,39 +491,30 @@ export class PaymentService {
     } else {
       target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
-    // Fetch every coin object in the deposit wallet across all pages
-    const allCoins: Awaited<ReturnType<SuiClient["getCoins"]>>["data"] = [];
-    let cursor: string | null | undefined = undefined;
-    do {
-      const page = await this.client.getCoins({
-        owner: paymentWallet.address,
-        coinType,
-        cursor,
-      });
-      allCoins.push(...page.data);
-      cursor = page.hasNextPage ? page.nextCursor : undefined;
-    } while (cursor);
-    //verify the payment was actually received
-    // Sum every coin object in the deposit wallet to get the true received total.
-    const receivedTotal = allCoins.reduce(
-      (sum, coin) => sum + BigInt(coin.balance),
-      0n
-    );
+    // verify the payment was actually received
+    const coins = await this.client.listCoins({
+      owner: paymentWallet.address,
+      coinType,
+    });
 
-    if (receivedTotal < target) {
-      throw new APIError(
-        "Payment not received yet.",
-        STATUS.paymentRequired
-      );
-    }
-    const matchingCoin = allCoins
+    const matchingCoin = coins.objects
       .filter(coin => BigInt(coin.balance) >= target)
       .sort((a, b) => (BigInt(a.balance) < BigInt(b.balance) ? -1 : 1))[0] ?? null;
 
     if (!matchingCoin) {
       throw new APIError(
-        "Payment received but split across multiple coin objects. Please retry shortly.",
+        "Payment not received yet.",
         STATUS.paymentRequired
+      );
+    }
+
+    // Log significant overpayment (>5% above target)
+    const overpaymentThreshold = target + (target * 5n) / 100n;
+    if (BigInt(matchingCoin.balance) > overpaymentThreshold) {
+        logger.info(
+        `[verifyTransfer] Overpayment detected on payment ${paymentId}: ` +
+        `expected ${target.toString()}, received ${matchingCoin.balance} ` +
+        `(+${((BigInt(matchingCoin.balance) - target) * 100n / target).toString()}%)`
       );
     }
 
@@ -525,7 +523,7 @@ export class PaymentService {
 
     await transactionQueue.add(jobs.SETTLE_PAYMENT, {
       walletPrivateKey: secretKey,
-      coinObjectId: matchingCoin.coinObjectId,
+      coinObjectId: matchingCoin.objectId,
       amount: target.toString(),
       toAddress: tx?.profile.wallet[0]?.address as string,
       coinType,

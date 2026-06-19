@@ -1,6 +1,4 @@
-import { getFullnodeUrl } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
-import { SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { walrus, RetryableWalrusClientError } from "@mysten/walrus";
 import { Service } from "typedi";
 import { WalletService } from "./wallet.service";
@@ -11,6 +9,15 @@ import logger from "@/utils/logger";
 import { Mode } from "../../generated/prisma";
 import sharp from "sharp";
 
+const GRPC_URLS = {
+    mainnet: "https://fullnode.mainnet.sui.io:443",
+    testnet: "https://fullnode.testnet.sui.io:443",
+};
+
+const UPLOAD_RELAY_URLS = {
+    mainnet: "https://upload-relay.mainnet.walrus.space",
+    testnet: "https://upload-relay.testnet.walrus.space",
+};
 
 @Service()
 export class WalrusService {
@@ -19,20 +26,16 @@ export class WalrusService {
     ) { }
 
     private getWalrusClient(network: 'mainnet' | 'testnet') {
-        
-        return new SuiJsonRpcClient({
-            url: getFullnodeUrl(network),
+        return new SuiGrpcClient({
+            baseUrl: GRPC_URLS[network],
             network,
         }).$extend(
             walrus({
                 uploadRelay: {
-                    host: network === "testnet" 
-                        ? "https://upload-relay.testnet.walrus.space" 
-                        : "https://upload-relay.mainnet.walrus.space",
-                    sendTip: { max: 1_000_000_000 }, // 1k SUI, adjust as needed
+                    host: UPLOAD_RELAY_URLS[network],
+                    sendTip: { max: 1_000_000_000 },
                 }
-            }
-        )
+            })
         );
     }
 
@@ -49,7 +52,7 @@ export class WalrusService {
                 })
                 .webp({ quality: 80 })
                 .toBuffer();
-            
+
             logger.info(`Image compressed: ${imageBuffer.length} bytes → ${compressed.length} bytes`);
             return compressed;
         } catch (error: any) {
@@ -61,17 +64,12 @@ export class WalrusService {
     async deleteImageFromWalrus(blobObjectId: string, mode: Mode) {
         try {
             const network = mode === Mode.live ? "mainnet" : "testnet";
-            const suiJsonRpcClient = this.getWalrusClient(network);
+            const client = this.getWalrusClient(network);
             const signer = this.getSigner();
 
-            const storage = suiJsonRpcClient.walrus.deleteBlob({ blobObjectId });
-            const tx = new Transaction();
-            tx.transferObjects([storage], signer.getPublicKey().toSuiAddress());
-            
-            await suiJsonRpcClient.signAndExecuteTransaction({
+            await client.walrus.executeDeleteBlobTransaction({
+                blobObjectId,
                 signer,
-                transaction: tx,
-                options: { showEffects: true, showObjectChanges: true },
             });
         } catch (error: any) {
             logger.error(error);
@@ -82,23 +80,22 @@ export class WalrusService {
     async uploadImageToWalrus(imageBuffer: Uint8Array, mode: Mode) {
         try {
             const network = mode === Mode.live ? "mainnet" : "testnet";
-            const suiJsonRpcClient = this.getWalrusClient(network);
+            const client = this.getWalrusClient(network);
             const signer = this.getSigner();
 
-            // Compress image to reduce blob size and lower tip amount
             const compressedImage = await this.compressImage(imageBuffer);
 
             const upload = () =>
-                suiJsonRpcClient.walrus.writeBlob({
+                client.walrus.writeBlob({
                     blob: compressedImage,
                     deletable: true,
                     epochs: 2,
-                    signer
+                    signer,
                 });
 
             const { blobId, blobObject } = await upload().catch(async (error: any) => {
                 if (error instanceof RetryableWalrusClientError) {
-                    suiJsonRpcClient.walrus.reset();
+                    client.walrus.reset();
                     return upload();
                 }
                 throw new APIError(

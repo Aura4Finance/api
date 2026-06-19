@@ -11,8 +11,8 @@
   "dependencies": {
     "@7kprotocol/sdk-ts": "^4.0.0",
     "@cetusprotocol/aggregator-sdk": "^1.6.1",
-    "@mysten/sui": "^1.43.1",
-    "@mysten/walrus": "^0.9.0",
+    "@mysten/sui": "^2.19.0",
+    "@mysten/walrus": "^1.2.1",
     "@prisma/client": "^6.16.3",
     "argon2": "^0.44.0",
     "axios": "^1.12.2",
@@ -64,5 +64,16 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@pythnetwork/pyth-sui-js": {
+      "@mysten/sui": "^2.19.0"
+    },
+    "@cetusprotocol/aggregator-sdk": {
+      "@mysten/sui": "^2.19.0"
+    },
+    "@flowx-finance/sdk": {
+      "@mysten/sui": "^2.19.0"
+    }
   }
 }

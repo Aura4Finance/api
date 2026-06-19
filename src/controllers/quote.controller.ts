@@ -5,6 +5,7 @@ import { getTokenPriceValidation } from "@/validation/quote.validation";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { Request, Response } from "express";
 import { STATUS } from "@/constants/status.constant";
+import { getCoinDecimal } from "@/constants/tokens.constants";
 
 @Service()
 export class QuoteController {
@@ -24,7 +25,7 @@ export class QuoteController {
                     success: true,
                     message: "Token price retrieved successfully!",
                     data: {
-                        price: quotePrice.toString(),
+                        price: (quotePrice * BigInt(getCoinDecimal(body.token))).toString(),
                         timeStamp: new Date().toISOString(),
                     },
                 });
