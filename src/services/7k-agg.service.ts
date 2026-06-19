@@ -68,7 +68,7 @@ export class SevenKAggService {
     
             if(!bestQuote) {
                 logger.error(`No quote found for fromCoinType: ${coinTypeIn} and toCoinType: ${coinTypeOut}`);
-                throw new APIError("No quote found", STATUS.notFound);
+                return null;
             }
             // coinOut here is now the resulting USDC transaction object from the swap
             const coinOut = await this.metaAg.swap(
