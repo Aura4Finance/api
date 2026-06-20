@@ -1,16 +1,22 @@
 {
   "name": "OraFi",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "ts-node-dev -r tsconfig-paths/register src/server.ts",
-    "build": "tsc",
+    "lint": "tsc",
+    "dev:tsc": "tsc --watch --preserveWatchOutput",
+    "dev:node": "node --watch dist/index.js",
+    "dev:esbuild": "pnpm run build --watch",
+    "dev": "run-p dev:*",
+    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --format=esm --external:@pythnetwork/pyth-sui-js",
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "@7kprotocol/sdk-ts": "^4.0.0",
+    "@7kprotocol/sdk-ts": "^5.0.0-beta.2",
     "@cetusprotocol/aggregator-sdk": "^1.6.1",
+    "@hop.ag/sdk": "^5.0.9",
     "@mysten/sui": "^2.19.0",
     "@mysten/walrus": "^1.2.1",
     "@prisma/client": "^6.16.3",
@@ -60,21 +66,11 @@
     "@types/speakeasy": "^2.0.10",
     "@types/uuid": "^10.0.0",
     "dotenv-cli": "^11.0.0",
+    "esbuild": "^0.28.1",
     "prisma": "^6.16.3",
     "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
-  },
-  "overrides": {
-    "@pythnetwork/pyth-sui-js": {
-      "@mysten/sui": "^2.19.0"
-    },
-    "@cetusprotocol/aggregator-sdk": {
-      "@mysten/sui": "^2.19.0"
-    },
-    "@flowx-finance/sdk": {
-      "@mysten/sui": "^2.19.0"
-    }
   }
 }

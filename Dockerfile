@@ -14,9 +14,7 @@ ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 RUN npx prisma generate && date > generated/.buildstamp
 
-# FIX 2: Added npx before tsc in case typescript isn't explicitly in your package.json devDependencies
-RUN npx tsc
-RUN npx tsc-alias
+RUN npm run build
 
 RUN cp -r src/html dist/html
 

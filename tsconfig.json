@@ -1,49 +1,35 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File Layout
     "types": ["node"],
     "rootDir": "./src",
     "outDir": "./dist",
     "typeRoots": ["./node_modules/@types", "./src/@types"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "target": "es2024",
-    "baseUrl": "./src",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "noEmit": true,
+    "lib": ["es2024"],
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["./src/*"]
     },
-
-    // Other Outputs
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-
-    // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
-    // Style Options
     "noImplicitReturns": true,
-    // "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
-    // "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-
-    //TypeDI config
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-
     "esModuleInterop": true
   },
   "include": ["src/**/*", "src/@types/**/*"]

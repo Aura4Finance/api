@@ -1,4 +1,4 @@
-import db from "config/db-config";
+import db from "@/config/db-config";
 import { Service } from "typedi";
 import { RefundQueryDto } from "@/dto/refund.dto";
 import { Mode, Network } from "../../generated/prisma";
