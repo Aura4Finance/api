@@ -1,6 +1,6 @@
 import db from "@/config/db-config";
 import { APIError } from "@/utils/error-handler";
-import { Mode, SubscriptionDuration, SubscriptionStatus } from "../../generated/prisma";
+import { Mode, SubscriptionDuration, SubscriptionStatus } from "@generated/prisma
 import { Service } from "typedi";
 import { STATUS } from "@/constants/status.constant";
 import { CreateSubscriptionDto } from "@/dto/subscription.dto";

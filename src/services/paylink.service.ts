@@ -4,7 +4,7 @@ import { PaylinkRepository } from "@/repositories/paylink.repository";
 import { APIError } from "@/utils/error-handler";
 import { WalrusService } from "./walrus.service";
 import { Service } from "typedi";
-import { Mode } from "../../generated/prisma";
+import { Mode } from "@generated/prisma";
 import { OLLAMA_BASE_URL, OLLAMA_MODEL } from "@/config/ollama-config";
 import axios from "axios";
 

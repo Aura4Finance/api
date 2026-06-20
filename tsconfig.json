@@ -12,7 +12,8 @@
     "noEmit": true,
     "lib": ["es2024"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@generated/*": ["./generated/*"]
     },
     "sourceMap": true,
     "declaration": true,

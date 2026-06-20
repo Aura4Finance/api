@@ -1,4 +1,4 @@
-import { Network } from "../../generated/prisma";
+import { Network } from "@generated/prisma
 
 export interface CryptoPayOutDto {
     walletAddress?: string;

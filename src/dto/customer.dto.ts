@@ -1,4 +1,4 @@
-import { Mode } from "../../generated/prisma";
+import { Mode } from "@generated/prisma
 
 export interface CreateCustomerDto {
   firstname: string;

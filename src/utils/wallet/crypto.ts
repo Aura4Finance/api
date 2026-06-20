@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { SystemConfig } from "../../../generated/prisma";
+import { SystemConfig } from "../@generated/prisma";
 
 const ALGO = "aes-256-gcm";
 

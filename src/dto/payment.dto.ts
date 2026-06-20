@@ -1,4 +1,4 @@
-import { Network, Paylink, PaymentMethod, Token } from "../../generated/prisma";
+import { Network, Paylink, PaymentMethod, Token } from "@generated/prisma
 
 export interface CreatePaymentDto {
   amount: number;

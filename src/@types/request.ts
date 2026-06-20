@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { Paylink, PaymentMethod, Wallet } from "../../generated/prisma";
+import { Paylink, PaymentMethod, Wallet } from "@generated/prisma";
 export interface RequestAuth extends Request {
   user: {
     id: string,

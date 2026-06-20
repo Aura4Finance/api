@@ -7,7 +7,7 @@ import { formatErrorValidation } from "@/utils/format-validation-error";
 import { createFiatPayoutValidation, cryptoPayoutSchemaValidation, retryCryptoPayoutValidation } from "@/validation/payout.validation";
 import { CryptoPayOutDto, RetryCryptoPayoutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
-import { Wallet } from "../../generated/prisma";
+import { Wallet } from "@generated/prisma";
 
 @Service()
 export class PayoutController {

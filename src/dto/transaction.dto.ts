@@ -5,7 +5,7 @@ import {
     PaymentMethod,
     Mode,
     Network
-} from "../../generated/prisma";
+} from "@generated/prisma
 
 type IntervalPreset = 
     | "today"

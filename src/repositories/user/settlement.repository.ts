@@ -1,6 +1,6 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
-import { Network } from "../../../generated/prisma";
+import { Network } from "../@generated/prisma
 
 @Service()
 export class SettlementRepository {

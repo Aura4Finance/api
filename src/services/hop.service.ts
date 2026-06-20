@@ -3,7 +3,7 @@ import logger from "@/utils/logger";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { HopApi, QuoteResponse } from "@hop.ag/sdk";
-import { Mode, Token } from "../../generated/prisma";
+import { Mode, Token } from "@generated/prisma";
 import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 

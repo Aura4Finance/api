@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { Mode, Token } from "../../generated/prisma";
+import { Mode, Token } from "@generated/prisma";
 
 /**
  * Validation schema for getting token price.

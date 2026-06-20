@@ -3,7 +3,7 @@ import { APIError } from "@/utils/error-handler";
 import logger from "@/utils/logger";
 import { STATUS } from "@/constants/status.constant";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
-import { Mode, Token } from "../../generated/prisma";
+import { Mode, Token } from "@generated/prisma";
 import { getTokenPrice, MetaAg, MetaQuote } from "@7kprotocol/sdk-ts";
 import { Transaction, TransactionObjectArgument, coinWithBalance } from "@mysten/sui/transactions";
 
