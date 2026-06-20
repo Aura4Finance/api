@@ -14,6 +14,7 @@
     "@mysten/sui": "^2.19.0",
     "@mysten/walrus": "^1.2.1",
     "@prisma/client": "^6.16.3",
+    "@prisma/config": "^7.5.0",
     "argon2": "^0.44.0",
     "axios": "^1.12.2",
     "axios-retry": "^4.5.0",
