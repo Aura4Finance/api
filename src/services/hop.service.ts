@@ -19,7 +19,7 @@ export class HopService {
      * @param mode The mode for which to initialize the client.
      */
     initializeClient(mode: Mode) {
-        if(mode !== "live")
+        if(mode === "live")
         this.hopApi = new HopApi({
             fee_bps: 0,
         });
@@ -48,7 +48,7 @@ export class HopService {
             logger.error(`No quote found for fromCoinType: ${token} and toCoinType: ${usdcType}`);
             return null;
         }
-        return BigInt(Math.floor(Number(route.amount_out)));
+        return BigInt(route.amount_out);
     }
 
     /**
