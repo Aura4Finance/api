@@ -29,7 +29,7 @@ import { EmailQueue } from "@/services/schedule.email.service";
 import { WalletService } from "@/services/wallet.service";
 import { CreatePaymentDto } from "@/dto/payment.dto";
 import { PaymentService } from "@/services/payment.service";
-import { PaymentMethod, SubscriptionStatus } from "@generated/prisma
+import { PaymentMethod, SubscriptionStatus } from "@generated/prisma";
 import { PaymentRepository } from "@/repositories/payment.repository";
 import { redisConnection, redisClient } from "@/config/redis-config";
 import { jobs, SUBSCRIPTION_WORKER } from "@/queues/subscription.queue";
