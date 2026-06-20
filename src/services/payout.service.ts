@@ -1,5 +1,6 @@
 import { Service } from "typedi";
-import { getFullnodeUrl, SuiClient, type SuiTransactionBlockResponse } from "@mysten/sui/client";
+import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { WalletService } from "./wallet.service";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
 import { APIError } from "@/utils/error-handler";
@@ -11,13 +12,15 @@ import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "./user/fiat.service";
 import { FiatRepository } from "@/repositories/user/fiat.repository";
+import { getCoinType } from "@/constants/tokens.constants";
 import logger from "@/utils/logger";
+import { logTransactionError } from "@/utils/log-transaction-error";
+import { SuiClientTypes } from "@mysten/sui/client";
 
 @Service()
 export class PayoutService {
-    private client!: SuiClient;
-    private primaryCoin: any;
-    cointype!: string;
+    private client!: SuiGrpcClient;
+    private network!: "mainnet" | "testnet"
 
     // cache for coin data: walletAddress -> { coinObjects, totalBalance }
     private walletCache: Map<string, { coinObjects: string[]; totalBalance: number }> = new Map();
@@ -31,10 +34,12 @@ export class PayoutService {
     ) { }
 
     private async setActiveNetwork(mode: Mode) {
-        this.client = new SuiClient({ url: getFullnodeUrl(`${mode == "live" ? "mainnet" : "testnet"}`) });
-        this.cointype = mode == "test" ? 
-            "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC" :
-            "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC"
+        this.network = mode == "live" ? "mainnet" : "testnet";
+        this.client = new SuiGrpcClient({
+            baseUrl: getJsonRpcFullnodeUrl(this.network),
+            network: this.network
+        });
+
     }
 
     private async fetchCoins(walletAddress: string) {
@@ -45,21 +50,21 @@ export class PayoutService {
 
         try {
             while (hasNext) {
-                const coinBalance: any = await this.client.getCoins({
+                const coins = await this.client.listCoins({
                     owner: walletAddress,
-                    coinType: this.cointype,
+                    coinType: <string>getCoinType("USDC", this.network),
                     cursor: nextCursor,
                 });
 
-                const total = coinBalance.data
+                const total = coins.objects
                     .map((coin: { balance: string }) => Number(coin.balance))
                     .reduce((a: number, b: number) => a + b, 0);
 
                 totalBalance += total;
-                coinObjects.push(...coinBalance.data.map((c: any) => c.coinObjectId));
+                coinObjects.push(...coins.objects.map((c) => c.objectId));
 
-                hasNext = coinBalance.hasNextPage;
-                nextCursor = coinBalance.nextCursor ?? null;
+                hasNext = coins.hasNextPage;
+                nextCursor = coins.cursor ?? null;
             }
 
             // Cache the result for reuse
@@ -94,12 +99,12 @@ export class PayoutService {
         mode: Mode
     ) {
         await this.setActiveNetwork(mode);
-        const cache: any = await this.fetchCoins(keys.address);
-        if (cache?.coinObjects.length == 0) {
+        const coins = await this.fetchCoins(keys.address);
+        if (coins?.coinObjects.length == 0 || !coins?.coinObjects[0]) {
             throw new APIError("No balance available for payout.", STATUS.bad);
         }
-        const primaryCoin = cache?.coinObjects[0];
-        const mergeTargets = cache?.coinObjects.slice(1);
+        const primaryCoin = coins?.coinObjects[0];
+        const mergeTargets = coins?.coinObjects.slice(1);
 
         if (mergeTargets.length != 0) {
             const derivedWalletBuffer = await deriveWallet(keys.derivationIndex);
@@ -110,8 +115,9 @@ export class PayoutService {
                 mergeTargets,
                 mode
             )
-            const isSuccess = result?.effects?.status?.status === "success"
-            if (!isSuccess) {
+
+            if (result.$kind !== "Transaction") {
+                logTransactionError(result);
                 throw new APIError("Payout failed because the on-chain service is unavailable.", STATUS.serverUnavailable)
             }
         }
@@ -123,47 +129,47 @@ export class PayoutService {
         amount: number,
         to: string,
         payoutId: string,
+        primaryCoinObjectId: string,
         mode: Mode
     ) {
         const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         const result = await this.walletService.withdrawlToMerchant(
             secretKey,
-            this.primaryCoin,
+            primaryCoinObjectId,
             amount,
             to,
             mode
         );
-        const isSuccess = result?.effects?.status?.status === "success"
-        if (!isSuccess) {
+
+        if (result.$kind !== "Transaction") {
+            const errorMessage = result.FailedTransaction.effects?.status?.error?.message;
+            if (errorMessage?.includes("InsufficientCoinBalance")) {
+                throw new APIError(
+                    "Refund failed due to insufficient balance.",
+                    STATUS.conflict
+                );
+            }
+            logTransactionError(result)
             await this.payoutRepository.failPayout(
                 payoutId,
-                result.digest
+                result.FailedTransaction?.digest
             );
-            const errorCode = result.effects?.abortError?.error_code;
-            throw new APIError(
-                `Payout failed: ${errorCode !== "0"
-                    ? "insufficient balance"
-                    : errorCode != null
-                        ? "an unknown error occurred"
-                        : "the transaction failed"
-                }`,
-                STATUS.serverUnavailable
-            );
+            throw new APIError("Unable to process payout transaction.", STATUS.serverUnavailable);
         }
         await this.payoutRepository.confirmPayout(
             payoutId,
-            result.digest
+            result.Transaction.digest
         );
-        const gasUsed = result.effects?.gasUsed;
+        const gasUsed = result.Transaction.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
         return {
             message: "Payout initiated successfully",
             payload: {
                 status: "COMPLETED",
                 amount,
-                txDigest: result.digest,
-                executionTime: result.effects?.executedEpoch,
+                txDigest: result.Transaction.digest,
+                executionTime: result.Transaction.epoch,
                 gasFee: totalGas,
                 platformFee: amount * 0.01,
                 amountRecieved: amount * 0.99,
@@ -178,13 +184,14 @@ export class PayoutService {
         walletAddress: string,
         mode: Mode
     ) {
-        this.primaryCoin = await this.getPrimaryCoin(wallet, mode);
+        const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
 
         return await this.finalizeCryptoPayout(
             wallet,
             amount,
             walletAddress,
             transactionId,
+            primaryCoinObjectId,
             mode
         );
     }
@@ -218,7 +225,7 @@ export class PayoutService {
             } else {
                 throw new APIError("Provide a settlement account or a wallet address and network.", STATUS.bad);
             }
-        this.primaryCoin = await this.getPrimaryCoin(wallet, mode);
+        const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createPayout(
             network,
@@ -230,7 +237,15 @@ export class PayoutService {
             mode,
             cryptoAccountId
         );
-        return this.finalizeCryptoPayout(wallet, body.amount, to, payout.id, mode);
+
+        return this.finalizeCryptoPayout(
+            wallet,
+            body.amount,
+            to,
+            payout.id,
+            primaryCoinObjectId,
+            mode
+        );
     }
 
     private async finalizeFiatPayout(
@@ -244,27 +259,29 @@ export class PayoutService {
     ) {
         const walletBuffer = await deriveWallet(wallet.derivationIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(walletBuffer);
-        let tx: SuiTransactionBlockResponse;
+        let tx: SuiClientTypes.TransactionResult<{
+            effects: true;
+            objectTypes: true;
+        }>;
         try {
             const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
-            
             tx = await this.walletService.offrampSmartContractCall(
                 BigInt((amount.toFixed(6).replace(".", ""))),
                 primaryCoinObjectId,
                 secretKey,
                 mode
             );
-        
         } catch (err: any) {
             throw new APIError("Payout failed. Please try again.", STATUS.bad);
         }
 
-        if (!tx.effects || tx.effects.status.status !== "success") {
+
+        if (tx.$kind !== "Transaction") {
             await this.payoutRepository.failPayout(
                 payoutId,
-                tx.digest
+                tx.FailedTransaction.digest
             );
-            throw new APIError(`Payout failed. On-chain transaction failed${tx.digest ? ` (${tx.digest})` : ""}.`, STATUS.bad);
+            throw new APIError(`Payout failed. On-chain transaction failed${tx.FailedTransaction.digest ? ` (${tx.FailedTransaction.digest})` : ""}.`, STATUS.bad);
         }
 
         let result: {
@@ -273,13 +290,13 @@ export class PayoutService {
         };
         try {
             result = await this.fiatService.initiatePayout(
-                tx.digest,
+                tx.Transaction.digest,
                 bankCode,
                 accountIdentifier,
                 accountName,
             );
 
-            if(result.id !== "COMPLETED"){
+            if (result.id !== "COMPLETED") {
                 logger.info(`Payout initiation returned non-completed status: ${result.status} (Ramp order ID: ${result.id})`);
                 throw new APIError("Payout failed after on-chain success. Off-chain payout did not complete.", STATUS.bad);
             }
@@ -287,27 +304,27 @@ export class PayoutService {
         } catch (err: any) {
             await this.payoutRepository.failPayout(
                 payoutId,
-                tx.digest
+                tx.Transaction.digest
             );
             throw new APIError("Payout failed. Please try again.", STATUS.bad);
         }
 
         await this.payoutRepository.confirmPayout(
             payoutId,
-            tx.digest,
+            tx.Transaction.digest,
             result.id
         );
 
-        const gasUsed = tx.effects?.gasUsed;
+        const gasUsed = tx.Transaction.effects.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
-        
+
         return {
             message: "Payout initiated successfully",
             payload: {
                 status: "COMPLETED",
                 amount,
-                txDigest: tx.digest,
-                executionTime: tx.effects?.executedEpoch,
+                txDigest: tx.Transaction.digest,
+                executionTime: tx.Transaction?.epoch,
                 gasFee: totalGas,
                 platformFee: amount * 0.005,
                 amountRecieved: amount * 0.995,
@@ -393,14 +410,14 @@ export class PayoutService {
             }
             accountName = resolvedAccount.payload.accountName;
             if (save) {
-               fiatAccountId = (await this.fiatService.addBankAccount(accountIdentifier, bankCode, false, profileId)).id;
+                fiatAccountId = (await this.fiatService.addBankAccount(accountIdentifier, bankCode, false, profileId)).id;
             } else {
-               fiatAccountId = undefined;
-            }  
+                fiatAccountId = undefined;
+            }
         } else {
             const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(profileId);
             if (!primaryFiatAccount) throw new APIError("Provide accountId or accountIdentifier and bankCode.", STATUS.bad);
-        
+
             accountIdentifier = primaryFiatAccount.accountNumber;
             bankCode = primaryFiatAccount.bankCode;
             accountName = primaryFiatAccount.accountName;
@@ -416,7 +433,7 @@ export class PayoutService {
             profileId,
             mode,
             undefined,
-            fiatAccountId      
+            fiatAccountId
         );
 
         return this.finalizeFiatPayout(
@@ -435,7 +452,7 @@ export class PayoutService {
         profileId: string,
         wallet: Wallet,
         mode: Mode
-    ){
+    ) {
         await this.setActiveNetwork(mode);
         const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, profileId);
         if (
@@ -447,7 +464,7 @@ export class PayoutService {
             throw new APIError("Payout transaction is not eligible for retry.", STATUS.bad);
         }
 
-        if(payoutTransaction?.payout?.method === "CRYPTO" ){
+        if (payoutTransaction?.payout?.method === "CRYPTO") {
             return await this.retryCryptoPayout(
                 wallet,
                 transactionId,
@@ -455,7 +472,7 @@ export class PayoutService {
                 <string>payoutTransaction?.payout?.walletAddress,
                 mode
             );
-        }else {
+        } else {
             return await this.retryFiatPayout(
                 profileId,
                 wallet,

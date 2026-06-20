@@ -6,6 +6,7 @@ import { refundQuerySchemaValidation, retryRefundSchemaValidation } from "@/vali
 import { STATUS } from "@/constants/status.constant";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { RefundDto, RetryRefundDto } from "@/dto/refund.dto";
+import { Wallet } from "../../generated/prisma";
 
 @Service()
 export class RefundController {
@@ -14,7 +15,8 @@ export class RefundController {
     ) { }
 
     async initiateRefund(req: RequestAuth, res: Response) {
-        const userId = req.user?.id as string;
+        const profileId = req.user?.businessProfile.id;
+        const wallet = req.user?.businessProfile.wallet[0];
         const { error, value } = refundQuerySchemaValidation({
             ...req.body,
             ...req.params,
@@ -28,9 +30,10 @@ export class RefundController {
         const { originalTxId, reason, to }: RefundDto = value;
         const { message, payload } = await this.refundService.initiateRefund(
             to,
-            reason as string,
+            <string>reason,
             originalTxId,
-            userId,
+            <Wallet>wallet,
+            <string>profileId,
             req.mode
         );
         return res.status(STATUS.ok).json({
@@ -41,8 +44,8 @@ export class RefundController {
     }
 
     async retryRefund(req: RequestAuth, res: Response) {
-        const userId = req.user?.id as string;
-
+        const profileId = req.user?.businessProfile.id;
+        const wallet = req.user?.businessProfile.wallet[0];
         const { error, value } = retryRefundSchemaValidation(req.params as any);
         if (error) {
             return res.status(STATUS.bad).json({
@@ -51,7 +54,12 @@ export class RefundController {
             });
         }
         const { transactionId }: RetryRefundDto = value;
-        const { message, payload } = await this.refundService.retryRefund(transactionId, userId, req.mode);
+        const { message, payload } = await this.refundService.retryRefund(
+            transactionId, 
+            <Wallet>wallet,
+            <string>profileId, 
+            req.mode
+        );
 
         return res.status(STATUS.ok).json({
             success: true,

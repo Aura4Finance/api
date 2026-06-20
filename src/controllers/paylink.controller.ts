@@ -66,7 +66,7 @@ export class PaylinkController {
         );
         images.push({
           blobId,
-          blobObjectId: blobObject?.id?.id
+          blobObjectId: blobObject?.id
         });
       }
     } catch (error: any) {

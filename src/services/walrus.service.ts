@@ -2,17 +2,13 @@ import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { walrus, RetryableWalrusClientError } from "@mysten/walrus";
 import { Service } from "typedi";
 import { WalletService } from "./wallet.service";
+import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import logger from "@/utils/logger";
 import { Mode } from "../../generated/prisma";
 import sharp from "sharp";
-
-const GRPC_URLS = {
-    mainnet: "https://fullnode.mainnet.sui.io:443",
-    testnet: "https://fullnode.testnet.sui.io:443",
-};
 
 const UPLOAD_RELAY_URLS = {
     mainnet: "https://upload-relay.mainnet.walrus.space",
@@ -27,7 +23,7 @@ export class WalrusService {
 
     private getWalrusClient(network: 'mainnet' | 'testnet') {
         return new SuiGrpcClient({
-            baseUrl: GRPC_URLS[network],
+            baseUrl: getJsonRpcFullnodeUrl(network),
             network,
         }).$extend(
             walrus({
