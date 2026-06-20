@@ -10,7 +10,8 @@
       "./node_modules/@types",
       "./src/@types"
     ],
-    "module": "commonjs",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "ignoreDeprecations": "5.0",
     "baseUrl": "./src",
     "paths": {
