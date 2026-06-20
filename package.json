@@ -10,7 +10,7 @@
     "dev:node": "node --watch dist/index.js",
     "dev:esbuild": "pnpm run build --watch",
     "dev": "run-p dev:*",
-    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --format=esm --packages=external --external:../../generated/prisma --external:../../generated/prisma/* --external:@pythnetwork/pyth-sui-js",
+    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --format=esm --packages=external --external:@generated/* --external:@pythnetwork/pyth-sui-js",
     "start": "node dist/server.js"
   },
   "dependencies": {

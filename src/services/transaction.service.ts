@@ -4,7 +4,7 @@ import { SUPPORTED_NETWORKS } from "@/constants/networks.constant";
 import { APIError } from "@/utils/error-handler";
 import { TransactionRepository } from "@/repositories/transaction.repository";
 import { GetAllTransactionsDto } from "@/dto/transaction.dto";
-import { Mode, Token } from "@generated/prisma
+import { Mode, Token } from "@generated/prisma";
 
 @Service()
 export class TransactionService {

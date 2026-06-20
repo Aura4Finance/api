@@ -7,7 +7,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import logger from "@/utils/logger";
-import { Mode } from "@generated/prisma
+import { Mode } from "@generated/prisma";
 import sharp from "sharp";
 
 const UPLOAD_RELAY_URLS = {

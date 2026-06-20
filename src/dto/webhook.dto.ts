@@ -1,4 +1,4 @@
-import { TransactionStatus } from "@generated/prisma
+import { TransactionStatus } from "@generated/prisma";
 export interface RegisterWebhookDto {
   url: string;
 }
