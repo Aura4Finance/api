@@ -10,7 +10,7 @@
       "./node_modules/@types",
       "./src/@types"
     ],
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "bundler",
     "ignoreDeprecations": "5.0",
     "baseUrl": "./src",
