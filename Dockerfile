@@ -10,6 +10,8 @@ RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm instal
 COPY . .
 
 ARG CACHEBUST=1
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 RUN npx prisma generate && date > generated/.buildstamp
 
 RUN npm run build
