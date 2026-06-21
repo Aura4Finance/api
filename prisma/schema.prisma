@@ -9,7 +9,7 @@ datasource db {
 }
 
 model SystemConfig {
-  id        String   @id
+  id        String   @id @default(cuid())
   key       String   @unique
   encryptedSeedPhrase   String
   iv        String
