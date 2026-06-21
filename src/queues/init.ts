@@ -2,7 +2,7 @@ import logger from "@/utils/logger";
 import { initializeTransactionJobs } from "./transaction.queue";
 import { initializeWebhookDeadLetterJob } from "./webhook.queue";
 import { initializeSubscriptionJobs } from "./subscription.queue";
-import Container from "typedi";
+import { Container } from "typedi";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { initializeSeed } from "@/utils/wallet/seed";
 

@@ -3,7 +3,7 @@ import { SettlementController } from "@/controllers/user/settlement.controller";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 
 const router = express.Router();
 const settlementController = Container.get(SettlementController);

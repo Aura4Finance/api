@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import express, { Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 import { ApiKeyController } from "@/controllers/user/api-key.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import { RequestAuth } from "@/@types/request";

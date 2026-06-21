@@ -3,7 +3,7 @@ import { SecurityController } from "@/controllers/user/security.controller";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 
 const router = express.Router();
 const securityController = Container.get(SecurityController);

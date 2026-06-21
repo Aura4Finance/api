@@ -2,7 +2,7 @@ import { RequestAuth } from "@/@types/request";
 import { PaylinkController } from "@/controllers/paylink.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 import multer from "multer";
 import { checkIfUserIsDisabled } from "@/middlewares/user.milddleware";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";

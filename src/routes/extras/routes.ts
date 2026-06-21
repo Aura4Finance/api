@@ -5,7 +5,7 @@ import { FiatController } from "@/controllers/user/fiat.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Request, Response } from "express";
 import { QuoteController } from "@/controllers/quote.controller";
-import Container from "typedi";
+import { Container } from "typedi";
 
 const router = express.Router();
 const fiatController = Container.get(FiatController);

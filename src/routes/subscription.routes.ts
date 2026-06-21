@@ -2,7 +2,7 @@ import { RequestAuth } from "@/@types/request";
 import { SubscriptionController } from "@/controllers/subscription.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 import { checkIfUserIsDisabled } from "@/middlewares/user.milddleware";
 import { verifyRequestBody } from "@/middlewares/verify-request-body";
 

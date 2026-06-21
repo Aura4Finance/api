@@ -2,7 +2,7 @@ import { RequestAuth } from "@/@types/request";
 import { ModeController } from "@/controllers/user/mode.controller";
 import { asyncHandler } from "@/utils/error-handler";
 import express, { Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 
 const router = express.Router();
 const modeController = Container.get(ModeController);

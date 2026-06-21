@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import Container from "typedi";
+import { Container } from "typedi";
 import { AdminController } from "../controllers/admin.controller";
 import { asyncHandler } from "../utils/error-handler";
 import "reflect-metadata";
