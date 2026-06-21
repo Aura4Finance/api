@@ -10,8 +10,6 @@ RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm instal
 COPY . .
 
 ARG CACHEBUST=1
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
 RUN npx prisma generate && date > generated/.buildstamp
 
 RUN npm run build
@@ -35,7 +33,6 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev --legacy-peer-deps; else
 
 # Copy compilation results and generated prisma clients
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 

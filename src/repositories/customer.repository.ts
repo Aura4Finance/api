@@ -2,7 +2,7 @@ import db from "@/config/db-config";
 import { STATUS } from "@/constants/status.constant";
 import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
-import { Mode } from "@generated/prisma";
+import { Mode } from "@/generated/prisma/client";
 import { GetCustomersQueryDto } from "@/dto/customer.dto";
 import { resend, segments } from "@/config/resend-config";
 import logger from "@/utils/logger";

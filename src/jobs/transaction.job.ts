@@ -1,14 +1,14 @@
 import { Worker } from "bullmq";
 import pLimit from "p-limit";
 import db from "@/config/db-config";
-import { TransactionStatus } from "@generated/prisma";
+import { TransactionStatus } from "@/generated/prisma/client";
 import logger from "@/utils/logger";
 import { PaymentService } from "@/services/payment.service";
 import Container from "typedi";
 import { redisConnection } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
 import { EmailQueue } from "@/services/schedule.email.service";
-import { SubscriptionStatus, SubscriptionDuration } from "@generated/prisma";
+import { SubscriptionStatus, SubscriptionDuration } from "@/generated/prisma/client";
 import { jobs, TRANSACTION_WORKER } from "@/queues/transaction.queue";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { logTransactionError } from "@/utils/log-transaction-error";

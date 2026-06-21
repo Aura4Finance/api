@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc"
-import { Customer, Mode, PaymentMethod, Token } from "@generated/prisma";
+import { Customer, Mode, PaymentMethod, Token } from "@/generated/prisma/client";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "./schedule.email.service";

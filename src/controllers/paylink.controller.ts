@@ -14,7 +14,7 @@ import {
 } from "@/validation/paylink.validation";
 import { Response } from "express";
 import { Service } from "typedi";
-import { Mode } from "@generated/prisma";
+import { Mode } from "@/generated/prisma/client";
 
 @Service()
 export class PaylinkController {

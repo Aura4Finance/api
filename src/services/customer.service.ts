@@ -3,7 +3,7 @@ import { CreateCustomerDto, GetCustomersQueryDto } from "@/dto/customer.dto";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
-import { Mode } from "@generated/prisma";
+import { Mode } from "@/generated/prisma/client";
 
 @Service()
 export class CustomerService {

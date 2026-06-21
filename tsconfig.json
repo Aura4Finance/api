@@ -1,19 +1,27 @@
 {
   "compilerOptions": {
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "rootDir": "./src",
     "outDir": "./dist",
-    "typeRoots": ["./node_modules/@types", "./src/@types"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/@types"
+    ],
     "target": "es2024",
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleResolution": "Bundler",
     "module": "ESNext",
     "noEmit": true,
-    "lib": ["es2024"],
+    "lib": [
+      "es2024"
+    ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@generated/*": ["./generated/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
     "sourceMap": true,
     "declaration": true,
@@ -33,5 +41,8 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true
   },
-  "include": ["src/**/*", "src/@types/**/*"]
+  "include": [
+    "src/**/*",
+    "src/@types/**/*"
+  ]
 }

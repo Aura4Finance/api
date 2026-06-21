@@ -3,7 +3,7 @@ import { SevenKAggService } from "./7k-agg.service";
 import { CetusService } from "./cetus.service";
 import { STATUS } from "@/constants/status.constant";
 import { APIError } from "@/utils/error-handler";
-import { Token, Mode } from "@generated/prisma";
+import { Token, Mode } from "@/generated/prisma/client";
 import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import logger from "@/utils/logger";
 import { HopService } from "./hop.service";

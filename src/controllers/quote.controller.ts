@@ -1,5 +1,5 @@
 import { QuoteService } from "@/services/quote.service";
-import { Mode, Token } from "@generated/prisma";
+import { Mode, Token } from "@/generated/prisma/client";
 import { Service } from "typedi";
 import { getTokenPriceValidation } from "@/validation/quote.validation";
 import { formatErrorValidation } from "@/utils/format-validation-error";

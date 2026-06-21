@@ -7,7 +7,7 @@ import { PayoutService } from "@/services/payout.service";
 import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
-import { Mode, TransactionStatus, TransactionType, Wallet } from "@generated/prisma";
+import { Mode, TransactionStatus, TransactionType, Wallet } from "@/generated/prisma/client";
 import { logTransactionError } from "@/utils/log-transaction-error";
 
 

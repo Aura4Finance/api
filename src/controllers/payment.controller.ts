@@ -15,7 +15,7 @@ import {
 } from "@/validation/payment.validation";
 import { Response } from "express";
 import { Service } from "typedi";
-import { Paylink, PaymentMethod } from "@generated/prisma";
+import { Paylink, PaymentMethod } from "@/generated/prisma/client";
 import { redisClient } from "@/config/redis-config";
 
 @Service()

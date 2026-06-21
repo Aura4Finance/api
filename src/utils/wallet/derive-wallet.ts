@@ -3,7 +3,7 @@ import { derivePath } from "ed25519-hd-key";
 import { systemRepository } from "@/repositories/system.repository";
 import { decryptSeed } from "./crypto";
 import { wipeSensitive } from "./wipe";
-import { SystemConfig } from "@generated/prisma";
+import { SystemConfig } from "@/generated/prisma/client";
 
 export const deriveWallet = async (index: number) => {
     const seedData = await systemRepository.findConfig("master_seed");

@@ -6,7 +6,7 @@ import { refundQuerySchemaValidation, retryRefundSchemaValidation } from "@/vali
 import { STATUS } from "@/constants/status.constant";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { RefundDto, RetryRefundDto } from "@/dto/refund.dto";
-import { Wallet } from "@generated/prisma";
+import { Wallet } from "@/generated/prisma/client";
 
 @Service()
 export class RefundController {

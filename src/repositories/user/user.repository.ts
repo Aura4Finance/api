@@ -2,7 +2,7 @@ import { Service } from "typedi";
 import db from "../../config/db-config";
 import { OnboardUserDto } from "@/dto/user.dto";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";
-import { Provider } from "@generated/prisma";
+import { Provider } from "@generated/prisma/enums";
 
 @Service()
 export class UserRepository {

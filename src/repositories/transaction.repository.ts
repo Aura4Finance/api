@@ -1,7 +1,7 @@
 import { GetAllTransactionsDto } from "@/dto/transaction.dto";
 import { Service } from "typedi";
 import db from "@/config/db-config";
-import { Mode, TransactionStatus } from "@generated/prisma";
+import { Mode, TransactionStatus } from "@/generated/prisma/client";
 
 @Service()
 export class TransactionRepository {

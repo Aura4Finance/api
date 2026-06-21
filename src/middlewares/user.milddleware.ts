@@ -8,7 +8,7 @@ import { RequestAuth } from "@/@types/request";
 import { ApiKeyService } from "@/services/user/api-key.service";
 import speakeasy from "speakeasy";
 import logger from "@/utils/logger";
-import { PaymentMethod, Role } from "@generated/prisma";
+import { PaymentMethod, Role } from "@/generated/prisma/client";
 import { PaylinkRepository } from "@/repositories/paylink.repository";
 import { redisClient } from "@/config/redis-config";
 

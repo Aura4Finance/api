@@ -5,7 +5,7 @@ import {
     UpdateSubscriptionPlanDto,
     GetSubscriptionsDto
  } from "@/dto/subscription.dto";
-import { Network, SubscriptionDuration } from "@generated/prisma";
+import { Network, SubscriptionDuration } from "@/generated/prisma/client";
 
 export const createSubscriptionPlanValidation = (data: CreateSubscriptionPlanDto) => {
   const schema = Joi.object({

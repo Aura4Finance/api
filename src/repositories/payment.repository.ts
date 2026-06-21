@@ -8,7 +8,7 @@ import {
   TransactionStatus,
   TransactionType,
   Token
-} from "@generated/prisma";
+} from "@/generated/prisma/client";
 
 type PaymentOptions =
   {

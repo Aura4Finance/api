@@ -10,7 +10,7 @@ import {
   CreateSubscriptionPlanDto,
   UpdateSubscriptionPlanDto,
 } from "@/dto/subscription.dto";
-import { Mode, PaymentMethod } from "@generated/prisma";
+import { Mode, PaymentMethod } from "@/generated/prisma/client";
 import { WebhookQueue } from "./schedule.webhook.service";
 import { CreatePaymentDto } from "@/dto/payment.dto";
 import crypto from "crypto";

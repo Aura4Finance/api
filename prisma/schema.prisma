@@ -1,13 +1,11 @@
 generator client {
-  provider       = "prisma-client-js"
-  output         = "../generated/prisma"
-  binaryTargets  = ["native", "linux-musl-openssl-3.0.x"]
-  previewFeature = ["mongoDbTransactionless"]
+  provider       = "prisma-client"
+  output         = "../src/generated/prisma"
+  moduleFormat   = "esm"
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 model SystemConfig {

@@ -8,7 +8,7 @@ import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc"
 import coinMarketClient from "@/config/coinMarketClient-config";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
-import { Mode, Token } from "@generated/prisma";
+import { Mode, Token } from "@/generated/prisma/client";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";

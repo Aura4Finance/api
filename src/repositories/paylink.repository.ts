@@ -1,7 +1,7 @@
 import db from "@/config/db-config";
 import { CreatePaylinkDto } from "@/dto/paylink.dto";
 import { Service } from "typedi";
-import { Mode } from "@generated/prisma";
+import { Mode } from "@/generated/prisma/client";
 
 @Service()
 export class PaylinkRepository {

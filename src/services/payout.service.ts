@@ -7,7 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PayoutRepository } from "@/repositories/payout.repository";
-import { TransactionStatus, TransactionType, Network, Mode, Wallet } from "@generated/prisma";
+import { TransactionStatus, TransactionType, Network, Mode, Wallet } from "@/generated/prisma/client";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "./user/fiat.service";
