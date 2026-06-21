@@ -1,6 +1,6 @@
 import db from "@/config/db-config";
 import { Service } from "typedi";
-import { Mode, Network, PayOutMethod, TransactionStatus } from "@/generated/prisma/client"/client";
+import { Mode, Network, PayOutMethod, TransactionStatus } from "@/generated/prisma/client";
 import { PayoutQueryDto } from "@/dto/payout.dto";
 
 @Service()
