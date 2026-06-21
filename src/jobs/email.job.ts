@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
 import pLimit from "p-limit";
-import Container from "typedi";
+import { Container } from "typedi";
 import { EmailService } from "@/services/email.service";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
@@ -9,6 +9,7 @@ import db from "@/config/db-config";
 import { redisConnection, redisClient } from "@/config/redis-config";
 import { resend } from "@/config/resend-config";
 import { EMAIL_WORKER, jobs } from "@/queues/email.queue";
+import { RedisKey } from "ioredis";
 
 const emailService = Container.get(EmailService);
 
@@ -66,7 +67,7 @@ async function processOnboardedEmails(): Promise<JobStats> {
   const limit = pLimit(EMAIL_CONFIG.concurrencyLimit);
 
   await Promise.all(
-    users.map((user) =>
+    users.map((user: { userId: RedisKey; user: { email: string | string[]; firstname: string; }; }) =>
       limit(async () => {
         stats.attempted++;
 

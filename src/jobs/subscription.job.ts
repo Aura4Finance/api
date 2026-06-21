@@ -21,7 +21,7 @@
 
 import crypto from "crypto";
 import { Worker } from "bullmq";
-import Container from "typedi";
+import { Container } from "typedi";
 import pLimit from "p-limit";
 import logger from "@/utils/logger";
 import db from "@/config/db-config";
@@ -35,6 +35,7 @@ import { redisConnection, redisClient } from "@/config/redis-config";
 import { jobs, SUBSCRIPTION_WORKER } from "@/queues/subscription.queue";
 import { jobs as transactionJobs, transactionQueue } from "@/queues/transaction.queue";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
+import  { Subscription } from "@/generated/prisma/client";
 
 // ---------------------------------------------------------------------------
 // Configuration – move these to environment variables / feature flags as needed
@@ -297,7 +298,7 @@ async function processReminders(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub) =>
+        subscriptions.map((sub: Subscription) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:reminder:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
@@ -349,7 +350,7 @@ async function processTrialExpirations(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub) =>
+        subscriptions.map((sub: Subscription) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:trial:${sub.id}:${dayKey(sub.trialEndsAt ?? now)}`;
@@ -423,7 +424,7 @@ async function processExpiries(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub) =>
+        subscriptions.map((sub: Subscription) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:expiry:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
@@ -482,7 +483,7 @@ async function processCancellations(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub) =>
+        subscriptions.map((sub: Subscription) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:cancel:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
@@ -495,7 +496,7 @@ async function processCancellations(
 
                     await db.subscription.update({
                         where: { id: sub.id },
-                        data: { status: "CANCELLED" as any, canceledAt: cancelledAt },
+                        data: { status: "CANCELLED", canceledAt: cancelledAt },
                     });
 
                     try {
@@ -569,7 +570,7 @@ async function reconcileStuckSubscriptions(now: Date): Promise<ReconciliationSta
     };
 
     await Promise.all([
-        ...stuckActive.map((subscription) =>
+        ...stuckActive.map((subscription: Subscription) =>
             limit(async () => {
                 try {
                     const result = await db.subscription.updateMany({
@@ -593,7 +594,7 @@ async function reconcileStuckSubscriptions(now: Date): Promise<ReconciliationSta
                 }
             })
         ),
-        ...stuckPastDue.map((subscription) =>
+        ...stuckPastDue.map((subscription: Subscription) =>
             limit(async () => {
                 try {
                     const result = await db.subscription.updateMany({

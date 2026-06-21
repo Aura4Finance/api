@@ -5,7 +5,7 @@ import { Service } from "typedi";
 import crypto from "crypto";
 import { RetrieveWebhookDeliveries, WebhookPayload } from "@/dto/webhook.dto";
 import axios from "axios";
-import Container from "typedi";
+import { Container } from "typedi";
 import { WebhookDeliveryRepository } from "@/repositories/webhookDelivery.repository";
 import {
   HttpRequestError,

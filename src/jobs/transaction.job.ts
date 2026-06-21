@@ -4,7 +4,7 @@ import db from "@/config/db-config";
 import { TransactionStatus } from "@/generated/prisma/client";
 import logger from "@/utils/logger";
 import { PaymentService } from "@/services/payment.service";
-import Container from "typedi";
+import { Container } from "typedi";
 import { redisConnection } from "@/config/redis-config";
 import { WalletService } from "@/services/wallet.service";
 import { EmailQueue } from "@/services/schedule.email.service";
@@ -48,7 +48,7 @@ async function processExpiredPendingTransactions(paymentService: PaymentService)
   const limit = pLimit(EXPIRY_CONFIG.concurrencyLimit);
 
   await Promise.all(
-    pending.map((tx) =>
+    pending.map((tx: { id: string; }) =>
       limit(async () => {
         stats.attempted++;
 
