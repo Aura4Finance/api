@@ -9,16 +9,17 @@ datasource db {
 }
 
 model SystemConfig {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  key       String @unique
+  id        String   @id
+  key       String   @unique
   encryptedSeedPhrase   String
   iv        String
   authTag   String
   createdAt DateTime @default(now())
+  singleton Boolean  @unique @default(true)
 }
 
 model User {
-  id              String           @id @default(uuid()) @map("_id")
+  id              String           @id @default(uuid())
   firstname       String
   lastname        String
   email           String           @unique
@@ -46,7 +47,7 @@ enum Role {
 }
 
 model BusinessProfile {
-  id             String          @id @default(uuid()) @map("_id")
+  id             String          @id @default(uuid())
   userId         String          @unique
   user           User            @relation(fields: [userId], references: [id])
   apiKey         ApiKey[]        @relation("ProfileApiKeys")
@@ -67,7 +68,7 @@ model BusinessProfile {
 }
 
 model Webhook {
-  id              String            @id @default(cuid()) @map("_id")
+  id              String            @id @default(cuid())
   url             String
   secret          String
   events          String[]
@@ -79,7 +80,7 @@ model Webhook {
 }
 
 model OTP {
-  id        String   @id @default(nanoid()) @map("_id")
+  id        String   @id @default(nanoid())
   secret    String
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -87,7 +88,7 @@ model OTP {
 }
 
 model Wallet {
-  id                String  @id @default(cuid()) @map("_id")
+  id                String  @id @default(cuid())
   address           String
   derivationIndex   Int
   profile           BusinessProfile? @relation("ProfileWallets", fields: [profileId], references: [id])
@@ -98,13 +99,13 @@ model Wallet {
 }
 
 model WalletCounter {
-  id              Int @id @default(1) @map("_id")
+  id              Int @id @default(1)
   currentIndex    Int
 }
 
 
 model ApiKey {
-  id         String          @id @default(cuid()) @map("_id")
+  id         String          @id @default(cuid())
   liveKey    String
   testKey    String
   createdAt  DateTime        @default(now())
@@ -114,7 +115,7 @@ model ApiKey {
 }
 
 model Customer {
-  id            String         @id @default(cuid()) @map("_id")
+  id            String         @id @default(cuid())
   firstname     String
   lastname      String
   email         String
@@ -128,7 +129,7 @@ model Customer {
 }
 
 model SubscriptionPlan {
-  id          String               @id @default(cuid()) @map("_id")
+  id          String               @id @default(cuid())
   profileId   String
   profile     BusinessProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   name        String
@@ -142,7 +143,7 @@ model SubscriptionPlan {
 }
 
 model Subscription {
-  id         String           @id @default(cuid()) @map("_id")
+  id         String           @id @default(cuid())
   mode       Mode
   network    Network
   customerId String
@@ -176,7 +177,7 @@ enum SubscriptionStatus {
 }
 
 model UserCustomer {
-  id         String          @id @default(cuid()) @map("_id")
+  id         String          @id @default(cuid())
   profile    BusinessProfile @relation("ProfileUserCustomers", fields: [profileId], references: [id], onDelete: Cascade)
   profileId  String
   customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -229,7 +230,7 @@ enum TransactionType {
 }
 
 model Transaction {
-  id                String            @id @default(cuid()) @map("_id")
+  id                String            @id @default(cuid())
   type              TransactionType
   status            TransactionStatus @default(PENDING)
   currency          String
@@ -252,7 +253,7 @@ model Transaction {
 }
 
 model Paylink {
-  id           String          @id @default(cuid()) @map("_id")
+  id           String          @id @default(cuid())
   title        String
   description  String
   mode         Mode
@@ -265,7 +266,7 @@ model Paylink {
 }
 
 model Images {
-  id            String   @id @default(cuid()) @map("_id")
+  id            String   @id @default(cuid())
   blobId        String
   blobObjectId  String
   paylink       Paylink  @relation("PaylinkImages", fields: [paylinkId], references: [id], onDelete: Cascade)
@@ -273,7 +274,7 @@ model Images {
 }
 
 model Payout {
-  id              String         @id @default(cuid()) @map("_id")
+  id              String         @id @default(cuid())
   method          PayOutMethod
   walletAddress   String?
   txDigest        String?
@@ -287,7 +288,7 @@ model Payout {
 }
 
 model Refund {
-  id            String      @id @default(cuid()) @map("_id")
+  id            String      @id @default(cuid())
   reason        String?
   walletAddress String
   originalTxId  String
@@ -302,7 +303,7 @@ enum Mode {
 }
 
 model Payment {
-  id              String        @id @default(cuid()) @map("_id")
+  id              String        @id @default(cuid())
   refunded        Boolean       @default(false)
   depositAddress  String?       
   wallet          Wallet?      @relation("PaymentWallet")
@@ -319,7 +320,7 @@ model Payment {
 }
 
 model FiatAccount {
-  id            String          @id @default(uuid()) @map("_id")
+  id            String          @id @default(uuid())
   bankName      String
   bankCode      String
   accountName   String
@@ -333,7 +334,7 @@ model FiatAccount {
 }
 
 model CryptoAccount {
-  id            String           @id @default(uuid()) @map("_id")
+  id            String           @id @default(uuid())
   walletAddress String
   network       Network
   alias         String           @unique()
@@ -343,7 +344,7 @@ model CryptoAccount {
 }
 
 model WebhookDelivery {
-  id             String            @id @default(uuid()) @map("_id")
+  id             String            @id @default(uuid())
   webhookId      String
   webhook        Webhook           @relation("WebhookDeliveryRegister", fields: [webhookId], references: [id])
   event          String
