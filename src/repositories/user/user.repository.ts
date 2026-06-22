@@ -3,7 +3,6 @@ import db from "@/config/db-config";
 import { OnboardUserDto } from "@/dto/user.dto";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";
 import { Provider } from "@/generated/prisma/enums";
-import { Transaction } from "@/generated/prisma/client";
 
 @Service()
 export class UserRepository {
@@ -438,7 +437,7 @@ export class UserRepository {
     );
 
     // 4. Combine metrics
-    const merchantMetrics = transactionAgg.map((t: Transaction) => {
+    const merchantMetrics = transactionAgg.map((t: any) => {
       const activeCustomers = customerMap.get(t.profileId) || 0;
 
       return {

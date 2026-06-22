@@ -11,10 +11,10 @@ import {
   UpdateSubscriptionPlanDto,
 } from "@/dto/subscription.dto";
 import { Mode, PaymentMethod } from "@/generated/prisma/client";
-import { WebhookQueue } from "@/schedule.webhook.service";
+import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { CreatePaymentDto } from "@/dto/payment.dto";
 import crypto from "crypto";
-import { EmailQueue } from "@/schedule.email.service";
+import { EmailQueue } from "@/services/schedule.email.service";
 import logger from "@/utils/logger";
 
 const CHECKOUT_BASE_URL = "https://checkout.orafi.app";

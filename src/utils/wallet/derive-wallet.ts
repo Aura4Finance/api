@@ -1,8 +1,8 @@
 import { mnemonicToSeedSync } from "bip39";
 import { derivePath } from "ed25519-hd-key";
 import { systemRepository } from "@/repositories/system.repository";
-import { decryptSeed } from "@/crypto";
-import { wipeSensitive } from "@/wipe";
+import { decryptSeed } from "@/utils/wallet/crypto";
+import { wipeSensitive } from "@/utils/wallet/wipe";
 import { SystemConfig } from "@/generated/prisma/client";
 
 export const deriveWallet = async (index: number) => {
