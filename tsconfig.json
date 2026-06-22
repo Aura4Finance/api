@@ -41,6 +41,10 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true
   },
+    "tsc-alias": {
+    "resolveFullPaths": true,
+    "verbose": false
+    },
   "include": [
     "src/**/*",
     "src/@types/**/*"
