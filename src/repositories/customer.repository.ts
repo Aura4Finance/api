@@ -2,7 +2,7 @@ import db from "@/config/db-config";
 import { STATUS } from "@/constants/status.constant";
 import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
-import { Customer, Mode, UserCustomer } from "@/generated/prisma/client";
+import { Mode } from "@/generated/prisma/client";
 import { GetCustomersQueryDto } from "@/dto/customer.dto";
 import { resend, segments } from "@/config/resend-config";
 import logger from "@/utils/logger";
@@ -275,7 +275,7 @@ export class CustomerRepository {
     customerId: string,
     modeToAdd: Mode
   ) {
-    return db.$transaction(async (tx: Customer) => {
+    return db.$transaction(async (tx) => {
       // 1. Get current modes
       const customer = await tx.customer.findUnique({
         where: { id: customerId },
@@ -316,7 +316,7 @@ export class CustomerRepository {
   }
 
   async deleteCustomer(customerId: string, profileId: string) {
-    await db.$transaction(async (tx: UserCustomer) => {
+    await db.$transaction(async (tx) => {
       const currentCount = await tx.userCustomer.count({
         where: { customerId },
       });

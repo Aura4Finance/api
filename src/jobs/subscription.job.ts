@@ -35,7 +35,7 @@ import { redisConnection, redisClient } from "@/config/redis-config";
 import { jobs, SUBSCRIPTION_WORKER } from "@/queues/subscription.queue";
 import { jobs as transactionJobs, transactionQueue } from "@/queues/transaction.queue";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
-import  { Subscription } from "@/generated/prisma/client";
+
 
 // ---------------------------------------------------------------------------
 // Configuration – move these to environment variables / feature flags as needed
@@ -298,7 +298,7 @@ async function processReminders(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub: Subscription) =>
+        subscriptions.map((sub: SubscriptionWithRelations) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:reminder:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
@@ -350,7 +350,7 @@ async function processTrialExpirations(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub: Subscription) =>
+        subscriptions.map((sub: SubscriptionWithRelations) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:trial:${sub.id}:${dayKey(sub.trialEndsAt ?? now)}`;
@@ -424,7 +424,7 @@ async function processExpiries(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub: Subscription) =>
+        subscriptions.map((sub: SubscriptionWithRelations) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:expiry:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
@@ -483,7 +483,7 @@ async function processCancellations(
     const limit = pLimit(RENEWAL_CONFIG.concurrencyLimit);
 
     await Promise.all(
-        subscriptions.map((sub: Subscription) =>
+        subscriptions.map((sub: SubscriptionWithRelations) =>
             limit(async () => {
                 stats.attempted++;
                 const dedupeKey = `subscription:cancel:${sub.id}:${dayKey(sub.endsAt ?? now)}`;
@@ -570,7 +570,7 @@ async function reconcileStuckSubscriptions(now: Date): Promise<ReconciliationSta
     };
 
     await Promise.all([
-        ...stuckActive.map((subscription: Subscription) =>
+        ...stuckActive.map((subscription) =>
             limit(async () => {
                 try {
                     const result = await db.subscription.updateMany({
@@ -594,7 +594,7 @@ async function reconcileStuckSubscriptions(now: Date): Promise<ReconciliationSta
                 }
             })
         ),
-        ...stuckPastDue.map((subscription: Subscription) =>
+        ...stuckPastDue.map((subscription) =>
             limit(async () => {
                 try {
                     const result = await db.subscription.updateMany({
