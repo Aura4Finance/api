@@ -25,7 +25,7 @@ export class QuoteController {
                     success: true,
                     message: "Token price retrieved successfully!",
                     data: {
-                        price: (quotePrice * BigInt(getCoinDecimal(body.token))).toString(),
+                        price: (quotePrice / BigInt(getCoinDecimal(body.token))).toString(),
                         timeStamp: new Date().toISOString(),
                     },
                 });
