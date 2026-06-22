@@ -9,15 +9,12 @@ type TemplateVars = Record<string, string | number | undefined>;
 
 @Service()
 export class EmailService {
-  private templatePath: string;
   private batch: any[] = [];
   private flushTimer: NodeJS.Timeout | null = null; 
   private readonly BATCH_SIZE = 10;
   private readonly BATCH_FLUSH_MS = 1000;
 
-  constructor() {
-    this.templatePath = path.join(__dirname, "@", "html");
-  }
+  constructor() { }
 
   private readonly RATE_LIMIT = 2; // max calls per second
 
