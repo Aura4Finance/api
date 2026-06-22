@@ -44,5 +44,9 @@
   "include": [
     "src/**/*",
     "src/@types/**/*"
-  ]
+  ],
+  "ts-allias": {
+    "resolveFullPaths": true,
+    "verbose": false
+  }
 }
