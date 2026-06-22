@@ -5,9 +5,9 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "dev": "tsx --watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js"
+  "build": "rm -rf dist && tsc && npx tsc-alias && npx tsc-esm-fix --src=src --ext=.js",
+  "start": "node dist/server.js",
+  "dev": "concurrently -k -n TSC,ALIAS,APP -c blue,yellow,green \"tsc --watch --preserveWatchOutput\" \"tsc-alias --watch\" \"nodemon --watch dist --delay 300ms dist/server.js\""
   },
   "dependencies": {
     "@7kprotocol/sdk-ts": "^5.0.0-beta.2",

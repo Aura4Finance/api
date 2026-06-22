@@ -4,14 +4,14 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import morgan from "morgan";
-import logger from "./utils/logger";
-import { globalErrorHandler } from "./utils/error-handler";
-import CORS_OPTIONS from "./config/cors-config";
-import authRoutes from "./routes/auth.routes";
+import logger from "@/utils/logger";
+import { globalErrorHandler } from "@/utils/error-handler";
+import CORS_OPTIONS from "@/config/cors-config";
+import authRoutes from "@/routes/auth.routes";
 import adminRoutes from "@/routes/admin.routes";
-import routes  from "./routes";
+import routes  from "@/routes";
 import waitlistRoutes from "@/routes/waitlist.routes";
-import { limiter } from "./middlewares/rate-limit.middleware";
+import { limiter } from "@/middlewares/rate-limit.middleware";
 
 dotenv.config();
 const app = express();
@@ -48,9 +48,6 @@ app.get("/", (_: Request, res: Response) => {
   });
 });
 
-app.use(globalErrorHandler);
-
-// Fallback 404 handler for undefined endpoints
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     status: "error",
@@ -62,6 +59,7 @@ app.use((req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+app.use(globalErrorHandler);
 
 process.on("unhandledRejection", (reason, promise) => {
   logger.error("Unhandled Rejection at", promise, "reason:", reason);

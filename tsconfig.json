@@ -12,9 +12,9 @@
     "target": "es2024",
     "allowJs": true,
     "resolveJsonModule": true,
-    "moduleResolution": "Bundler",
-    "module": "ESNext",
-    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": false,
     "lib": [
       "es2024"
     ],
