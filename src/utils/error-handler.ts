@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import logger from "./logger";
+import logger from "@/utils/logger";
 import "reflect-metadata"
 import { AxiosError } from "axios";
-import { HttpRequestError } from "./http-client";
+import { HttpRequestError } from "@/utils/http-client";
 
 export class APIError extends Error {
   public statusCode: number;

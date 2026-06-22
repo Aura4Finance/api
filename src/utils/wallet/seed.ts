@@ -1,7 +1,7 @@
 import * as bip39 from "bip39";
 import { systemRepository } from "@/repositories/system.repository";
 import { encryptSeed } from "@/utils/wallet/crypto";
-import logger from "../logger";
+import logger from "@/logger";
 
 export const initializeSeed = async () => {
   const existing = await systemRepository.findConfig("master_seed");

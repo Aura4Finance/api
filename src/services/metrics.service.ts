@@ -68,7 +68,7 @@ export class Metrics {
     // 1. Database check
     try {
       const dbStart = Date.now();
-      await db.$runCommandRaw({ ping: 1 });
+      await db.$queryRaw`SELECT 1`; // simple query to check connectivity
       const dbLatency = Date.now() - dbStart;
 
       let status: ServiceStatus =

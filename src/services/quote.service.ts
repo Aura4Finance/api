@@ -1,12 +1,12 @@
 import { Service } from "typedi";
-import { SevenKAggService } from "./7k-agg.service";
-import { CetusService } from "./cetus.service";
+import { SevenKAggService } from "@/services/7k-agg.service";
+import { CetusService } from "@/services/cetus.service";
 import { STATUS } from "@/constants/status.constant";
 import { APIError } from "@/utils/error-handler";
 import { Token, Mode } from "@/generated/prisma/client";
 import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import logger from "@/utils/logger";
-import { HopService } from "./hop.service";
+import { HopService } from "@/services/hop.service";
 
 @Service()
 export class QuoteService {

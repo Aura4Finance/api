@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { APIError } from "../utils/error-handler";
-import { STATUS } from "../constants/status.constant";
+import { APIError } from "@/utils/error-handler";
+import { STATUS } from "@/constants/status.constant";
 
 export const verifyRequestBody = (
   req: Request,

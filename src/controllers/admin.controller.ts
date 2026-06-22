@@ -1,15 +1,15 @@
 import { Service } from "typedi";
-import { AuthService } from "../services/auth.service";
+import { AuthService } from "@/services/auth.service";
 import { AuthController } from "@/controllers/auth.controller";
 import { Request, Response } from "express";
-import { LoginDto, AdminAuthDto, ResetAdminPasswordDto } from "../dto/auth.dto";
-import { STATUS } from "../constants/status.constant";
+import { LoginDto, AdminAuthDto, ResetAdminPasswordDto } from "@/dto/auth.dto";
+import { STATUS } from "@/constants/status.constant";
 import {
   adminAuthSchemaValidation,
   loginSchemaValidation,
   resetAdminPasswordValidation,
-} from "../validation/auth.validation";
-import { formatErrorValidation } from "../utils/format-validation-error";
+} from "@/validation/auth.validation";
+import { formatErrorValidation } from "@/utils/format-validation-error";
 import { RequestAuth } from "@/@types/request";
 import { getAllMerchantSchemaValidation } from "@/validation/merchant.validation";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";

@@ -1,9 +1,9 @@
 import express, { Request, Response } from "express";
 import { Container } from "typedi";
-import { AdminController } from "../controllers/admin.controller";
-import { asyncHandler } from "../utils/error-handler";
+import { AdminController } from "@/controllers/admin.controller";
+import { asyncHandler } from "@/utils/error-handler";
 import "reflect-metadata";
-import { verifyRequestBody } from "../middlewares/verify-request-body";
+import { verifyRequestBody } from "@/middlewares/verify-request-body";
 import { checkUserRole, verifyAccessToken } from "@/middlewares/user.milddleware";
 import { RequestAuth } from "@/@types/request";
 

@@ -19,7 +19,7 @@ export class EmailService {
   private readonly BATCH_FLUSH_MS = 1000;
 
   constructor() {
-    this.templatePath = path.join(__dirname, "..", "html");
+    this.templatePath = path.join(__dirname, "@", "html");
     this.logoBase64 = fs
       .readFileSync(path.join(this.templatePath, "attachments", "logo.png"))
       .toString("base64");

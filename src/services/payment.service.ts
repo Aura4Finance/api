@@ -1,23 +1,23 @@
 import { CreatePaymentDto, VerifyPaymentDto } from "@/dto/payment.dto";
 import { PaymentRepository } from "@/repositories/payment.repository";
 import { Service } from "typedi";
-import { WalletService } from "./wallet.service";
+import { WalletService } from "@/services/wallet.service";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc"
 import { Customer, Mode, PaymentMethod, Token } from "@/generated/prisma/client";
-import { WebhookQueue } from "./schedule.webhook.service";
+import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
-import { EmailQueue } from "./schedule.email.service";
+import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
-import { QuoteService } from "./quote.service";
+import { QuoteService } from "@/services/quote.service";
 
 @Service()
 export class PaymentService {

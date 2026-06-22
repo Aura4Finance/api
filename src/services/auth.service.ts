@@ -1,5 +1,5 @@
 import { Service } from "typedi";
-import { UserRepository } from "../repositories/user/user.repository";
+import { UserRepository } from "@/repositories/user/user.repository";
 import {
   CreateAccountDto,
   LoginDto,
@@ -9,20 +9,20 @@ import {
   AdminAuthDto,
   AuthCodeDto,
   ResetAdminPasswordDto,
-} from "../dto/auth.dto";
-import { APIError } from "../utils/error-handler";
+} from "@/dto/auth.dto";
+import { APIError } from "@/utils/error-handler";
 import argon from "argon2";
-import { STATUS } from "../constants/status.constant";
-import { WalletService } from "./wallet.service";
+import { STATUS } from "@/constants/status.constant";
+import { WalletService } from "@/services/wallet.service";
 import crypto from "crypto";
-import { AuthRepository } from "../repositories/auth.repository";
-import { EmailService } from "./email.service";
+import { AuthRepository } from "@/repositories/auth.repository";
+import { EmailService } from "@/services/email.service";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
-import { EmailQueue } from "./schedule.email.service";
+import { EmailQueue } from "@/services/schedule.email.service";
 import { v4 as uuid } from "uuid";
 import speakeasy from "speakeasy";
-import { UserService } from "./user/user.service";
+import { UserService } from "@/services/user/user.service";
 
 @Service()
 export class AuthService {

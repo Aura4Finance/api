@@ -1,4 +1,4 @@
-import { TOKENS } from "./tokens.constants";
+import { TOKENS } from "@/constants/tokens.constants";
 
 export const SUPPORTED_NETWORKS = [
   {

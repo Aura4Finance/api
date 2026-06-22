@@ -1,7 +1,7 @@
 import { Service } from "typedi";
 import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { SuiGrpcClient } from "@mysten/sui/grpc";
-import { WalletService } from "./wallet.service";
+import { WalletService } from "@/services/wallet.service";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
@@ -10,7 +10,7 @@ import { PayoutRepository } from "@/repositories/payout.repository";
 import { TransactionStatus, TransactionType, Network, Mode, Wallet } from "@/generated/prisma/client";
 import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
-import { FiatService } from "./user/fiat.service";
+import { FiatService } from "@/services/user/fiat.service";
 import { FiatRepository } from "@/repositories/user/fiat.repository";
 import { getCoinType } from "@/constants/tokens.constants";
 import logger from "@/utils/logger";
@@ -266,7 +266,7 @@ export class PayoutService {
         try {
             const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
             tx = await this.walletService.offrampSmartContractCall(
-                BigInt((amount.toFixed(6).replace(".", ""))),
+                BigInt((amount.toFixed(6).replace("@", ""))),
                 primaryCoinObjectId,
                 secretKey,
                 mode
@@ -439,8 +439,8 @@ export class PayoutService {
         return this.finalizeFiatPayout(
             wallet,
             amount,
-            accountIdentifier,
-            bankCode,
+            <string>accountIdentifier,
+            <string>bankCode,
             accountName,
             payout.id,
             mode

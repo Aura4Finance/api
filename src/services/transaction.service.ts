@@ -4,7 +4,7 @@ import { SUPPORTED_NETWORKS } from "@/constants/networks.constant";
 import { APIError } from "@/utils/error-handler";
 import { TransactionRepository } from "@/repositories/transaction.repository";
 import { GetAllTransactionsDto } from "@/dto/transaction.dto";
-import { Mode, Token } from "@/generated/prisma/client";
+import { Mode, Token, Transaction } from "@/generated/prisma/client";
 
 @Service()
 export class TransactionService {
@@ -21,7 +21,7 @@ export class TransactionService {
 
     private getTokenLogoUrl(network: string, token: Token): string | null {
         const networkData = SUPPORTED_NETWORKS.find(n => n.code === network || n.symbol === network);
-        const tokenData = networkData?.supportedTokens?.find(t => t.symbol === String(token));
+        const tokenData = networkData?.supportedTokens?.find(( t: { symbol: string; } ) => t.symbol === String(token));
         return tokenData?.logoUrl || null;
     }
 
@@ -68,7 +68,7 @@ export class TransactionService {
             message: "Transactions retrieved successfully",
             payload: {
                 ...transactions,
-                transactions: transactions.transactions.map((transaction) => this.enrichTransactionWithNetworkLogo(transaction))
+                transactions: transactions.transactions.map((transaction: Transaction) => this.enrichTransactionWithNetworkLogo(transaction))
             }
         };
     }

@@ -12,7 +12,7 @@ import { Mode, Token } from "@/generated/prisma/client";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
-import { QuoteService } from "./quote.service";
+import { QuoteService } from "@/services/quote.service";
 
 
 type CoinMarketPriceConversionResponse = {

@@ -1,4 +1,4 @@
-import { HttpRequestError, isHttpRequestError } from "./http-client";
+import { HttpRequestError, isHttpRequestError } from "@/http-client";
 
 const BASE_DELAY_MS = 2000;
 const MAX_DELAY_MS = 60_000;

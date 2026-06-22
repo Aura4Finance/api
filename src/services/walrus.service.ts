@@ -1,7 +1,7 @@
 import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { walrus, RetryableWalrusClientError } from "@mysten/walrus";
 import { Service } from "typedi";
-import { WalletService } from "./wallet.service";
+import { WalletService } from "@/services/wallet.service";
 import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { APIError } from "@/utils/error-handler";

@@ -8,7 +8,7 @@ import {
   ResetAdminPasswordDto,
   AdminAuthDto,
   AuthCodeDto,
-} from "../dto/auth.dto";
+} from "@/dto/auth.dto";
 
 export const loginSchemaValidation = (data: LoginDto) => {
   const schema = Joi.object({

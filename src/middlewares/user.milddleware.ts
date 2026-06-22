@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response, RequestHandler } from "express";
-import { APIError } from "../utils/error-handler";
-import { STATUS } from "../constants/status.constant";
+import { APIError } from "@/utils/error-handler";
+import { STATUS } from "@/constants/status.constant";
 import jwt from "jsonwebtoken";
 import { Container } from "typedi";
 import { UserRepository } from "@/repositories/user/user.repository";

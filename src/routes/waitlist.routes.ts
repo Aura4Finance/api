@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { Container } from "typedi";
-import { asyncHandler } from "../utils/error-handler";
-import { verifyRequestBody } from "../middlewares/verify-request-body";
+import { asyncHandler } from "@/utils/error-handler";
+import { verifyRequestBody } from "@/middlewares/verify-request-body";
 import { WaitlistController } from "@/controllers/waitlist.controller";
 
 const router = express.Router();

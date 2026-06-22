@@ -5,7 +5,7 @@ import { APIError } from "@/utils/error-handler";
 import { Service } from "typedi";
 import crypto from "crypto";
 import { AuthRepository } from "@/repositories/auth.repository";
-import { EmailService } from "../email.service";
+import { EmailService } from "@/services/email.service";
 import { resend, segments } from "@/config/resend-config";
 import { redisClient } from "@/config/redis-config";
 import speakeasy from "speakeasy";

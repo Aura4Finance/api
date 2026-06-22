@@ -1,5 +1,5 @@
 import { Service } from "typedi";
-import db from "../config/db-config";
+import db from "@/config/db-config";
 
 @Service()
 export class AuthRepository {

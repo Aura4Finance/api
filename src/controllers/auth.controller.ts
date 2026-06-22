@@ -1,5 +1,5 @@
 import { Service } from "typedi";
-import { AuthService } from "../services/auth.service";
+import { AuthService } from "@/services/auth.service";
 import { Request, Response } from "express";
 import {
   AuthCodeDto,
@@ -8,8 +8,8 @@ import {
   OTPDto,
   ResendOtpDto,
   ResetPasswordDto,
-} from "../dto/auth.dto";
-import { STATUS } from "../constants/status.constant";
+} from "@/dto/auth.dto";
+import { STATUS } from "@/constants/status.constant";
 import {
   createAccountValidation,
   loginSchemaValidation,
@@ -18,8 +18,8 @@ import {
   resendOtpSchemaValidation,
   resetPasswordSchemaValidation,
   verify2FASchemaValidation,
-} from "../validation/auth.validation";
-import { formatErrorValidation } from "../utils/format-validation-error";
+} from "@/validation/auth.validation";
+import { formatErrorValidation } from "@/utils/format-validation-error";
 import { RequestAuth } from "@/@types/request";
 
 @Service()

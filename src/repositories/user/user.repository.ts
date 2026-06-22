@@ -1,8 +1,9 @@
 import { Service } from "typedi";
-import db from "../../config/db-config";
+import db from "@/config/db-config";
 import { OnboardUserDto } from "@/dto/user.dto";
 import { getAllMerchantsDto } from "@/dto/merchant.dto";
-import { Provider } from "@generated/prisma/enums";
+import { Provider } from "@/generated/prisma/enums";
+import { Transaction } from "@/generated/prisma/client";
 
 @Service()
 export class UserRepository {
@@ -432,12 +433,12 @@ export class UserRepository {
     });
 
     // 3. Map customers by profileId
-    const customerMap = new Map(
-      customersAgg.map((c) => [c.profileId, c._count.customerId])
+    const customerMap = new Map<string, number>(
+      customersAgg.map((c: { profileId: string; _count: { customerId: number; }; }) => [c.profileId, c._count.customerId])
     );
 
     // 4. Combine metrics
-    const merchantMetrics = transactionAgg.map((t) => {
+    const merchantMetrics = transactionAgg.map((t: Transaction) => {
       const activeCustomers = customerMap.get(t.profileId) || 0;
 
       return {
@@ -454,14 +455,14 @@ export class UserRepository {
 
     // 5. Sort and take top 10
     const topMerchants = merchantMetrics
-      .sort((a, b) => b.score - a.score)
+      .sort((a: { score: number; }, b: { score: number; }) => b.score - a.score)
       .slice(0, limit);
 
     // 6. Fetch merchant details
     const profiles = await db.businessProfile.findMany({
       where: {
         id: {
-          in: topMerchants.map((m) => m.profileId),
+          in: topMerchants.map((m: { profileId: string; }) => m.profileId),
         },
       },
       select: {
@@ -473,7 +474,7 @@ export class UserRepository {
     });
 
     // 7. Merge data
-    return topMerchants.map((m) => ({
+    return topMerchants.map((m: { profileId: string; }) => ({
       ...m,
       profile: profiles.find((p: { id: string }) => p.id === m.profileId),
     }));

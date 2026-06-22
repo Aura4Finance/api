@@ -3,8 +3,8 @@ import { asyncHandler } from "@/utils/error-handler";
 import express, {Response} from "express";
 import { RequestAuth } from "@/@types/request";
 import { TransactionController } from "@/controllers/transaction.controller";
-import payoutRoutes from "./payout.routes";
-import refundRoutes from "./refund.routes";
+import payoutRoutes from "@/routes/user/payout.routes";
+import refundRoutes from "@/routes/user/refund.routes";
 
 const transactionController = Container.get(TransactionController);
 

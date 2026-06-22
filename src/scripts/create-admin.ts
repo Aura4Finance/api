@@ -1,4 +1,4 @@
-import  db  from "../config/db-config";
+import  db  from "@/config/db-config";
 import argon from 'argon2';
 
 async function createInitialAdmin() {

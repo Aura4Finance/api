@@ -1,20 +1,19 @@
 import express from "express";
-
-import onboardingRoutes from "./user/onboarding.routes";
-import profileRoutes from "./user/profile.routes";
-import settlementRoutes from "./user/settlement.routes";
-import apiKeyRoutes from "./user/api-key.routes";
-import modeRoutes from "./user/mode.routes";
-import webhookRoutes from "./user/webhook.routes";
-import securityRoutes from "./user/security.routes";
-import fiatRoutes from "./user/fiat.routes";
-import transactionRoutes from "./user/transaction.routes";
-import paylinkRoutes from "./paylink.routes";
-import subscriptionRoutes from "./subscription.routes";
-import customersRoutes from "./customer.routes";
-import paymentRoutes from "./payment.routes";
-import notificationRoutes from "./user/notification.routes"
-import extraRoutes from "./extras/routes";
+import onboardingRoutes from "@/routes/user/onboarding.routes";
+import profileRoutes from "@/routes/user/profile.routes";
+import settlementRoutes from "@/routes/user/settlement.routes";
+import apiKeyRoutes from "@/routes/user/api-key.routes";
+import modeRoutes from "@/routes/user/mode.routes";
+import webhookRoutes from "@/routes/user/webhook.routes";
+import securityRoutes from "@/routes/user/security.routes";
+import fiatRoutes from "@/routes/user/fiat.routes";
+import transactionRoutes from "@/routes/user/transaction.routes";
+import paylinkRoutes from "@/routes/paylink.routes";
+import subscriptionRoutes from "@/routes/subscription.routes";
+import customersRoutes from "@/routes/customer.routes";
+import paymentRoutes from "@/routes/payment.routes";
+import notificationRoutes from "@/routes/user/notification.routes"
+import extraRoutes from "@/routes/extras/routes";
 
 import { 
     checkUserRole, 

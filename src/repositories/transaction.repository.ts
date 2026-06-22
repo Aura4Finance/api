@@ -550,10 +550,10 @@ export class TransactionRepository {
       },
     });
     return {
-      total: raw.reduce((sum, item) => sum + item._count._all, 0),
-      successful: raw.find(item => item.status === "COMPLETED")?._count._all || 0,
-      pending: raw.find(item => item.status === "PENDING")?._count._all || 0,
-      failed: raw.find(item => item.status === "FAILED")?._count._all || 0,
+      total: raw.reduce((sum: number, item: { _count: { _all: number; }; }) => sum + item._count._all, 0),
+      successful: raw.find((item: { status: TransactionStatus; _count: { _all: number; }; }) => item.status === "COMPLETED")?._count._all || 0,
+      pending: raw.find((item: { status: TransactionStatus; _count: { _all: number; }; }) => item.status === "PENDING")?._count._all || 0,
+      failed: raw.find((item: { status: TransactionStatus; _count: { _all: number; }; }) => item.status === "FAILED")?._count._all || 0,
     }
   }
 
@@ -586,15 +586,15 @@ export class TransactionRepository {
     }
 
     const totalRevenue = merchantRevenues.reduce(
-      (sum, m) => sum + (m._sum.amount ?? 0),
+      (sum: number, m: { _sum: { amount: number; }; }) => sum + (m._sum.amount ?? 0),
       0
     );
     const totalRevenueInUSDC = merchantRevenues.reduce(
-      (sum, m) => sum + (m._sum.amountInUSDC ?? 0),
+      (sum: number, m: { _sum: { amountInUSDC: number; }; }) => sum + (m._sum.amountInUSDC ?? 0),
       0
     );
     const totalTransactions = merchantRevenues.reduce(
-      (sum, m) => sum + m._count._all,
+      (sum: number, m: { _count: { _all: number; }; }) => sum + m._count._all,
       0
     );
 
