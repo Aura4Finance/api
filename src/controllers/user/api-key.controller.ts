@@ -1,5 +1,5 @@
 import { Service } from "typedi";
-import { ApiKeyService } from "@/../services/user/api-key.service";
+import { ApiKeyService } from "@/services/user/api-key.service";
 import { Response } from "express";
 import { STATUS } from "@/constants/status.constant";
 import { RequestAuth } from "@/@types/request";

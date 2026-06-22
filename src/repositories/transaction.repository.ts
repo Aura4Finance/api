@@ -586,11 +586,11 @@ export class TransactionRepository {
     }
 
     const totalRevenue = merchantRevenues.reduce(
-      (sum: number, m: { _sum: { amount: number; }; }) => sum + (m._sum.amount ?? 0),
+      (sum: number, m: { _sum: { amount: number | null; }; }) => sum + (m._sum.amount ?? 0),
       0
     );
     const totalRevenueInUSDC = merchantRevenues.reduce(
-      (sum: number, m: { _sum: { amountInUSDC: number; }; }) => sum + (m._sum.amountInUSDC ?? 0),
+      (sum: number, m: { _sum: { amountInUSDC: number | null; }; }) => sum + (m._sum.amountInUSDC ?? 0),
       0
     );
     const totalTransactions = merchantRevenues.reduce(
