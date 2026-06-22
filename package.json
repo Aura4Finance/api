@@ -5,7 +5,7 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-  "build": "rm -rf dist && tsc && npx tsc-alias",
+  "build": "rm -rf dist && tsc && npx tsc-alias && npx tsc-esm-fix --src=dist --ext=.js",
   "start": "node dist/server.js",
   "dev": "concurrently -k -n TSC,ALIAS,APP -c blue,yellow,green \"tsc --watch --preserveWatchOutput\" \"tsc-alias --watch\" \"nodemon --watch dist --delay 300ms dist/server.js\""
   },
