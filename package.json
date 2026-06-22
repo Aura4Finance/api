@@ -5,7 +5,7 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-  "build": "rm -rf dist && tsc && npx tsc-alias && npx tsc-esm-fix --src=dist --ext=.js",
+  "build": "rm -rf dist && tsc && npx tsc-alias",
   "start": "node dist/server.js",
   "dev": "concurrently -k -n TSC,ALIAS,APP -c blue,yellow,green \"tsc --watch --preserveWatchOutput\" \"tsc-alias --watch\" \"nodemon --watch dist --delay 300ms dist/server.js\""
   },
@@ -16,8 +16,8 @@
     "@mysten/sui": "^2.19.0",
     "@mysten/walrus": "^1.2.1",
     "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.0.0",
-    "@prisma/config": "^7.0.0",
+    "@prisma/client": "^7.8.0",
+    "@prisma/config": "^7.8.0",
     "argon2": "^0.44.0",
     "axios": "^1.12.2",
     "axios-retry": "^4.5.0",
@@ -65,7 +65,7 @@
     "@types/uuid": "^10.0.0",
     "dotenv-cli": "^11.0.0",
     "esbuild": "^0.28.1",
-    "prisma": "^7.0.0",
+    "prisma": "^7.8.0",
     "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.6",
