@@ -7,6 +7,6 @@ const adapter = new PrismaPg(pool)
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
 
-export default const db =  globalForPrisma.prisma ?? new PrismaClient({ adapter })
+export default db =  globalForPrisma.prisma ?? new PrismaClient({ adapter })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
