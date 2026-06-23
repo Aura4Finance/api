@@ -500,10 +500,12 @@ export class PaymentService {
       owner: paymentWallet.address,
       coinType,
     });
+    console.log(target);
+    console.log(coins);
 
     const matchingCoin = coins.objects
-      .filter(coin => BigInt(coin.balance) >= target)
-      .sort((a, b) => (BigInt(a.balance) < BigInt(b.balance) ? -1 : 1))[0] ?? null;
+      .filter(coin => decimalToBigInt(coin.balance, getCoinDecimal(token)) >= target)
+      .sort((a, b) => (decimalToBigInt(a.balance, getCoinDecimal(token)) < decimalToBigInt(b.balance, getCoinDecimal(token)) ? -1 : 1))[0] ?? null;
 
     if (!matchingCoin) {
       throw new APIError(
