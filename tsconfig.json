@@ -45,7 +45,7 @@
     "src/**/*",
     "src/@types/**/*"
   ],
-  "ts-allias": {
+  "ts-alias": {
     "resolveFullPaths": true,
     "verbose": false
   }
