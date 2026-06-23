@@ -13,7 +13,7 @@ import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
-import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
+import { getCoinType } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
@@ -487,7 +487,7 @@ export class PaymentService {
 
     let target: bigint;
     if (token === Token.USDC) {
-      target = BigInt(Math.floor(Number(amountInUSDC) * getCoinDecimal(token)));
+      target = BigInt(amountInUSDC);
     } else {
       target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
