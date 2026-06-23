@@ -33,8 +33,10 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev --legacy-peer-deps; else
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/index.js"]
+CMD ["npm", "run", "start"]
