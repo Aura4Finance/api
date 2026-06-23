@@ -129,7 +129,7 @@ export const TOKENS = {
     logoUrl: "https://imagedelivery.net/cBNDGgkrsEA-b_ixIp9SkQ/_MCfJKCnm7HFHwGk_JW1B-AU9kjOe3FtYe-ay75YcgI.png/public",
   },
 
-   USDT: {
+  USDT: {
     name: "USD Tether",
     symbol: "USDT",
     decimals: 6,
@@ -182,5 +182,5 @@ export function getCoinType(
 export function getCoinDecimal(
   symbol: TokenSymbol
 ): number {
-  return 10 ** TOKENS[symbol].decimals; 
+  return TOKENS[symbol].decimals;
 }

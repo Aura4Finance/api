@@ -6,6 +6,7 @@ import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { Mode, Token } from "@/generated/prisma/client";
 import { getTokenPrice, MetaAg, MetaQuote } from "@7kprotocol/sdk-ts";
 import { Transaction, TransactionObjectArgument, coinWithBalance } from "@mysten/sui/transactions";
+import { decimalToBigInt } from "@/utils/decimal-to-big-int";
 
 @Service()
 export class SevenKAggService {
@@ -32,7 +33,7 @@ export class SevenKAggService {
             logger.error(`Token price not found for coin type: ${coinType}`);
             return null;
         }
-        return BigInt(Math.floor(Number(amount / rate) * getCoinDecimal(token)));;
+        return decimalToBigInt(Number(amount / rate), getCoinDecimal(token));
     }
 
     /**
@@ -45,8 +46,8 @@ export class SevenKAggService {
      * @returns A promise resolving to an object containing the output coin and the best quote, or null if the swap fails.
      */
     async swapTokens(
-        amount: bigint, 
-        coinTypeIn: string, 
+        amount: bigint,
+        coinTypeIn: string,
         coinTypeOut: string,
         signer: string,
         tx: Transaction
@@ -54,19 +55,19 @@ export class SevenKAggService {
         coinOut: TransactionObjectArgument;
         bestQuote: MetaQuote;
     } | null> {
-        try{
+        try {
             let bestQuote: MetaQuote | undefined = undefined;
             const quotes = await this.metaAg.quote({
                 amountIn: amount.toString(),
                 coinTypeIn,
                 coinTypeOut,
             });
-    
+
             bestQuote = quotes.sort(
                 (a, b) => Number(b.simulatedAmountOut || b.amountOut) - Number(a.simulatedAmountOut || a.amountOut),
             )[0];
-    
-            if(!bestQuote) {
+
+            if (!bestQuote) {
                 logger.error(`No quote found for fromCoinType: ${coinTypeIn} and toCoinType: ${coinTypeOut}`);
                 return null;
             }
@@ -84,7 +85,7 @@ export class SevenKAggService {
                 100,
             );
             return { coinOut, bestQuote };
-        }catch(error: any) {
+        } catch (error: any) {
             logger.error(`7kAgg swapTokens failed: ${error.message}`);
             return null;
         }

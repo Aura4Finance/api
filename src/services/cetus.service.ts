@@ -6,6 +6,7 @@ import { AggregatorClient, Env, RouterDataV3 } from '@cetusprotocol/aggregator-s
 import { Mode, Token } from "@/generated/prisma/client";
 import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
+import { decimalToBigInt } from "@/utils/decimal-to-big-int";
 
 
 @Service()
@@ -37,7 +38,7 @@ export class CetusService {
             throw new APIError("Coin type not found", STATUS.notFound);
         }
 
-        const target = BigInt(Math.floor(Number(amount) * getCoinDecimal(Token.USDC)));
+        const target = decimalToBigInt(amount, getCoinDecimal(Token.USDC));
 
         const route = await this.getQuote(usdcType, coinType, target.toString());
 
@@ -45,7 +46,7 @@ export class CetusService {
             logger.error(`No quote found for fromCoinType: ${token} and toCoinType: ${usdcType}`);
             return null;
         }
-        return BigInt(Math.floor(Number(route.amountOut)));
+        return decimalToBigInt(route.amountOut, getCoinDecimal(token));
     }
 
 
@@ -89,7 +90,7 @@ export class CetusService {
     ): Promise<{
         coinOut: TransactionObjectArgument;
         bestQuote: RouterDataV3;
-    } |null> {
+    } | null> {
         this.initializeClient("live");
         try {
             const bestQuote = await this.getQuote(coinTypeIn, coinTypeOut, amount.toString());

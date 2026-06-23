@@ -13,11 +13,12 @@ import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
-import { getCoinType } from "@/constants/tokens.constants";
+import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
+import { decimalToBigInt } from "@/utils/decimal-to-big-int";
 
 @Service()
 export class PaymentService {
@@ -487,8 +488,11 @@ export class PaymentService {
 
     let target: bigint;
     if (token === Token.USDC) {
-      target = BigInt(Math.floor(Number(amountInUSDC)));
+      target = decimalToBigInt(amountInUSDC, getCoinDecimal(Token.USDC));
     } else {
+      if (tx.mode === Mode.test) {
+        throw new APIError("All payments must be in USDC for testnet", STATUS.bad);
+      }
       target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
     // verify the payment was actually received
@@ -496,7 +500,6 @@ export class PaymentService {
       owner: paymentWallet.address,
       coinType,
     });
-    console.log(coins);
 
     const matchingCoin = coins.objects
       .filter(coin => BigInt(coin.balance) >= target)
@@ -512,7 +515,7 @@ export class PaymentService {
     // Log significant overpayment (>5% above target)
     const overpaymentThreshold = target + (target * 5n) / 100n;
     if (BigInt(matchingCoin.balance) > overpaymentThreshold) {
-        logger.info(
+      logger.info(
         `[verifyTransfer] Overpayment detected on payment ${paymentId}: ` +
         `expected ${target.toString()}, received ${matchingCoin.balance} ` +
         `(+${((BigInt(matchingCoin.balance) - target) * 100n / target).toString()}%)`
