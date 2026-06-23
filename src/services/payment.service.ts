@@ -496,7 +496,7 @@ export class PaymentService {
       owner: paymentWallet.address,
       coinType,
     });
-    console.log(coins.objects[0]);
+    console.log(coins);
 
     const matchingCoin = coins.objects
       .filter(coin => BigInt(coin.balance) >= target)
