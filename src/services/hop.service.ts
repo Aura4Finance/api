@@ -49,7 +49,7 @@ export class HopService {
             logger.error(`No quote found for fromCoinType: ${token} and toCoinType: ${usdcType}`);
             return null;
         }
-        return decimalToBigInt(route.amount_out, getCoinDecimal(token));
+        return BigInt(route.amount_out);
     }
 
     /**

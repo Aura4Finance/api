@@ -46,7 +46,7 @@ export class CetusService {
             logger.error(`No quote found for fromCoinType: ${token} and toCoinType: ${usdcType}`);
             return null;
         }
-        return decimalToBigInt(route.amountOut, getCoinDecimal(token));
+        return BigInt(route.amountOut);
     }
 
 

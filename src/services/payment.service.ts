@@ -516,15 +516,15 @@ export class PaymentService {
 
     // Log significant overpayment (>5% above target)
     const overpaymentThreshold = target + (target * 5n) / 100n;
-    if (BigInt(matchingCoin.balance) > overpaymentThreshold) {
+    if (decimalToBigInt(matchingCoin.balance, getCoinDecimal(token)) > overpaymentThreshold) {
       logger.info(
         `[verifyTransfer] Overpayment detected on payment ${paymentId}: ` +
         `expected ${target.toString()}, received ${matchingCoin.balance} ` +
-        `(+${((BigInt(matchingCoin.balance) - target) * 100n / target).toString()}%)`
+        `(+${((decimalToBigInt(matchingCoin.balance, getCoinDecimal(token)) - target) * 100n / target).toString()}%)`
       );
     }
 
-    const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex as number);
+    const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex);
     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
 
     await transactionQueue.add(jobs.SETTLE_PAYMENT, {
