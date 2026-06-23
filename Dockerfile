@@ -35,4 +35,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
