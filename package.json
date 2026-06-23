@@ -6,7 +6,7 @@
   "main": "src/server.ts",
   "scripts": {
   "build": "tsc && tsc-alias",
-  "start": "npx prisma migrate deploy && node dist/index.js",
+  "start": "npx prisma migrate deploy && node dist/server.js",
   "dev": "concurrently -k -n TSC,ALIAS,APP -c blue,yellow,green \"tsc --watch --preserveWatchOutput\" \"tsc-alias --watch\" \"nodemon --watch dist --delay 300ms dist/server.js\""
   },
   "dependencies": {
