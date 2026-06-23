@@ -487,7 +487,7 @@ export class PaymentService {
 
     let target: bigint;
     if (token === Token.USDC) {
-      target = BigInt(amountInUSDC);
+      target = BigInt(Number(amountInUSDC));
     } else {
       target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
