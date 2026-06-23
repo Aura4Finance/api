@@ -32,6 +32,7 @@ COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --omit=dev --legacy-peer-deps; else npm install --omit=dev --legacy-peer-deps; fi
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
