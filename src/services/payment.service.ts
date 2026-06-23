@@ -13,11 +13,12 @@ import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
-import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
+import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
+import { decimalToBigInt } from "@/utils/decimal-to-big-int";
 
 @Service()
 export class PaymentService {
@@ -487,8 +488,11 @@ export class PaymentService {
 
     let target: bigint;
     if (token === Token.USDC) {
-      target = BigInt(Math.floor(Number(amountInUSDC) * getCoinDecimal(token)));
+      target = decimalToBigInt(amountInUSDC, getCoinDecimal(Token.USDC));
     } else {
+      if (tx.mode === Mode.test) {
+        throw new APIError("All payments must be in USDC for testnet", STATUS.bad);
+      }
       target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
     // verify the payment was actually received
@@ -496,10 +500,12 @@ export class PaymentService {
       owner: paymentWallet.address,
       coinType,
     });
+    console.log(target);
+    console.log(coins);
 
     const matchingCoin = coins.objects
-      .filter(coin => BigInt(coin.balance) >= target)
-      .sort((a, b) => (BigInt(a.balance) < BigInt(b.balance) ? -1 : 1))[0] ?? null;
+      .filter(coin => decimalToBigInt(coin.balance, getCoinDecimal(token)) >= target)
+      .sort((a, b) => (decimalToBigInt(a.balance, getCoinDecimal(token)) < decimalToBigInt(b.balance, getCoinDecimal(token)) ? -1 : 1))[0] ?? null;
 
     if (!matchingCoin) {
       throw new APIError(
@@ -510,15 +516,15 @@ export class PaymentService {
 
     // Log significant overpayment (>5% above target)
     const overpaymentThreshold = target + (target * 5n) / 100n;
-    if (BigInt(matchingCoin.balance) > overpaymentThreshold) {
-        logger.info(
+    if (decimalToBigInt(matchingCoin.balance, getCoinDecimal(token)) > overpaymentThreshold) {
+      logger.info(
         `[verifyTransfer] Overpayment detected on payment ${paymentId}: ` +
         `expected ${target.toString()}, received ${matchingCoin.balance} ` +
-        `(+${((BigInt(matchingCoin.balance) - target) * 100n / target).toString()}%)`
+        `(+${((decimalToBigInt(matchingCoin.balance, getCoinDecimal(token)) - target) * 100n / target).toString()}%)`
       );
     }
 
-    const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex as number);
+    const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex);
     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
 
     await transactionQueue.add(jobs.SETTLE_PAYMENT, {

@@ -6,6 +6,7 @@ import { HopApi, QuoteResponse } from "@hop.ag/sdk";
 import { Mode, Token } from "@/generated/prisma/client";
 import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import { getCoinType, getCoinDecimal } from "@/constants/tokens.constants";
+import { decimalToBigInt } from "@/utils/decimal-to-big-int";
 
 @Service()
 export class HopService {
@@ -19,10 +20,10 @@ export class HopService {
      * @param mode The mode for which to initialize the client.
      */
     initializeClient(mode: Mode) {
-        if(mode === "live")
-        this.hopApi = new HopApi({
-            fee_bps: 0,
-        });
+        if (mode === "live")
+            this.hopApi = new HopApi({
+                fee_bps: 0,
+            });
     }
 
     /**
@@ -40,7 +41,7 @@ export class HopService {
             throw new APIError("Coin type not found", STATUS.notFound);
         }
 
-        const target = BigInt(Math.floor(Number(amount) * getCoinDecimal(Token.USDC)));
+        const target = decimalToBigInt(amount, getCoinDecimal(Token.USDC));
 
         const route = await this.getQuote(usdcType, coinType, target.toString());
 

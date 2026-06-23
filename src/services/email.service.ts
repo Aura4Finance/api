@@ -1,6 +1,4 @@
 import { Service } from "typedi";
-import path from "path";
-import fs from "fs";
 import { resend } from "@/config/resend-config";
 import { generateReceiptPDF, generateReceiptNumber } from "@/utils/pdf-generator";
 import { redisClient } from "@/config/redis-config";
@@ -11,19 +9,12 @@ type TemplateVars = Record<string, string | number | undefined>;
 
 @Service()
 export class EmailService {
-  private templatePath: string;
-  private logoBase64: string;
   private batch: any[] = [];
   private flushTimer: NodeJS.Timeout | null = null; 
   private readonly BATCH_SIZE = 10;
   private readonly BATCH_FLUSH_MS = 1000;
 
-  constructor() {
-    this.templatePath = path.join(__dirname, "@", "html");
-    this.logoBase64 = fs
-      .readFileSync(path.join(this.templatePath, "attachments", "logo.png"))
-      .toString("base64");
-  }
+  constructor() { }
 
   private readonly RATE_LIMIT = 2; // max calls per second
 
@@ -32,61 +23,57 @@ export class EmailService {
   }
 
   private async flushBatch() {
-  if (this.batch.length === 0) return;
+    if (this.batch.length === 0) return;
 
-  const payload = [...this.batch];
-  this.batch = [];
+    const payload = [...this.batch];
+    this.batch = [];
 
-  try {
-    for (let i = 0; i < payload.length; i += this.RATE_LIMIT) {
-      const chunk = payload.slice(i, i + this.RATE_LIMIT);
-      await Promise.all(chunk.map(email => resend.emails.send(email)));
-      if (i + this.RATE_LIMIT < payload.length) {
-        await this.delay(1000);
+    try {
+      for (let i = 0; i < payload.length; i += this.RATE_LIMIT) {
+        const chunk = payload.slice(i, i + this.RATE_LIMIT);
+        await Promise.all(chunk.map(email => resend.emails.send(email)));
+        if (i + this.RATE_LIMIT < payload.length) {
+          await this.delay(1000);
+        }
       }
+    } catch (err) {
+      throw new APIError("Unable to send emails. Please try again later.", STATUS.bad);
     }
-  } catch (err) {
-    throw new APIError("Unable to send emails. Please try again later.", STATUS.bad);
   }
-}
 
-private async queueEmail(emailPayload: any) {
-  this.batch.push(emailPayload);
+  private async queueEmail(emailPayload: any) {
+    this.batch.push(emailPayload);
 
-  if (this.batch.length >= this.BATCH_SIZE) {
-    await this.flushBatch();
-  } else if (!this.flushTimer) {
-    this.flushTimer = setTimeout(async () => {
+    if (this.batch.length >= this.BATCH_SIZE) {
       await this.flushBatch();
-      this.flushTimer = null;
-    }, this.BATCH_FLUSH_MS);
+    } else if (!this.flushTimer) {
+      this.flushTimer = setTimeout(async () => {
+        await this.flushBatch();
+        this.flushTimer = null;
+      }, this.BATCH_FLUSH_MS);
+    }
   }
-}
 
   async buildEmailPayload(
-  to: string | string[],
-  subject: string,
-  templateId: string,
-  variables: TemplateVars,
-  notification = true,
-  receipt = false
-) {
-  const templateVariables = Object.fromEntries(
-    Object.entries(variables).filter(([, value]) => value !== undefined)
-  ) as Record<string, string | number>;
+    to: string | string[],
+    subject: string,
+    templateId: string,
+    variables: TemplateVars,
+    notification = true,
+    receipt = false
+  ) {
+    const templateVariables = Object.fromEntries(
+      Object.entries(variables).filter(([, value]) => value !== undefined)
+    ) as Record<string, string | number>;
 
-  let attachments = [
-     {
-        content: this.logoBase64,
-        filename: "logo.png",
-        contentId: "logo@orafi",
-      },
-  ]
+    let attachments: any[] = [];
 
     if (receipt) {
       const receiptNumber = generateReceiptNumber(2);
+      // Note: If your PDF generator requires a logo image URL/Base64, 
+      // you may need to pass a public asset URL here instead.
       const pdfBuffer = await generateReceiptPDF({
-        logo: `data:image/png;base64,${this.logoBase64}`, 
+        logo: "", 
         receiptNumber, 
         date: new Date().toUTCString(),
         name: variables.name,
@@ -107,20 +94,20 @@ private async queueEmail(emailPayload: any) {
         contentId: "receipt@orafi",
       });
     }
-  return {
-    from: notification
-      ? "OraFi <notifications@orafi.app>"
-      : "Chidi from OraFi <chidi@orafi.app>",
-    to: Array.isArray(to) ? to : [to],
-    subject,
-    template: {
-      id: templateId,
-      variables: templateVariables,
-    },
-    attachments
-  };
-}
-
+    
+    return {
+      from: notification
+        ? "OraFi <notifications@orafi.app>"
+        : "Chidi from OraFi <chidi@orafi.app>",
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      template: {
+        id: templateId,
+        variables: templateVariables,
+      },
+      ...(attachments.length > 0 ? { attachments } : {})
+    };
+  }
 
   /**
    * Core reusable email sender
@@ -151,16 +138,8 @@ private async queueEmail(emailPayload: any) {
         id: templateId,
         variables: templateVariables,
       },
-      attachments: [
-        {
-          content: this.logoBase64,
-          filename: "logo.png",
-          contentId: "logo@orafi",
-        },
-      ],
     });
   }
-
 
   async sendOtp(to: string, otp: string) {
     const throttleKey = `email:otp:${to}`;
@@ -181,9 +160,8 @@ private async queueEmail(emailPayload: any) {
     );
 
     //throttle OTP for 60 seconds
-   await redisClient.set(throttleKey, "1", "EX", 60);
+    await redisClient.set(throttleKey, "1", "EX", 60);
   }
-
 
   async sendWelcomeEmail(to: string, name: string): Promise<any> {
     return this.sendEmail(
@@ -224,56 +202,56 @@ private async queueEmail(emailPayload: any) {
     );
   }
 
-async sendPaymentFailedEmail(
-  to: string,
-  name: string,
-  amount: number,
-  currency: string,
-  reference: string
-) {
-  const payload = await this.buildEmailPayload(
-    to,
-    "Payment Failed – Please Try Again",
-    "payment_failed",
-    {
-      name,
-      amount,
-      currency,
-      reference,
-      date: new Date().toLocaleString(),
-    },
-    true
-  );
+  async sendPaymentFailedEmail(
+    to: string,
+    name: string,
+    amount: number,
+    currency: string,
+    reference: string
+  ) {
+    const payload = await this.buildEmailPayload(
+      to,
+      "Payment Failed – Please Try Again",
+      "payment_failed",
+      {
+        name,
+        amount,
+        currency,
+        reference,
+        date: new Date().toLocaleString(),
+      },
+      true
+    );
 
-  await this.queueEmail(payload);
-}
+    await this.queueEmail(payload);
+  }
 
-async sendPaymentSuccessEmail(
-  to: string,
-  name: string,
-  amount: number,
-  currency: string,
-  reference: string,
-  merchantName: string
-) {
-  const payload = await this.buildEmailPayload(
-    to,
-    "Payment Successful 🎉",
-    "payment_success",
-    {
-      name,
-      amount,
-      currency,
-      reference,
-      merchantName,
-      date: new Date().toLocaleString(),
-    },
-    true,
-    true
-  );
+  async sendPaymentSuccessEmail(
+    to: string,
+    name: string,
+    amount: number,
+    currency: string,
+    reference: string,
+    merchantName: string
+  ) {
+    const payload = await this.buildEmailPayload(
+      to,
+      "Payment Successful 🎉",
+      "payment_success",
+      {
+        name,
+        amount,
+        currency,
+        reference,
+        merchantName,
+        date: new Date().toLocaleString(),
+      },
+      true,
+      true
+    );
 
-  await this.queueEmail(payload);
-}
+    await this.queueEmail(payload);
+  }
 
   async sendMerchantPaymentReceivedEmail(
     to: string,
@@ -282,8 +260,7 @@ async sendPaymentSuccessEmail(
     amount: number,
     currency: string,
     reference: string
-    ): Promise<any> {
-
+  ): Promise<any> {
     const payload = await this.buildEmailPayload(
       to,
       "You’ve Received a Payment 💰",
@@ -469,5 +446,5 @@ async sendPaymentSuccessEmail(
     );
     await this.queueEmail(payload);
   }
-
-}
+  }
+      

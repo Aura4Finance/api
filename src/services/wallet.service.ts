@@ -13,6 +13,7 @@ import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
+import { decimalToBigInt } from "@/utils/decimal-to-big-int";
 
 
 type CoinMarketPriceConversionResponse = {
@@ -78,7 +79,7 @@ export class WalletService {
       target: `${smart_contract_address}::main::generatePaymentWallet`,
       arguments: [
         tx.pure.address(merchantAddress),
-        tx.pure.u64(Math.round(amount * getCoinDecimal(token))),
+        tx.pure.u64(decimalToBigInt(amount, getCoinDecimal(token))),
         tx.pure.string(indexerIdentifier),
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
