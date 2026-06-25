@@ -75,5 +75,11 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+  "@mysten/sui": "2.19.0",
+  "@pythnetwork/pyth-sui-js": {
+    "@mysten/sui": "2.19.0"
   }
+}
 }
