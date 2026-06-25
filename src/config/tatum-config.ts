@@ -9,7 +9,7 @@ export const createTatumClient = (mode: Mode) => {
         headers: {
             "content-Type": "application/json",
             Accept: "application/json",
-            "x-api-key": process.env.TATUM_KEY,
+            "x-api-key": mode === "test" ? process.env.TATUM_TESTNET_KEY : process.env.TATUM_MAINNET_KEY,
 
         }
     });
