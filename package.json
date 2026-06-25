@@ -77,9 +77,9 @@
     "typescript": "^5.9.3"
   },
   "overrides": {
-  "@mysten/sui": "2.19.0",
+  "@mysten/sui": "^2.19.0",
   "@pythnetwork/pyth-sui-js": {
-    "@mysten/sui": "2.19.0"
+    "@mysten/sui": "^2.19.0"
   }
 }
 }
