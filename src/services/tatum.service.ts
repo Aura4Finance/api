@@ -121,7 +121,7 @@ export class TatumRpcClient {
             case "suix_getBalance":
                 if (!req.address)
                     throw new APIError("address required for suix_getBalance", STATUS.bad);
-                params = req.coinType ? [req.address, req.coinType] : [req.address];
+                params = [req.address, req.coinType];
                 break;
 
             case "sui_getObject":

@@ -10,12 +10,11 @@ import { CryptoPayOutDto } from "@/dto/payout.dto";
 import { InitiatePayoutDto } from "@/dto/fiat.dto";
 import { FiatService } from "@/services/user/fiat.service";
 import { FiatRepository } from "@/repositories/user/fiat.repository";
-import { getCoinType } from "@/constants/tokens.constants";
 import logger from "@/utils/logger";
 import { logTransactionError } from "@/utils/log-transaction-error";
 import { SuiClientTypes } from "@mysten/sui/client";
 import { TatumRpcClient } from "@/services/tatum.service";
-import { getCoinDecimal } from "@/constants/tokens.constants";
+import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
 import { bigIntToDecimal } from "@/utils/decimal-to-big-int";
 
 @Service()
@@ -57,10 +56,12 @@ export class PayoutService {
      * Gets total balance for a user.
      */
     async getBalances(address: string, mode: Mode) {
-        const balance = await this.tatumRpcClient.getBalance({
-            address,
-            mode
-        })
+
+            const balance = await this.tatumRpcClient.getBalance({
+                address,
+                coinType: <string>getCoinType("USDC", mode === "test"? "testnet" : "mainnet"),
+                mode
+            })
 
         return {
             message: "Balances retrieved successfully",
