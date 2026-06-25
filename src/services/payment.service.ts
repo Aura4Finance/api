@@ -439,15 +439,15 @@ export class PaymentService {
         throw new APIError("Payment session not found.", STATUS.notFound);
     }
 
-    if (tx.status === "COMPLETED") {
-        return {
-            message: `Transfer is already completed`,
-            payload: { 
-              status: tx.status,
-              paymentId
-               }
-        };
-    }
+    // if (tx.status === "COMPLETED") {
+    //     return {
+    //         message: `Transfer is already completed`,
+    //         payload: { 
+    //           status: tx.status,
+    //           paymentId
+    //            }
+    //     };
+    // }
 
     const paymentWallet = tx.payment?.wallet;
     if (!paymentWallet?.address) {
