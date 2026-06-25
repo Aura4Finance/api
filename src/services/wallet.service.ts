@@ -194,7 +194,7 @@ export class WalletService {
       arguments: [
         tx.object(primaryObj.objectId),
         tx.makeMoveVec({
-          elements: validMergeTargets.map((id) => tx.object(id)),
+          elements: validMergeTargets.map((id: string) => tx.object(id)),
         }),
       ],
     });
