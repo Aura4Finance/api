@@ -180,9 +180,12 @@ export class WalletService {
     }
 
     const validMergeTargets = targetObjs
-      .filter((obj): obj is Exclude<typeof obj, Error> => !(obj instanceof Error))
       .filter((obj) => !obj.error)
-      .map((obj) => obj.objectId);
+      .map((obj) => tx.objectRef({
+        objectId: obj.objectId,
+        version: obj.version,
+        digest: obj.digest,
+      }))
 
     if (validMergeTargets.length === 0) {
       logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
@@ -193,9 +196,13 @@ export class WalletService {
     tx.moveCall({
       target: `${smart_contract_address}::main::merge_all_usdc`,
       arguments: [
-        tx.object(primaryObj.objectId),
+        tx.objectRef({
+          objectId: primaryObj.objectId,
+          version: primaryObj.version,
+          digest: primaryObj.digest,
+        }),
         tx.makeMoveVec({
-          elements: validMergeTargets.map((id) => tx.object(id)),
+          elements: validMergeTargets.map((id) => id),
         }),
       ],
     });
@@ -228,7 +235,11 @@ export class WalletService {
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
       arguments: [
-        tx.object(coinObject.objectId),
+        tx.objectRef({
+          objectId: coinObject.objectId,
+          version: coinObject.version,
+          digest: coinObject.digest,
+        }),
         tx.pure.u64(amount * 1000000),
         tx.pure.address(to),
       ],
@@ -259,7 +270,14 @@ export class WalletService {
 
     const amountU64 = BigInt(Math.round(amount * 1_000_000));
     const tx = new Transaction();
-    const [splitCoin] = tx.splitCoins(coinObject.objectId, [tx.pure.u64(amountU64)]);
+    const [splitCoin] = tx.splitCoins(
+      tx.objectRef({
+        objectId: coinObject.objectId,
+        version: coinObject.version,
+        digest: coinObject.digest,
+      }),
+      [tx.pure.u64(amountU64)]
+    );
     tx.transferObjects([splitCoin], tx.pure.address(to));
 
     return this.sponsoredTransaction(tx, secret_key);
@@ -298,7 +316,11 @@ export class WalletService {
     let totalUsdcAmount: bigint;
 
     if (coinTypeIn === coinTypeOut) {
-      coinOut = tx.object(primaryCoinObjectId);
+      coinOut = tx.objectRef({
+        objectId: primaryCoinObjectId,
+        version: coinObject.version,
+        digest: coinObject.digest,
+      });;
       totalUsdcAmount = totalAmount;
     } else {
       const swapResult = await this.quoteService.swap(
@@ -312,16 +334,12 @@ export class WalletService {
       coinOut = swapResult.coinOut;
       totalUsdcAmount = BigInt(swapResult.amountOut);
     }
-    console.log('coinOut:', coinOut);
-    console.log('totalUsdcAmount:', totalUsdcAmount);
-    
+
     const platformFee = totalUsdcAmount / 100n; // 1%
     const platformKey = process.env.PLATFORM_PUBLIC_KEY;
     if (!platformKey) {
       throw new APIError("PLATFORM_PUBLIC_KEY is not configured", STATUS.serverError);
     }
-    console.log('platformFee:', platformFee);
-    console.log('platformKey:', platformKey);
 
     const [platformCoin] = tx.splitCoins(coinOut, [tx.pure.u64(platformFee)]);
     tx.transferObjects([platformCoin], tx.pure.address(platformKey));
@@ -385,7 +403,23 @@ export class WalletService {
     const coinType = getCoinType(Token.USDC, "mainnet")!; // or SUI_COIN_TYPE
 
     // Split the coin to cover amount + fee, then pass to off_ramp
-    const [splitCoin] = tx.splitCoins(tx.object(primaryCoinObjectId), [amount]);
+    const coinObject = await this.tatumRpcClient.getObject({
+      objectId: primaryCoinObjectId,
+      mode,
+    });
+    
+    if (coinObject.error) {
+      throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
+    }
+
+    const [splitCoin] = tx.splitCoins(
+      tx.objectRef({
+        objectId: coinObject.objectId,
+        version: coinObject.version,
+        digest: coinObject.digest,
+      }),
+      [amount]
+    );
 
     tx.moveCall({
       target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,

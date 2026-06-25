@@ -255,7 +255,6 @@ export const startEmailWorker = () => {
         }
       } catch (error) {
         logger.error(`Email worker error: ${error}`);
-        throw error;
       }
     },
     {

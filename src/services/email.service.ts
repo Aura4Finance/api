@@ -73,7 +73,7 @@ export class EmailService {
       // Note: If your PDF generator requires a logo image URL/Base64, 
       // you may need to pass a public asset URL here instead.
       const pdfBuffer = await generateReceiptPDF({
-        logo: "", 
+        logo: "https://orafi.app/logo.png", 
         receiptNumber, 
         date: new Date().toUTCString(),
         name: variables.name,
