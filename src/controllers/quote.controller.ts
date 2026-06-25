@@ -6,7 +6,7 @@ import { formatErrorValidation } from "@/utils/format-validation-error";
 import { Request, Response } from "express";
 import { STATUS } from "@/constants/status.constant";
 import { getCoinDecimal } from "@/constants/tokens.constants";
-import { decimalToBigInt } from "@/utils/decimal-to-big-int";
+import { bigIntToDecimal } from "@/utils/decimal-to-big-int";
 
 
 @Service()
@@ -25,14 +25,12 @@ export class QuoteController {
         const body = value as { amountInUSDC: number, token: Token, mode: Mode };
         const quotePrice = await this.quoteService.getTokenPrice(body.amountInUSDC, body.token, body.mode);
 
-        // Convert to Number to allow fractional division, then force 2 decimal places
-        const calculatedPrice = Number(quotePrice / decimalToBigInt(1, getCoinDecimal(body.token)));
-
         return res.status(STATUS.ok).json({
             success: true,
             message: "Token price retrieved successfully!",
             data: {
-                price: calculatedPrice.toFixed(2), // Ensures "20.23" or "20.00"
+                // 4. Use Decimal's native .toFixed(2) for the final response string
+                price: bigIntToDecimal(quotePrice, getCoinDecimal(body.token), 2),
                 timeStamp: new Date().toISOString(),
             },
         });

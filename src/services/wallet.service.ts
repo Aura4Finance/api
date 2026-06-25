@@ -14,6 +14,7 @@ import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
+import { TatumRpcClient } from "./tatum.service";
 
 
 type CoinMarketPriceConversionResponse = {
@@ -31,9 +32,11 @@ export class WalletService {
   private PAYFRICA_CONFIG_ID = "0x50eee353064aa82f120bfc212486acf9bd9acf5b3a3b5aadea8284ce30a20f84";
   private client!: SuiGrpcClient;
   admin_secret_key: string;
+
   constructor(
     private readonly systemRepository: SystemRepository,
-    private readonly quoteService: QuoteService
+    private readonly quoteService: QuoteService,
+    private readonly tatumRpcClient: TatumRpcClient
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
   }
@@ -167,20 +170,18 @@ export class WalletService {
     const smart_contract_address = await this.setActiveNetwork(mode);
 
     // Batch fetch primary + all merge targets in one call
-    const { objects } = await this.client.getObjects({
+    const [primaryObj, ...targetObjs] = await this.tatumRpcClient.getObjects({
       objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds],
+      mode,
     });
-
-    const [primaryObj, ...targetObjs] = objects;
-
-    if (!primaryObj || primaryObj instanceof Error) {
+    if (!primaryObj || primaryObj.error ) {
       logger.info(`Primary coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
     }
 
     const validMergeTargets = targetObjs
       .filter((obj): obj is Exclude<typeof obj, Error> => !(obj instanceof Error))
-      .map((obj) => obj.objectId);
+      .map((obj) => obj.error ? null : obj.objectId);
 
     if (validMergeTargets.length === 0) {
       logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
@@ -212,11 +213,12 @@ export class WalletService {
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
 
-    const { object: coinObject } = await this.client.getObject({
+    const coinObject = await this.tatumRpcClient.getObject({
       objectId: primaryCoinObjectId,
+      mode,
     });
 
-    if (!coinObject || coinObject instanceof Error) {
+    if (coinObject.error) {
       logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
@@ -244,11 +246,12 @@ export class WalletService {
   ) {
     await this.setActiveNetwork(mode);
 
-    const { object: coinObject } = await this.client.getObject({
+    const coinObject = await this.tatumRpcClient.getObject({
       objectId: primaryCoinObjectId,
+      mode,
     });
 
-    if (!coinObject || coinObject instanceof Error) {
+    if (coinObject.error) {
       logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
     }
@@ -271,11 +274,12 @@ export class WalletService {
   ) {
     await this.setActiveNetwork(mode);
 
-    const { object: coinObject } = await this.client.getObject({
+    const coinObject = await this.tatumRpcClient.getObject({
       objectId: primaryCoinObjectId,
+      mode,
     });
 
-    if (!coinObject || coinObject instanceof Error) {
+    if (coinObject.error) {
       throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
     }
 

@@ -1,6 +1,4 @@
 import { Service } from "typedi";
-import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { WalletService } from "@/services/wallet.service";
 import { SettlementRepository } from "@/repositories/user/settlement.repository";
 import { APIError } from "@/utils/error-handler";
@@ -16,62 +14,41 @@ import { getCoinType } from "@/constants/tokens.constants";
 import logger from "@/utils/logger";
 import { logTransactionError } from "@/utils/log-transaction-error";
 import { SuiClientTypes } from "@mysten/sui/client";
+import { TatumRpcClient } from "@/services/tatum.service";
+import { getCoinDecimal } from "@/constants/tokens.constants";
+import { bigIntToDecimal } from "@/utils/decimal-to-big-int";
 
 @Service()
 export class PayoutService {
-    private client!: SuiGrpcClient;
-    private network!: "mainnet" | "testnet"
-
-    // cache for coin data: walletAddress -> { coinObjects, totalBalance }
-    private walletCache: Map<string, { coinObjects: string[]; totalBalance: number }> = new Map();
 
     constructor(
         private readonly walletService: WalletService,
         private readonly payoutRepository: PayoutRepository,
         private readonly fiatRepository: FiatRepository,
         private readonly fiatService: FiatService,
-        private readonly settlementRepository: SettlementRepository
+        private readonly settlementRepository: SettlementRepository,
+        private readonly tatumRpcClient: TatumRpcClient
     ) { }
 
-    private async setActiveNetwork(mode: Mode) {
-        this.network = mode == "live" ? "mainnet" : "testnet";
-        this.client = new SuiGrpcClient({
-            baseUrl: getJsonRpcFullnodeUrl(this.network),
-            network: this.network
-        });
-
-    }
-
-    private async fetchCoins(walletAddress: string) {
+    private async fetchCoins(walletAddress: string, mode: Mode) {
         let nextCursor: string | null = null;
-        let totalBalance = 0;
         const coinObjects: string[] = [];
         let hasNext = true;
 
         try {
             while (hasNext) {
-                const coins = await this.client.listCoins({
-                    owner: walletAddress,
-                    coinType: <string>getCoinType("USDC", this.network),
-                    cursor: nextCursor,
+                const coins = await this.tatumRpcClient.listCoins({
+                    address: walletAddress,
+                    coinType: <string>getCoinType("USDC", mode === "test" ? "testnet" : "mainnet"),
+                    ...(nextCursor && { cursor: nextCursor }),
+                    mode
                 });
-
-                const total = coins.objects
-                    .map((coin: { balance: string }) => Number(coin.balance))
-                    .reduce((a: number, b: number) => a + b, 0);
-
-                totalBalance += total;
-                coinObjects.push(...coins.objects.map((c) => c.objectId));
-
+                coinObjects.push(...coins.data.map((c) => c.coinObjectId));
                 hasNext = coins.hasNextPage;
-                nextCursor = coins.cursor ?? null;
+                nextCursor = coins.nextCursor ?? null;
             }
-
-            // Cache the result for reuse
-            this.walletCache.set(walletAddress, { coinObjects, totalBalance });
-            return { coinObjects, totalBalance };
+            return coinObjects;
         } catch (error: any) {
-            console.error("fetchCoins error:", error);
             throw new APIError("Unable to fetch on-chain balances. Please try again.", STATUS.serverUnavailable);
         }
     }
@@ -79,16 +56,18 @@ export class PayoutService {
     /**
      * Gets total balance for a user.
      */
-    async getBalances(walletAddress: string, mode: Mode) {
-        await this.setActiveNetwork(mode);
-        const cache: any = await this.fetchCoins(walletAddress);
+    async getBalances(address: string, mode: Mode) {
+        const balance = await this.tatumRpcClient.getBalance({
+            address,
+            mode
+        })
 
         return {
             message: "Balances retrieved successfully",
             payload: [
                 {
                     coinType: "USDC",
-                    balance: cache?.totalBalance,
+                    balance: bigIntToDecimal(BigInt(balance.totalBalance), getCoinDecimal("USDC"), 4),
                 }
             ]
         };
@@ -98,13 +77,13 @@ export class PayoutService {
         keys: Wallet,
         mode: Mode
     ) {
-        await this.setActiveNetwork(mode);
-        const coins = await this.fetchCoins(keys.address);
-        if (coins?.coinObjects.length == 0 || !coins?.coinObjects[0]) {
+
+        const coins = await this.fetchCoins(keys.address, mode);
+        if (coins?.length == 0 || !coins?.[0]) {
             throw new APIError("No balance available for payout.", STATUS.bad);
         }
-        const primaryCoin = coins?.coinObjects[0];
-        const mergeTargets = coins?.coinObjects.slice(1);
+        const primaryCoin = coins?.[0];
+        const mergeTargets = coins?.slice(1);
 
         if (mergeTargets.length != 0) {
             const derivedWalletBuffer = await deriveWallet(keys.derivationIndex);
@@ -202,19 +181,23 @@ export class PayoutService {
         profileId: string,
         mode: Mode
     ) {
-        await this.setActiveNetwork(mode);
         let to: string;
         let network: Network;
         let cryptoAccountId: string | undefined = undefined;
+
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlementAccountById(body.cryptoSettlementAccountId, profileId);
+            
             if (!settlementAccount) {
                 throw new APIError("Settlement account not found.", STATUS.bad);
             }
+
             to = settlementAccount.walletAddress;
             network = settlementAccount.network;
             cryptoAccountId = settlementAccount.id;
+
         } else
+
             if (body.walletAddress && body.network) {
                 to = body.walletAddress;
                 network = body.network;
@@ -225,6 +208,7 @@ export class PayoutService {
             } else {
                 throw new APIError("Provide a settlement account or a wallet address and network.", STATUS.bad);
             }
+
         const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createPayout(
@@ -384,7 +368,6 @@ export class PayoutService {
         body: InitiatePayoutDto,
         mode: Mode,
     ) {
-        await this.setActiveNetwork(mode);
         let {
             amount,
             accountId,
@@ -453,7 +436,7 @@ export class PayoutService {
         wallet: Wallet,
         mode: Mode
     ) {
-        await this.setActiveNetwork(mode);
+
         const payoutTransaction = await this.payoutRepository.getPayoutById(transactionId, profileId);
         if (
             !payoutTransaction ||
