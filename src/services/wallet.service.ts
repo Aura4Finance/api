@@ -298,26 +298,30 @@ export class WalletService {
     let totalUsdcAmount: bigint;
 
     if (coinTypeIn === coinTypeOut) {
-      coinOut = tx.object(coinObject.objectId);
+      coinOut = tx.object(primaryCoinObjectId);
       totalUsdcAmount = totalAmount;
     } else {
       const swapResult = await this.quoteService.swap(
         totalAmount,
         coinTypeIn,
         coinTypeOut,
-        coinObject.objectId,
+        primaryCoinObjectId,
         signer,
         tx
       );
       coinOut = swapResult.coinOut;
       totalUsdcAmount = BigInt(swapResult.amountOut);
     }
-
+    console.log('coinOut:', coinOut);
+    console.log('totalUsdcAmount:', totalUsdcAmount);
+    
     const platformFee = totalUsdcAmount / 100n; // 1%
     const platformKey = process.env.PLATFORM_PUBLIC_KEY;
     if (!platformKey) {
       throw new APIError("PLATFORM_PUBLIC_KEY is not configured", STATUS.serverError);
     }
+    console.log('platformFee:', platformFee);
+    console.log('platformKey:', platformKey);
 
     const [platformCoin] = tx.splitCoins(coinOut, [tx.pure.u64(platformFee)]);
     tx.transferObjects([platformCoin], tx.pure.address(platformKey));

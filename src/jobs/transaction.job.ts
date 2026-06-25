@@ -239,7 +239,7 @@ export const startTransactionWorker = () => {
           coinType,
           mode
         } = job.data;
-        console.log(job.data)
+        
         logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${coinType}`);
         const walletService = Container.get(WalletService);
         try{
@@ -256,7 +256,6 @@ export const startTransactionWorker = () => {
           }
         }catch(error: unknown){
           logger.error(`[transaction-worker] settle payment job error: ${error}`);
-          throw error;
         }
       }
     },

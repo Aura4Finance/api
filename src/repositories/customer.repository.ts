@@ -65,6 +65,16 @@ export class CustomerRepository {
       });
 
       if (existingLink) {
+        if (!(existingCustomer.mode.includes(mode))) {
+           return db.customer.update({
+            where: { id: existingCustomer.id },
+            data: {
+              mode: {
+                set: [...existingCustomer.mode, mode],
+              },
+            },
+          });
+        }
         throw new APIError("Customer already exists", STATUS.conflict);
       }
 
@@ -106,7 +116,7 @@ export class CustomerRepository {
         lastName: result.lastname,
         unsubscribed: false,
       });
-      if(!contact) {
+      if (!contact) {
         logger.info(`Adding customer to resend failed. Customerid: ${result.id}`);
       }
       await resend.contacts.segments.add({
