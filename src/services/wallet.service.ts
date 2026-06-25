@@ -174,14 +174,15 @@ export class WalletService {
       objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds],
       mode,
     });
-    if (!primaryObj || primaryObj.error ) {
+    if (!primaryObj || primaryObj.error) {
       logger.info(`Primary coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
     }
 
     const validMergeTargets = targetObjs
       .filter((obj): obj is Exclude<typeof obj, Error> => !(obj instanceof Error))
-      .map((obj) => obj.error ? null : obj.objectId);
+      .filter((obj) => !obj.error)
+      .map((obj) => obj.objectId);
 
     if (validMergeTargets.length === 0) {
       logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
@@ -194,7 +195,7 @@ export class WalletService {
       arguments: [
         tx.object(primaryObj.objectId),
         tx.makeMoveVec({
-          elements: validMergeTargets.map((id: string) => tx.object(id)),
+          elements: validMergeTargets.map((id) => tx.object(id)),
         }),
       ],
     });
