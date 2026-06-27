@@ -3,8 +3,7 @@ import { Service } from "typedi";
 import { Transaction, TransactionObjectArgument } from "@mysten/sui/transactions";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
-import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc"
+import { SuiJsonRpcClient, JsonRpcHTTPTransport } from '@mysten/sui/jsonRpc';
 import coinMarketClient from "@/config/coinMarketClient-config";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { SystemRepository } from "@/repositories/system.repository";
@@ -14,7 +13,7 @@ import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
-import { TatumRpcClient } from "./tatum.service";
+//import { logTransactionError } from "@/utils/log-transaction-error";
 
 
 type CoinMarketPriceConversionResponse = {
@@ -30,22 +29,28 @@ type ConversionDirection = 'to_USDT' | 'from_USDT';
 export class WalletService {
   private PAYFRICA_ID = "0x4378b5bf4c21d313150634d529218ea11166ca113a2869a31c88deb4bb8c2417";
   private PAYFRICA_CONFIG_ID = "0x50eee353064aa82f120bfc212486acf9bd9acf5b3a3b5aadea8284ce30a20f84";
-  private client!: SuiGrpcClient;
+  private client!: SuiJsonRpcClient;
   admin_secret_key: string;
 
   constructor(
     private readonly systemRepository: SystemRepository,
     private readonly quoteService: QuoteService,
-    private readonly tatumRpcClient: TatumRpcClient
   ) {
     this.admin_secret_key = process.env.ADMIN_SECRET_KEY as string;
   }
 
   private async setActiveNetwork(mode: Mode) {
     const network = mode == "live" ? "mainnet" : "testnet";
-    this.client = new SuiGrpcClient({
+    this.client = new SuiJsonRpcClient({
       network,
-      baseUrl: getJsonRpcFullnodeUrl(network)
+      transport: new JsonRpcHTTPTransport({
+        url: String(mode === "test" ? "https://sui-testnet.gateway.tatum.io" : "https://sui-mainnet.gateway.tatum.io"),
+        rpc: {
+          headers: {
+            "x-api-key": String(mode === "test" ? process.env.TATUM_TESTNET_KEY : process.env.TATUM_MAINNET_KEY),
+          },
+        },
+      }),
     });
     return getSmartContractId(network);
   }
@@ -92,39 +97,39 @@ export class WalletService {
     const result = await this.client.signAndExecuteTransaction({
       signer: admin_keypair,
       transaction: tx,
-      include: {
-        effects: true,
-        objectTypes: true,
+      options: {
+        showEffects: true,
+        showObjectChanges: true,
       },
     });
 
-    if (result.$kind !== "Transaction") {
+    if (result.effects?.status.status === "failure") {
       logger.error(
-        `Unexpected transaction result kind: ${result.$kind}. Full result: ${JSON.stringify(result)}`
+        `Unexpected transaction result digest: ${result.digest}. Full result: ${JSON.stringify(result)}`
       );
       throw new APIError("Deposit wallet creation failed.", STATUS.unprocessableEntity);
     }
 
-    const objectTypes = result.Transaction?.objectTypes ?? {};
+    const objectTypes = result.effects?.created;
 
-    const createdWalletId = Object.entries(objectTypes).find(
-      ([_id, type]) => type.includes("::main::Wallet")
-    )?.[0] ?? null;
+    const createdWalletId = objectTypes?.find(
+      (object) => object.reference.objectId.includes("::main::Wallet"))
 
     if (!createdWalletId) {
       logger.error(
         `Wallet object not found in transaction objectTypes: ${JSON.stringify(objectTypes)}`
       );
+      //logTransactionError(result);
       throw new APIError("Deposit wallet creation failed.", STATUS.unprocessableEntity);
     }
 
-    return createdWalletId;
+    return createdWalletId.reference.objectId;
   }
 
   async sponsoredTransaction(
     tx: Transaction,
     merchantSecretKey: string,
-    client?: SuiGrpcClient
+    client?: SuiJsonRpcClient
   ) {
     if (client) {
       this.client = client;
@@ -149,7 +154,7 @@ export class WalletService {
     const { signature: sponsorSignature } = await sponsor_keypair.signTransaction(txBytes);
 
     // Execute with both signatures
-    const result = await this.client.executeTransaction({
+    const result = await this.client.core.executeTransaction({
       transaction: txBytes,
       signatures: [merchantSignature, sponsorSignature],
       include: {
@@ -170,22 +175,20 @@ export class WalletService {
     const smart_contract_address = await this.setActiveNetwork(mode);
 
     // Batch fetch primary + all merge targets in one call
-    const [primaryObj, ...targetObjs] = await this.tatumRpcClient.getObjects({
-      objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds],
-      mode,
+    const objects = await this.client.core.getObjects({
+      objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds]
     });
-    if (!primaryObj || primaryObj.error) {
+
+    const [primaryObj, ...targetObjs] = objects.objects;
+
+    if (primaryObj instanceof Error || !primaryObj) {
       logger.info(`Primary coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
     }
 
     const validMergeTargets = targetObjs
-      .filter((obj) => !obj.error)
-      .map((obj) => tx.objectRef({
-        objectId: obj.objectId,
-        version: obj.version,
-        digest: obj.digest,
-      }))
+      .filter((obj): obj is Exclude<typeof obj, Error> => !(obj instanceof Error))
+      .map((obj) => obj.objectId);
 
     if (validMergeTargets.length === 0) {
       logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
@@ -196,13 +199,9 @@ export class WalletService {
     tx.moveCall({
       target: `${smart_contract_address}::main::merge_all_usdc`,
       arguments: [
-        tx.objectRef({
-          objectId: primaryObj.objectId,
-          version: primaryObj.version,
-          digest: primaryObj.digest,
-        }),
+        tx.object(primaryObj.objectId),
         tx.makeMoveVec({
-          elements: validMergeTargets.map((id) => id),
+          elements: validMergeTargets.map((id) => tx.object(id)),
         }),
       ],
     });
@@ -221,12 +220,9 @@ export class WalletService {
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
 
-    const coinObject = await this.tatumRpcClient.getObject({
-      objectId: primaryCoinObjectId,
-      mode,
-    });
+    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
 
-    if (coinObject.error) {
+    if (coinObject.error || !coinObject.data) {
       logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError("Coin object not found or unavailable.", STATUS.bad);
     }
@@ -235,11 +231,7 @@ export class WalletService {
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
       arguments: [
-        tx.objectRef({
-          objectId: coinObject.objectId,
-          version: coinObject.version,
-          digest: coinObject.digest,
-        }),
+        tx.object(coinObject.data.objectId),
         tx.pure.u64(amount * 1000000),
         tx.pure.address(to),
       ],
@@ -258,26 +250,16 @@ export class WalletService {
   ) {
     await this.setActiveNetwork(mode);
 
-    const coinObject = await this.tatumRpcClient.getObject({
-      objectId: primaryCoinObjectId,
-      mode,
-    });
+    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
 
-    if (coinObject.error) {
+    if (coinObject.error || !coinObject.data) {
       logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
       throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
     }
 
     const amountU64 = BigInt(Math.round(amount * 1_000_000));
     const tx = new Transaction();
-    const [splitCoin] = tx.splitCoins(
-      tx.objectRef({
-        objectId: coinObject.objectId,
-        version: coinObject.version,
-        digest: coinObject.digest,
-      }),
-      [tx.pure.u64(amountU64)]
-    );
+    const [splitCoin] = tx.splitCoins(coinObject.data.objectId, [tx.pure.u64(amountU64)]);
     tx.transferObjects([splitCoin], tx.pure.address(to));
 
     return this.sponsoredTransaction(tx, secret_key);
@@ -293,12 +275,9 @@ export class WalletService {
   ) {
     await this.setActiveNetwork(mode);
 
-    const coinObject = await this.tatumRpcClient.getObject({
-      objectId: primaryCoinObjectId,
-      mode,
-    });
+    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
 
-    if (coinObject.error) {
+    if (coinObject.error || !coinObject.data ) {
       throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
     }
 
@@ -316,11 +295,7 @@ export class WalletService {
     let totalUsdcAmount: bigint;
 
     if (coinTypeIn === coinTypeOut) {
-      coinOut = tx.objectRef({
-        objectId: primaryCoinObjectId,
-        version: coinObject.version,
-        digest: coinObject.digest,
-      });;
+      coinOut = tx.object(coinObject.data.objectId);
       totalUsdcAmount = totalAmount;
     } else {
       const swapResult = await this.quoteService.swap(
@@ -399,27 +374,19 @@ export class WalletService {
     if (mode == "test") {
       throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad)
     }
+
+    
+    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
+
+    if (coinObject.error || !coinObject.data ) {
+      throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
+    }
+
     const tx = new Transaction();
     const coinType = getCoinType(Token.USDC, "mainnet")!; // or SUI_COIN_TYPE
 
     // Split the coin to cover amount + fee, then pass to off_ramp
-    const coinObject = await this.tatumRpcClient.getObject({
-      objectId: primaryCoinObjectId,
-      mode,
-    });
-    
-    if (coinObject.error) {
-      throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
-    }
-
-    const [splitCoin] = tx.splitCoins(
-      tx.objectRef({
-        objectId: coinObject.objectId,
-        version: coinObject.version,
-        digest: coinObject.digest,
-      }),
-      [amount]
-    );
+    const [splitCoin] = tx.splitCoins(tx.object(coinObject.data.objectId), [amount]);
 
     tx.moveCall({
       target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,
