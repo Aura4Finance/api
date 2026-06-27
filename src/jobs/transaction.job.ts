@@ -261,6 +261,7 @@ export const startTransactionWorker = () => {
     },
     {
       connection: redisConnection,
+      concurrency: 3,
       settings: {
         backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000),
       },

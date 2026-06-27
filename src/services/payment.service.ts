@@ -151,7 +151,7 @@ export class PaymentService {
   ) {
     const customer = await this.resolveCustomer(profileId, mode, data.customerId, data.customer);
     await this.customerRepository.addModeToCustomer(customer.id, mode);
-    
+
     let amount: number;
     let paymentMethod: PaymentMethod;
     let currency: string;
@@ -436,7 +436,7 @@ export class PaymentService {
 
     const tx = await this.paymentRepository.findPaymentById(paymentId);
     if (!tx) {
-        throw new APIError("Payment session not found.", STATUS.notFound);
+      throw new APIError("Payment session not found.", STATUS.notFound);
     }
 
     // if (tx.status === "COMPLETED") {
@@ -451,40 +451,40 @@ export class PaymentService {
 
     const paymentWallet = tx.payment?.wallet;
     if (!paymentWallet?.address) {
-        throw new APIError("No transfer address found for this payment", STATUS.notFound);
+      throw new APIError("No transfer address found for this payment", STATUS.notFound);
     }
 
     const { amountInUSDC } = tx;
     const coinType = getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet");
     if (!coinType) {
-        throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
+      throw new APIError("Unsupported token for transfer verification.", STATUS.bad);
     }
 
     let target: bigint;
     if (token === Token.USDC) {
-        target = decimalToBigInt(amountInUSDC, getCoinDecimal(Token.USDC));
+      target = decimalToBigInt(amountInUSDC, getCoinDecimal(Token.USDC));
     } else {
-        if (tx.mode === Mode.test) {
-            throw new APIError("All payments must be in USDC for testnet", STATUS.bad);
-        }
-        target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
+      if (tx.mode === Mode.test) {
+        throw new APIError("All payments must be in USDC for testnet", STATUS.bad);
+      }
+      target = await this.quoteService.getTokenPrice(amountInUSDC, token, tx.mode);
     }
 
     // Fetch live balances on Sui
     const coins = await this.tatumRpcClient.listCoins({
-        address: paymentWallet.address,
-        coinType,
-        mode: tx.mode
+      address: paymentWallet.address,
+      coinType,
+      mode: tx.mode
     });
 
     const validCoins = coins.data
-        .filter(coin => BigInt(coin.balance) >= target)
-        .sort((a, b) => Number(BigInt(a.balance) - BigInt(b.balance))); // Sort ascending (closest match first)
+      .filter(coin => BigInt(coin.balance) >= target)
+      .sort((a, b) => Number(BigInt(a.balance) - BigInt(b.balance))); // Sort ascending (closest match first)
 
     const matchingCoin = validCoins[0] ?? null;
 
     if (!matchingCoin) {
-        throw new APIError("Payment not received yet.", STATUS.paymentRequired);
+      throw new APIError("Payment not received yet.", STATUS.paymentRequired);
     }
 
     const actualBalance = BigInt(matchingCoin.balance);
@@ -492,49 +492,56 @@ export class PaymentService {
     // Log significant overpayment (>5% above target)
     const overpaymentThreshold = target + (target * 5n) / 100n;
     if (actualBalance > overpaymentThreshold) {
-        const overpaymentPercent = ((actualBalance - target) * 100n) / target;
-        logger.info(
-            `[verifyTransfer] Overpayment detected on payment ${paymentId}: ` +
-            `expected ${target.toString()}, received ${matchingCoin.balance} (+${overpaymentPercent.toString()}%)`
-        );
+      const overpaymentPercent = ((actualBalance - target) * 100n) / target;
+      logger.info(
+        `[verifyTransfer] Overpayment detected on payment ${paymentId}: ` +
+        `expected ${target.toString()}, received ${matchingCoin.balance} (+${overpaymentPercent.toString()}%)`
+      );
     }
 
     const derivedWalletBuffer = await deriveWallet(paymentWallet.derivationIndex);
     const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
 
     await transactionQueue.add(
-        jobs.SETTLE_PAYMENT, 
-        {
-            walletPrivateKey: secretKey,
-            coinObjectId: matchingCoin.coinObjectId,
-            amount: matchingCoin.balance,
-            toAddress: tx?.profile.wallet[0]?.address as string,
-            coinType,
-            mode: tx.mode,
+      jobs.SETTLE_PAYMENT,
+      {
+        walletPrivateKey: secretKey,
+        coinObjectId: matchingCoin.coinObjectId,
+        amount: matchingCoin.balance,
+        toAddress: tx?.profile.wallet[0]?.address as string,
+        coinType,
+        mode: tx.mode,
+      },
+      {
+        attempts: 4,
+        removeOnComplete: true,
+        backoff: {
+          type: "exponential",
+          delay: 2000, // 2s, 4s, 8s, 16s
         },
-        { removeOnComplete: true }
+      }
     );
 
     await this.confirmPayment(
-        tx.id,
-        <string>tx.customerId,
-        tx.amount,
-        tx.amountInUSDC,
-        <string>tx.customer?.email,
-        <string>tx.customer?.firstname,
-        tx.profile.businessName,
-        <string>tx.profile.user?.email,
-        tx.currency,
-        tx.mode,
-        token,
+      tx.id,
+      <string>tx.customerId,
+      tx.amount,
+      tx.amountInUSDC,
+      <string>tx.customer?.email,
+      <string>tx.customer?.firstname,
+      tx.profile.businessName,
+      <string>tx.profile.user?.email,
+      tx.currency,
+      tx.mode,
+      token,
     );
 
     return {
-        message: "Transfer verification completed",
-        payload: {
-            status: "completed",
-            paymentId
-        }
+      message: "Transfer verification completed",
+      payload: {
+        status: "completed",
+        paymentId
+      }
     };
-}
+  }
 }
