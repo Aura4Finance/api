@@ -240,6 +240,7 @@ export const startTransactionWorker = () => {
         logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${coinType}`);
         const walletService = Container.get(WalletService);
 
+        try{
         const result = await walletService.splitSendToMerchantsAndAdmin(
           walletPrivateKey,
           coinObjectId,
@@ -251,6 +252,10 @@ export const startTransactionWorker = () => {
         if (result.$kind !== "Transaction") {
           logTransactionError(result)
         }
+        } catch (error: unknown) {
+    logger.error(`[transaction-worker] settle payment job error: ${(error as Error).stack ?? error}`);
+    throw error; // rethrow so BullMQ retries
+  }
       }
     },
     {
