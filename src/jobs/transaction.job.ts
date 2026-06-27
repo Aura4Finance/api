@@ -28,8 +28,8 @@ interface BatchStats {
 function logStats(stats: BatchStats): void {
   logger.info(
     `[transaction-worker] phase=${stats.phase} ` +
-      `attempted=${stats.attempted} skipped=${stats.skipped} ` +
-      `succeeded=${stats.succeeded} failed=${stats.failed}`
+    `attempted=${stats.attempted} skipped=${stats.skipped} ` +
+    `succeeded=${stats.succeeded} failed=${stats.failed}`
   );
 }
 
@@ -80,7 +80,7 @@ export const startTransactionWorker = () => {
   const paymentService = Container.get(PaymentService);
   const webhookQueueSvc = Container.get(WebhookQueue);
 
-  new Worker(
+  const worker = new Worker(
     TRANSACTION_WORKER,
     async (job) => {
       if (job.name === jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT) {
@@ -146,7 +146,7 @@ export const startTransactionWorker = () => {
                   occuredAt: new Date().toISOString()
                 }
               });
-            } catch {}
+            } catch { }
 
             // schedule active email
             await emailQueue.addSubscriptionActiveScheduler({
@@ -173,20 +173,18 @@ export const startTransactionWorker = () => {
           try {
             const subscription = await db.subscription.findUnique({ where: { id: subscriptionId }, include: { plan: { include: { profile: true } }, customer: true } });
             if (subscription) {
-              await db.subscription.update({ where: { id: subscription.id }, data: { status: "ABANDONED" as any } });
+              await db.subscription.update({ where: { id: subscription.id }, data: { status: "ABANDONED" } });
 
-              try {
-                await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
-                  event: "subscription.abandoned",
-                  data: {
-                    transactionId: subscription.id,
-                    amount: subscription.plan.amount,
-                    currency: subscription.plan.currency,
-                    status: "abandoned",
-                    occuredAt: new Date().toISOString()
-                  }
-                });
-              } catch {}
+              await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
+                event: "subscription.abandoned",
+                data: {
+                  transactionId: subscription.id,
+                  amount: subscription.plan.amount,
+                  currency: subscription.plan.currency,
+                  status: "abandoned",
+                  occuredAt: new Date().toISOString()
+                }
+              });
 
               const emailQueueSvc = Container.get(EmailQueue);
               if (failureEmailTemplate === "cancelled") {
@@ -220,7 +218,6 @@ export const startTransactionWorker = () => {
       if (job.name === jobs.EXPIRE_PENDING) {
         try {
           logger.info("⏱ Transaction expiry job running");
-
           const expiryStats = await processExpiredPendingTransactions(paymentService);
 
           logStats(expiryStats);
@@ -239,23 +236,20 @@ export const startTransactionWorker = () => {
           coinType,
           mode
         } = job.data;
-        
+
         logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${coinType}`);
         const walletService = Container.get(WalletService);
-        try{
-          const result = await walletService.splitSendToMerchantsAndAdmin(
-            walletPrivateKey,
-            coinObjectId,
-            amount,
-            toAddress,
-            coinType,
-            mode
-          )
-          if(result.$kind !== "Transaction"){
-            logTransactionError(result)
-          }
-        }catch(error: unknown){
-          logger.error(`[transaction-worker] settle payment job error: ${error}`);
+
+        const result = await walletService.splitSendToMerchantsAndAdmin(
+          walletPrivateKey,
+          coinObjectId,
+          amount,
+          toAddress,
+          coinType,
+          mode
+        )
+        if (result.$kind !== "Transaction") {
+          logTransactionError(result)
         }
       }
     },
@@ -269,4 +263,12 @@ export const startTransactionWorker = () => {
   );
 
   logger.info("💸 Transaction Worker started");
+  // Prevents unhandled worker errors from crashing the process
+  worker.on("error", (err) => {
+    logger.error(`[transaction-worker] worker error: ${err}`);
+  });
+
+  worker.on("failed", (job, err) => {
+    logger.error(`[transaction-worker] job ${job?.name} failed: ${err}`);
+  });
 };

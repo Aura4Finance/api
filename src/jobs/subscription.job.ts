@@ -644,38 +644,44 @@ export const startSubscriptionWorker = (): void => {
     const walletService = Container.get(WalletService);
     const paymentService = Container.get(PaymentService);
 
-    new Worker(
+    const worker = new Worker(
         SUBSCRIPTION_WORKER,
         async (job) => {
             if (job.name === jobs.PROCESS_RENEWALS) {
                 const now = new Date();
-    
+
                 const [reminderStats, expiryStats, cancellationStats] = await Promise.all([
                     processReminders(paymentRepository, walletService, emailQueue, now),
                     processExpiries(paymentRepository, walletService, emailQueue, now),
                     processCancellations(emailQueue, now),
                 ]);
-    
+
                 logStats(reminderStats);
                 logStats(expiryStats);
                 logStats(cancellationStats);
-                } else if (job.name === jobs.PROCESS_TRIAL_SUBSCRIPTIONS) {
-                    const now = new Date();
-                    const trialStats = await processTrialExpirations(paymentRepository, paymentService, emailQueue, now);
-                    logStats(trialStats);
+            } else if (job.name === jobs.PROCESS_TRIAL_SUBSCRIPTIONS) {
+                const now = new Date();
+                const trialStats = await processTrialExpirations(paymentRepository, paymentService, emailQueue, now);
+                logStats(trialStats);
             } else if (job.name === jobs.RECONCILE_STUCK_SUBSCRIPTIONS) {
                 const now = new Date();
                 const reconciliationStats = await reconcileStuckSubscriptions(now);
                 logStats(reconciliationStats);
-             }
-            },
+            }
+        },
         {
             connection: redisConnection,
-            // BullMQ-level retry: retry up to 3 times with exponential back-off
-            // before the job is moved to the dead-letter (failed) queue.
             settings: { backoffStrategy: (attempt) => Math.min(attempt * 5_000, 30_000) },
         }
     );
 
+    // Prevents unhandled worker errors from crashing the process
+    worker.on("error", (err) => {
+        logger.error(`[subscription-worker] worker error: ${err}`);
+    });
+
+    worker.on("failed", (job, err) => {
+        logger.error(`[subscription-worker] job ${job?.name} failed: ${err}`);
+    });
     logger.info("🔁 Subscription renewal worker started");
 };

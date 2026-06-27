@@ -28,8 +28,8 @@ interface JobStats {
 function logStats(stats: JobStats): void {
   logger.info(
     `[email-worker] phase=${stats.phase} ` +
-      `attempted=${stats.attempted} skipped=${stats.skipped} ` +
-      `succeeded=${stats.succeeded} failed=${stats.failed}`
+    `attempted=${stats.attempted} skipped=${stats.skipped} ` +
+    `succeeded=${stats.succeeded} failed=${stats.failed}`
   );
 }
 
@@ -111,7 +111,7 @@ const checkIfUserSuscribedForEmailNotification = async (email: string) => {
 
 export const startEmailWorker = () => {
 
-  new Worker(
+  const worker = new Worker(
     EMAIL_WORKER,
     async (job) => {
       const { email, name, customerName, ...rest } = job.data;
@@ -266,6 +266,14 @@ export const startEmailWorker = () => {
       },
     }
   );
+  // Prevents unhandled worker errors from crashing the process
+  worker.on("error", (err) => {
+    logger.error(`[email-worker] worker error: ${err}`);
+  });
+
+  worker.on("failed", (job, err) => {
+    logger.error(`[email-worker] job ${job?.name} failed: ${err}`);
+  });
 
   logger.info("📧 Email Worker started");
 };
