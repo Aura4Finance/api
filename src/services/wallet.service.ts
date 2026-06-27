@@ -143,7 +143,24 @@ export class WalletService {
     // Build transaction kind bytes (no gas info) from merchant's perspective
     tx.setSender(merchant_address);
     tx.setGasOwner(sponsor_address);
-    tx.setGasPayment([]); // empty = use sponsor's address balance
+
+    const { data: gasCoins } = await this.client.getCoins({
+      owner: sponsor_address,
+      coinType: "0x2::sui::SUI",
+    });
+
+    if (!gasCoins.length) {
+      throw new APIError("Sponsor has no SUI for gas", STATUS.serverError);
+    }
+
+    tx.setGasPayment(
+      gasCoins.slice(0, 1).map((c) => ({
+        objectId: c.coinObjectId,
+        version: c.version,
+        digest: c.digest,
+      }))
+    );
+
 
     const txBytes = await tx.build({ client: this.client });
 
@@ -277,7 +294,7 @@ export class WalletService {
 
     const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
 
-    if (coinObject.error || !coinObject.data ) {
+    if (coinObject.error || !coinObject.data) {
       throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
     }
 
@@ -375,10 +392,10 @@ export class WalletService {
       throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad)
     }
 
-    
+
     const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
 
-    if (coinObject.error || !coinObject.data ) {
+    if (coinObject.error || !coinObject.data) {
       throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
     }
 
