@@ -5,7 +5,7 @@
   "description": "",
   "main": "src/server.ts",
   "scripts": {
-    "build": "tsc && tsc-alias && cp -r src/html dist/html",
+    "build": "tsc && tsc-alias",
     "start": "npx prisma migrate deploy && node dist/server.js",
     "dev": "concurrently -k -n TSC,ALIAS,APP -c blue,yellow,green \"tsc --watch --preserveWatchOutput\" \"tsc-alias --watch\" \"nodemon --watch dist --delay 300ms dist/server.js\""
   },
@@ -75,11 +75,5 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
-  },
-  "overrides": {
-  "@mysten/sui": "^2.19.0",
-  "@pythnetwork/pyth-sui-js": {
-    "@mysten/sui": "^2.19.0"
   }
-}
 }
