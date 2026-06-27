@@ -13,8 +13,6 @@ import { getSmartContractId } from "@/constants/networks.constant";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
-//import { logTransactionError } from "@/utils/log-transaction-error";
-
 
 type CoinMarketPriceConversionResponse = {
   status: {
@@ -24,7 +22,12 @@ type CoinMarketPriceConversionResponse = {
     quote: Record<string, { price: number }>;
   };
 };
+
 type ConversionDirection = 'to_USDT' | 'from_USDT';
+
+// Ref shape the SDK needs to skip object resolution at build time
+type ObjectRef = { objectId: string; version: string; digest: string };
+
 @Service()
 export class WalletService {
   private PAYFRICA_ID = "0x4378b5bf4c21d313150634d529218ea11166ca113a2869a31c88deb4bb8c2417";
@@ -55,15 +58,39 @@ export class WalletService {
     return getSmartContractId(network);
   }
 
+  // Fetches a full objectRef (id + version + digest) — use this instead of tx.object(id)
+  // to prevent the SDK from making extra RPC calls at tx.build() time
+  private async getObjectRef(id: string): Promise<ObjectRef> {
+    const obj = await this.client.getObject({ id });
+    if (obj.error || !obj.data) {
+      throw new APIError(`Object not found: ${id}`, STATUS.bad);
+    }
+    return {
+      objectId: obj.data.objectId,
+      version: obj.data.version,
+      digest: obj.data.digest,
+    };
+  }
+
+  // Fetches sponsor gas coins — one call, returns the ref needed for setGasPayment
+  private async getSponsorGasRef(sponsorAddress: string): Promise<ObjectRef> {
+    const { data: gasCoins } = await this.client.getCoins({
+      owner: sponsorAddress,
+      coinType: "0x2::sui::SUI",
+    });
+    if (!gasCoins.length || !gasCoins[0]) {
+      throw new APIError("Sponsor has no SUI for gas", STATUS.serverError);
+    }
+    const c = gasCoins[0];
+    return { objectId: c.coinObjectId, version: c.version, digest: c.digest };
+  }
+
   async createWallet() {
     const index = await this.systemRepository.getNextWalletIndex();
     const derived = await deriveWallet(index);
     const keypair = Ed25519Keypair.fromSecretKey(derived);
     const address = keypair.getPublicKey().toSuiAddress();
-    return {
-      address,
-      derivationIndex: index
-    }
+    return { address, derivationIndex: index };
   }
 
   async serializeDerivedKeyToSuiSecretKey(derived: Buffer<ArrayBuffer>) {
@@ -82,7 +109,6 @@ export class WalletService {
     const admin_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
 
     const tx = new Transaction();
-
     tx.moveCall({
       target: `${smart_contract_address}::main::generatePaymentWallet`,
       arguments: [
@@ -111,15 +137,14 @@ export class WalletService {
     }
 
     const objectTypes = result.effects?.created;
-
     const createdWalletId = objectTypes?.find(
-      (object) => object.reference.objectId.includes("::main::Wallet"))
+      (object) => object.reference.objectId.includes("::main::Wallet")
+    );
 
     if (!createdWalletId) {
       logger.error(
         `Wallet object not found in transaction objectTypes: ${JSON.stringify(objectTypes)}`
       );
-      //logTransactionError(result);
       throw new APIError("Deposit wallet creation failed.", STATUS.unprocessableEntity);
     }
 
@@ -140,38 +165,22 @@ export class WalletService {
     const sponsor_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
     const sponsor_address = sponsor_keypair.getPublicKey().toSuiAddress();
 
-    // Build transaction kind bytes (no gas info) from merchant's perspective
     tx.setSender(merchant_address);
     tx.setGasOwner(sponsor_address);
 
-    const { data: gasCoins } = await this.client.getCoins({
-      owner: sponsor_address,
-      coinType: "0x2::sui::SUI",
-    });
+    // Explicit gas ref — prevents SDK from calling getReferenceGasPrice + getCheckpoint
+    const gasRef = await this.getSponsorGasRef(sponsor_address);
+    tx.setGasPayment([gasRef]);
+    tx.setGasPrice(1000n);
+    tx.setGasBudget(10_000_000n);
 
-    if (!gasCoins.length) {
-      throw new APIError("Sponsor has no SUI for gas", STATUS.serverError);
-    }
-
-    tx.setGasPayment(
-      gasCoins.slice(0, 1).map((c) => ({
-        objectId: c.coinObjectId,
-        version: c.version,
-        digest: c.digest,
-      }))
-    );
-
-
+    // No client passed to build() — SDK won't make any resolution RPC calls
     const txBytes = await tx.build({ client: this.client });
 
-    // Merchant signs first (can sign before sponsor since no coin refs to coordinate)
     const { signature: merchantSignature } = await merchant_keypair.signTransaction(txBytes);
-
-    // Sponsor signs
     const { signature: sponsorSignature } = await sponsor_keypair.signTransaction(txBytes);
 
-    // Execute with both signatures
-    const result = await this.client.core.executeTransaction({
+    return this.client.core.executeTransaction({
       transaction: txBytes,
       signatures: [merchantSignature, sponsorSignature],
       include: {
@@ -179,8 +188,6 @@ export class WalletService {
         objectTypes: true,
       },
     });
-
-    return result;
   }
 
   async mergeCoinObjects(
@@ -191,9 +198,8 @@ export class WalletService {
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
 
-    // Batch fetch primary + all merge targets in one call
     const objects = await this.client.core.getObjects({
-      objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds]
+      objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds],
     });
 
     const [primaryObj, ...targetObjs] = objects.objects;
@@ -216,17 +222,15 @@ export class WalletService {
     tx.moveCall({
       target: `${smart_contract_address}::main::merge_all_usdc`,
       arguments: [
-        tx.object(primaryObj.objectId),
+        tx.objectRef({ objectId: primaryObj.objectId, version: primaryObj.version!, digest: primaryObj.digest! }),
         tx.makeMoveVec({
           elements: validMergeTargets.map((id) => tx.object(id)),
         }),
       ],
     });
 
-    const result = await this.sponsoredTransaction(tx, secret_key);
-    return result;
+    return this.sponsoredTransaction(tx, secret_key);
   }
-
 
   async withdrawlToMerchant(
     secret_key: string,
@@ -236,26 +240,19 @@ export class WalletService {
     mode: Mode,
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
-
-    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
-
-    if (coinObject.error || !coinObject.data) {
-      logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
-      throw new APIError("Coin object not found or unavailable.", STATUS.bad);
-    }
+    const coinRef = await this.getObjectRef(primaryCoinObjectId);
 
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
       arguments: [
-        tx.object(coinObject.data.objectId),
+        tx.objectRef(coinRef),
         tx.pure.u64(amount * 1000000),
         tx.pure.address(to),
       ],
     });
 
-    const result = await this.sponsoredTransaction(tx, secret_key);
-    return result;
+    return this.sponsoredTransaction(tx, secret_key);
   }
 
   async splitAndSend(
@@ -266,17 +263,11 @@ export class WalletService {
     mode: Mode,
   ) {
     await this.setActiveNetwork(mode);
-
-    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
-
-    if (coinObject.error || !coinObject.data) {
-      logger.info(`Coin object not found for ID: ${primaryCoinObjectId}`);
-      throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
-    }
+    const coinRef = await this.getObjectRef(primaryCoinObjectId);
 
     const amountU64 = BigInt(Math.round(amount * 1_000_000));
     const tx = new Transaction();
-    const [splitCoin] = tx.splitCoins(coinObject.data.objectId, [tx.pure.u64(amountU64)]);
+    const [splitCoin] = tx.splitCoins(tx.objectRef(coinRef), [tx.pure.u64(amountU64)]);
     tx.transferObjects([splitCoin], tx.pure.address(to));
 
     return this.sponsoredTransaction(tx, secret_key);
@@ -291,12 +282,7 @@ export class WalletService {
     mode: Mode
   ) {
     await this.setActiveNetwork(mode);
-
-    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
-
-    if (coinObject.error || !coinObject.data) {
-      throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
-    }
+    const coinRef = await this.getObjectRef(primaryCoinObjectId);
 
     const network = mode === "live" ? "mainnet" : "testnet";
     const coinTypeOut = getCoinType(Token.USDC, network);
@@ -312,7 +298,8 @@ export class WalletService {
     let totalUsdcAmount: bigint;
 
     if (coinTypeIn === coinTypeOut) {
-      coinOut = tx.object(coinObject.data.objectId);
+      // Use objectRef — SDK won't resolve this at build time
+      coinOut = tx.objectRef(coinRef);
       totalUsdcAmount = totalAmount;
     } else {
       const swapResult = await this.quoteService.swap(
@@ -327,7 +314,7 @@ export class WalletService {
       totalUsdcAmount = BigInt(swapResult.amountOut);
     }
 
-    const platformFee = totalUsdcAmount / 100n; // 1%
+    const platformFee = totalUsdcAmount / 100n;
     const platformKey = process.env.PLATFORM_PUBLIC_KEY;
     if (!platformKey) {
       throw new APIError("PLATFORM_PUBLIC_KEY is not configured", STATUS.serverError);
@@ -349,22 +336,13 @@ export class WalletService {
       throw new APIError("Amount must be greater than 0.", STATUS.bad);
     }
 
-    // Determine base and convert symbols dynamically
     const isToUSDT = direction === 'to_USDT';
-
     const symbol = isToUSDT ? currency : 'USDT';
     const convert = isToUSDT ? 'USDT' : currency;
 
-
     const res = await coinMarketClient.get<CoinMarketPriceConversionResponse>(
       "/tools/price-conversion",
-      {
-        params: {
-          amount,
-          symbol,
-          convert,
-        },
-      }
+      { params: { amount, symbol, convert } }
     );
 
     if (
@@ -372,15 +350,11 @@ export class WalletService {
       res.data?.status?.error_code !== 0 ||
       !res.data?.data?.quote?.[convert]?.price
     ) {
-      throw new APIError(
-        "Unable to resolve conversion rate. Please try again.",
-        STATUS.serverError
-      );
+      throw new APIError("Unable to resolve conversion rate. Please try again.", STATUS.serverError);
     }
 
     return res.data.data.quote[convert].price;
   }
-
 
   async offrampSmartContractCall(
     amount: bigint,
@@ -389,35 +363,27 @@ export class WalletService {
     mode: Mode
   ) {
     if (mode == "test") {
-      throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad)
+      throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad);
     }
 
-
-    const coinObject = await this.client.getObject({ id: primaryCoinObjectId });
-
-    if (coinObject.error || !coinObject.data) {
-      throw new APIError(`Coin object not found for ID: ${primaryCoinObjectId}`, STATUS.bad);
-    }
+    await this.setActiveNetwork(mode);
+    const coinRef = await this.getObjectRef(primaryCoinObjectId);
 
     const tx = new Transaction();
-    const coinType = getCoinType(Token.USDC, "mainnet")!; // or SUI_COIN_TYPE
+    const coinType = getCoinType(Token.USDC, "mainnet")!;
 
-    // Split the coin to cover amount + fee, then pass to off_ramp
-    const [splitCoin] = tx.splitCoins(tx.object(coinObject.data.objectId), [amount]);
-
+    const [splitCoin] = tx.splitCoins(tx.objectRef(coinRef), [amount]);
     tx.moveCall({
       target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,
       arguments: [
-        tx.object(this.PAYFRICA_CONFIG_ID), // Shared config object
-        splitCoin,                      // Coin covering amount + fee
-        tx.pure.string("NGN"),          // Target fiat currency
-        tx.object.clock(),              // Sui clock (0x6)
+        tx.object(this.PAYFRICA_CONFIG_ID),
+        splitCoin,
+        tx.pure.string("NGN"),
+        tx.object.clock(),
       ],
       typeArguments: [coinType],
     });
-    await this.setActiveNetwork(mode);
-    const result = await this.sponsoredTransaction(tx, secret_key)
-    return result;
-  }
 
+    return this.sponsoredTransaction(tx, secret_key);
+  }
 }
