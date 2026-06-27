@@ -517,7 +517,7 @@ export class PaymentService {
         removeOnComplete: true,
         backoff: {
           type: "exponential",
-          delay: 2000, // 2s, 4s, 8s, 16s
+          delay: 10_000,
         },
       }
     );
