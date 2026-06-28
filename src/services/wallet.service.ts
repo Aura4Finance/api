@@ -118,7 +118,7 @@ export class WalletService {
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
     });
-      // Explicit gas ref — prevents SDK from calling getReferenceGasPrice + getCheckpoint
+    // Explicit gas ref — prevents SDK from calling getReferenceGasPrice + getCheckpoint
     const gasRef = await this.getSponsorGasRef(admin_keypair.getPublicKey().toSuiAddress());
     tx.setGasPayment([gasRef]);
     tx.setGasPrice(1000n);
@@ -140,208 +140,209 @@ export class WalletService {
       throw new APIError("Deposit wallet creation failed.", STATUS.unprocessableEntity);
     }
 
-    const objectTypes = result.effects?.created;
-    const createdWalletId = objectTypes?.find(
-      (object) => object.reference.objectId.includes("::main::Wallet")
+    const objectChanges = result.objectChanges;
+    const createdWallet = objectChanges?.find(
+      (change) =>
+        change.type === "created" &&
+        change.objectType.includes("::main::Wallet")
     );
 
-    if (!createdWalletId) {
+    if (!createdWallet || createdWallet.type !== "created") {
       logger.error(
-        `Wallet object not found in transaction objectTypes: ${JSON.stringify(objectTypes)}`
+        `Wallet object not found in transaction objectTypes: ${JSON.stringify(objectChanges)}`
       );
       throw new APIError("Deposit wallet creation failed.", STATUS.unprocessableEntity);
     }
 
-    return createdWalletId.reference.objectId;
   }
 
   async sponsoredTransaction(
-    tx: Transaction,
-    merchantSecretKey: string,
-    client?: SuiJsonRpcClient
-  ) {
-    if (client) {
-      this.client = client;
+      tx: Transaction,
+      merchantSecretKey: string,
+      client ?: SuiJsonRpcClient
+    ) {
+      if (client) {
+        this.client = client;
+      }
+
+      const merchant_keypair = Ed25519Keypair.fromSecretKey(merchantSecretKey);
+      const merchant_address = merchant_keypair.getPublicKey().toSuiAddress();
+      const sponsor_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
+      const sponsor_address = sponsor_keypair.getPublicKey().toSuiAddress();
+
+      tx.setSender(merchant_address);
+      tx.setGasOwner(sponsor_address);
+
+      // Explicit gas ref — prevents SDK from calling getReferenceGasPrice + getCheckpoint
+      const gasRef = await this.getSponsorGasRef(sponsor_address);
+      tx.setGasPayment([gasRef]);
+      tx.setGasPrice(1000n);
+      tx.setGasBudget(10_000_000n);
+
+      // No client passed to build() — SDK won't make any resolution RPC calls
+      const txBytes = await tx.build({ client: this.client });
+
+      const { signature: merchantSignature } = await merchant_keypair.signTransaction(txBytes);
+      const { signature: sponsorSignature } = await sponsor_keypair.signTransaction(txBytes);
+
+      return this.client.core.executeTransaction({
+        transaction: txBytes,
+        signatures: [merchantSignature, sponsorSignature],
+        include: {
+          effects: true,
+          objectTypes: true,
+        },
+      });
     }
-
-    const merchant_keypair = Ed25519Keypair.fromSecretKey(merchantSecretKey);
-    const merchant_address = merchant_keypair.getPublicKey().toSuiAddress();
-    const sponsor_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
-    const sponsor_address = sponsor_keypair.getPublicKey().toSuiAddress();
-
-    tx.setSender(merchant_address);
-    tx.setGasOwner(sponsor_address);
-
-    // Explicit gas ref — prevents SDK from calling getReferenceGasPrice + getCheckpoint
-    const gasRef = await this.getSponsorGasRef(sponsor_address);
-    tx.setGasPayment([gasRef]);
-    tx.setGasPrice(1000n);
-    tx.setGasBudget(10_000_000n);
-
-    // No client passed to build() — SDK won't make any resolution RPC calls
-    const txBytes = await tx.build({ client: this.client });
-
-    const { signature: merchantSignature } = await merchant_keypair.signTransaction(txBytes);
-    const { signature: sponsorSignature } = await sponsor_keypair.signTransaction(txBytes);
-
-    return this.client.core.executeTransaction({
-      transaction: txBytes,
-      signatures: [merchantSignature, sponsorSignature],
-      include: {
-        effects: true,
-        objectTypes: true,
-      },
-    });
-  }
 
   async mergeCoinObjects(
-    secret_key: string,
-    primaryCoinObjectId: string,
-    mergeTargetsObjectIds: string[],
-    mode: Mode,
-  ) {
-    const smart_contract_address = await this.setActiveNetwork(mode);
+      secret_key: string,
+      primaryCoinObjectId: string,
+      mergeTargetsObjectIds: string[],
+      mode: Mode,
+    ) {
+      const smart_contract_address = await this.setActiveNetwork(mode);
 
-    const objects = await this.client.core.getObjects({
-      objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds],
-    });
+      const objects = await this.client.core.getObjects({
+        objectIds: [primaryCoinObjectId, ...mergeTargetsObjectIds],
+      });
 
-    const [primaryObj, ...targetObjs] = objects.objects;
+      const [primaryObj, ...targetObjs] = objects.objects;
 
-    if (primaryObj instanceof Error || !primaryObj) {
-      logger.info(`Primary coin object not found for ID: ${primaryCoinObjectId}`);
-      throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
+      if (primaryObj instanceof Error || !primaryObj) {
+        logger.info(`Primary coin object not found for ID: ${primaryCoinObjectId}`);
+        throw new APIError("Primary coin not found or unavailable.", STATUS.bad);
+      }
+
+      const validMergeTargets = targetObjs
+        .filter((obj): obj is Exclude<typeof obj, Error> => !(obj instanceof Error))
+        .map((obj) => obj.objectId);
+
+      if (validMergeTargets.length === 0) {
+        logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
+        throw new APIError("No additional coin objects available to merge.", STATUS.bad);
+      }
+
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${smart_contract_address}::main::merge_all_usdc`,
+        arguments: [
+          tx.objectRef({ objectId: primaryObj.objectId, version: primaryObj.version!, digest: primaryObj.digest! }),
+          tx.makeMoveVec({
+            elements: validMergeTargets.map((id) => tx.object(id)),
+          }),
+        ],
+      });
+
+      return this.sponsoredTransaction(tx, secret_key);
     }
-
-    const validMergeTargets = targetObjs
-      .filter((obj): obj is Exclude<typeof obj, Error> => !(obj instanceof Error))
-      .map((obj) => obj.objectId);
-
-    if (validMergeTargets.length === 0) {
-      logger.info(`No valid merge targets found for IDs: ${mergeTargetsObjectIds.join(", ")}`);
-      throw new APIError("No additional coin objects available to merge.", STATUS.bad);
-    }
-
-    const tx = new Transaction();
-    tx.moveCall({
-      target: `${smart_contract_address}::main::merge_all_usdc`,
-      arguments: [
-        tx.objectRef({ objectId: primaryObj.objectId, version: primaryObj.version!, digest: primaryObj.digest! }),
-        tx.makeMoveVec({
-          elements: validMergeTargets.map((id) => tx.object(id)),
-        }),
-      ],
-    });
-
-    return this.sponsoredTransaction(tx, secret_key);
-  }
 
   async withdrawlToMerchant(
-    secret_key: string,
-    amount: number,
-    to: string,
-    mode: Mode,
-  ) {
-    const smart_contract_address = await this.setActiveNetwork(mode);
-    const balance = decimalToBigInt(amount, getCoinDecimal("USDC"));
-    const network = mode === "live" ? "mainnet" : "testnet";
+      secret_key: string,
+      amount: number,
+      to: string,
+      mode: Mode,
+    ) {
+      const smart_contract_address = await this.setActiveNetwork(mode);
+      const balance = decimalToBigInt(amount, getCoinDecimal("USDC"));
+      const network = mode === "live" ? "mainnet" : "testnet";
 
-    const tx = new Transaction();
-    tx.moveCall({
-      target: `${smart_contract_address}::main::withdraw_to_merchant`,
-      arguments: [
-        tx.coin({
-          balance,
-          type: getCoinType("USDC", network)!
-        }),
-        tx.pure.u64(balance),
-        tx.pure.address(to),
-      ],
-    });
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${smart_contract_address}::main::withdraw_to_merchant`,
+        arguments: [
+          tx.coin({
+            balance,
+            type: getCoinType("USDC", network)!
+          }),
+          tx.pure.u64(balance),
+          tx.pure.address(to),
+        ],
+      });
 
-    return this.sponsoredTransaction(tx, secret_key);
-  }
+      return this.sponsoredTransaction(tx, secret_key);
+    }
 
   async splitAndSend(
-    secret_key: string,
-    amount: number,
-    to: string,
-    mode: Mode,
-  ) {
-    await this.setActiveNetwork(mode);
-    const network = mode === "live" ? "mainnet" : "testnet";
-    const balance = decimalToBigInt(amount, getCoinDecimal("USDC"));
+      secret_key: string,
+      amount: number,
+      to: string,
+      mode: Mode,
+    ) {
+      await this.setActiveNetwork(mode);
+      const network = mode === "live" ? "mainnet" : "testnet";
+      const balance = decimalToBigInt(amount, getCoinDecimal("USDC"));
 
-    const tx = new Transaction();
-    tx.transferObjects(
-      [tx.coin({
-        balance,
-        type: getCoinType("USDC", network)!
-      })],
-      tx.pure.address(to));
+      const tx = new Transaction();
+      tx.transferObjects(
+        [tx.coin({
+          balance,
+          type: getCoinType("USDC", network)!
+        })],
+        tx.pure.address(to));
 
-    return this.sponsoredTransaction(tx, secret_key);
-  }
+      return this.sponsoredTransaction(tx, secret_key);
+    }
 
   async splitSendToMerchantsAndAdmin(
-    secret_key: string,
-    primaryCoinObjectId: string,
-    amount: string,
-    to: string,
-    coinTypeIn: string,
-    mode: Mode
-  ) {
-    await this.setActiveNetwork(mode);
-    const coinRef = await this.getObjectRef(primaryCoinObjectId);
-    const network = mode === "live" ? "mainnet" : "testnet";
-    const coinTypeOut = getCoinType(Token.USDC, network);
+      secret_key: string,
+      primaryCoinObjectId: string,
+      amount: string,
+      to: string,
+      coinTypeIn: string,
+      mode: Mode
+    ) {
+      await this.setActiveNetwork(mode);
+      const coinRef = await this.getObjectRef(primaryCoinObjectId);
+      const network = mode === "live" ? "mainnet" : "testnet";
+      const coinTypeOut = getCoinType(Token.USDC, network);
 
-    if (!coinTypeOut) {
-      throw new APIError(`Could not resolve USDC coin type for network: ${network}`, STATUS.serverError);
+      if (!coinTypeOut) {
+        throw new APIError(`Could not resolve USDC coin type for network: ${network}`, STATUS.serverError);
+      }
+
+      const totalAmount = BigInt(amount);
+      const tx = new Transaction();
+      const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
+
+      let coinOut: TransactionObjectArgument;
+      let totalUsdcAmount: bigint;
+
+      if (coinTypeIn === coinTypeOut) {
+        coinOut = tx.objectRef(coinRef);
+        totalUsdcAmount = totalAmount;
+      } else {
+        const swapResult = await this.quoteService.swap(
+          totalAmount,
+          coinTypeIn,
+          coinTypeOut,
+          primaryCoinObjectId,
+          signer,
+          tx
+        );
+        coinOut = swapResult.coinOut;
+        totalUsdcAmount = BigInt(swapResult.amountOut);
+      }
+
+      const platformFee = totalUsdcAmount / 100n;
+      const platformKey = process.env.PLATFORM_PUBLIC_KEY;
+      if (!platformKey) {
+        throw new APIError("PLATFORM_PUBLIC_KEY is not configured", STATUS.serverError);
+      }
+
+      const [platformCoin] = tx.splitCoins(coinOut, [tx.pure.u64(platformFee)]);
+      tx.transferObjects([platformCoin], tx.pure.address(platformKey));
+      tx.transferObjects([coinOut], tx.pure.address(to));
+
+      return this.sponsoredTransaction(tx, secret_key);
     }
-
-    const totalAmount = BigInt(amount);
-    const tx = new Transaction();
-    const signer = Ed25519Keypair.fromSecretKey(secret_key).getPublicKey().toSuiAddress();
-
-    let coinOut: TransactionObjectArgument;
-    let totalUsdcAmount: bigint;
-
-    if (coinTypeIn === coinTypeOut) {
-      coinOut = tx.objectRef(coinRef);
-      totalUsdcAmount = totalAmount;
-    } else {
-      const swapResult = await this.quoteService.swap(
-        totalAmount,
-        coinTypeIn,
-        coinTypeOut,
-        primaryCoinObjectId,
-        signer,
-        tx
-      );
-      coinOut = swapResult.coinOut;
-      totalUsdcAmount = BigInt(swapResult.amountOut);
-    }
-
-    const platformFee = totalUsdcAmount / 100n;
-    const platformKey = process.env.PLATFORM_PUBLIC_KEY;
-    if (!platformKey) {
-      throw new APIError("PLATFORM_PUBLIC_KEY is not configured", STATUS.serverError);
-    }
-
-    const [platformCoin] = tx.splitCoins(coinOut, [tx.pure.u64(platformFee)]);
-    tx.transferObjects([platformCoin], tx.pure.address(platformKey));
-    tx.transferObjects([coinOut], tx.pure.address(to));
-
-    return this.sponsoredTransaction(tx, secret_key);
-  }
 
   async convertBetweenCurrencyAndUSDT(
-    amount: number,
-    currency: string,
-    direction: ConversionDirection
-  ): Promise<number> {
-    if (!amount || amount <= 0) {
+      amount: number,
+      currency: string,
+      direction: ConversionDirection
+    ): Promise < number > {
+      if(!amount || amount <= 0) {
       throw new APIError("Amount must be greater than 0.", STATUS.bad);
     }
 
