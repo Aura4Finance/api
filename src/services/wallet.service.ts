@@ -270,10 +270,10 @@ export class WalletService {
 
     const tx = new Transaction();
     tx.transferObjects(
-      tx.coin({
+      [tx.coin({
         balance,
         type: getCoinType("USDC", network)!
-      }),
+      })],
       tx.pure.address(to));
 
     return this.sponsoredTransaction(tx, secret_key);
