@@ -44,13 +44,22 @@ export class WalletService {
 
   private async setActiveNetwork(mode: Mode) {
     const network = mode == "live" ? "mainnet" : "testnet";
+    
+    const url = mode == "live" ? 
+    "https://sui-mainnet.gateway.tatum.io" :
+    "https://sui-testnet.gateway.tatum.io"
+
+    const key = mode == "live" ? 
+    String(process.env.TATUM_MAINNET_KEY) : 
+    String(process.env.TATUM_TESTNET_KEY);
+
     this.client = new SuiJsonRpcClient({
       network,
       transport: new JsonRpcHTTPTransport({
-        url: String(mode === "test" ? "https://sui-testnet.gateway.tatum.io" : "https://sui-mainnet.gateway.tatum.io"),
+        url,
         rpc: {
           headers: {
-            "x-api-key": String(mode === "test" ? process.env.TATUM_TESTNET_KEY : process.env.TATUM_MAINNET_KEY),
+            "x-api-key": key
           },
         },
       }),
