@@ -118,7 +118,11 @@ export class WalletService {
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],
     });
-    tx.setGasBudget(10_000_000);
+      // Explicit gas ref — prevents SDK from calling getReferenceGasPrice + getCheckpoint
+    const gasRef = await this.getSponsorGasRef(admin_keypair.getPublicKey().toSuiAddress());
+    tx.setGasPayment([gasRef]);
+    tx.setGasPrice(1000n);
+    tx.setGasBudget(10_000_000n);
 
     const result = await this.client.signAndExecuteTransaction({
       signer: admin_keypair,
