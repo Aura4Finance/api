@@ -57,11 +57,11 @@ export class PayoutService {
      */
     async getBalances(address: string, mode: Mode) {
 
-            const balance = await this.tatumRpcClient.getBalance({
-                address,
-                coinType: <string>getCoinType("USDC", mode === "test"? "testnet" : "mainnet"),
-                mode
-            })
+        const balance = await this.tatumRpcClient.getBalance({
+            address,
+            coinType: <string>getCoinType("USDC", mode === "test" ? "testnet" : "mainnet"),
+            mode
+        })
 
         return {
             message: "Balances retrieved successfully",
@@ -109,14 +109,12 @@ export class PayoutService {
         amount: number,
         to: string,
         payoutId: string,
-        primaryCoinObjectId: string,
         mode: Mode
     ) {
         const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
         const result = await this.walletService.withdrawlToMerchant(
             secretKey,
-            primaryCoinObjectId,
             amount,
             to,
             mode
@@ -161,17 +159,15 @@ export class PayoutService {
         wallet: Wallet,
         transactionId: string,
         amount: number,
-        walletAddress: string,
-        mode: Mode
+        to: string,
+        mode: Mode,
     ) {
-        const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
 
         return await this.finalizeCryptoPayout(
             wallet,
             amount,
-            walletAddress,
+            to,
             transactionId,
-            primaryCoinObjectId,
             mode
         );
     }
@@ -188,7 +184,7 @@ export class PayoutService {
 
         if (body.cryptoSettlementAccountId) {
             const settlementAccount = await this.settlementRepository.findSettlementAccountById(body.cryptoSettlementAccountId, profileId);
-            
+
             if (!settlementAccount) {
                 throw new APIError("Settlement account not found.", STATUS.bad);
             }
@@ -210,7 +206,6 @@ export class PayoutService {
                 throw new APIError("Provide a settlement account or a wallet address and network.", STATUS.bad);
             }
 
-        const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
         const amountInNGN = await this.walletService.convertBetweenCurrencyAndUSDT(body.amount, "USD", "from_USDT");
         const payout = await this.payoutRepository.createPayout(
             network,
@@ -228,7 +223,6 @@ export class PayoutService {
             body.amount,
             to,
             payout.id,
-            primaryCoinObjectId,
             mode
         );
     }
@@ -249,10 +243,8 @@ export class PayoutService {
             objectTypes: true;
         }>;
         try {
-            const primaryCoinObjectId = await this.getPrimaryCoin(wallet, mode);
             tx = await this.walletService.offrampSmartContractCall(
-                BigInt((amount.toFixed(6).replace("@", ""))),
-                primaryCoinObjectId,
+                amount,
                 secretKey,
                 mode
             );
@@ -343,7 +335,7 @@ export class PayoutService {
             // Fallback to user's primary fiat account
             const primaryFiatAccount = await this.fiatRepository.getPrimaryAccount(profileId);
             if (!primaryFiatAccount) {
-                throw new APIError("No fiat account found for this payout. Please provide account details.", STATUS.notFound);
+                throw new APIError("No fiat account found for this payout. Please create new payout.", STATUS.notFound);
             }
 
             accountIdentifier = primaryFiatAccount.accountNumber;

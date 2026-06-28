@@ -3,7 +3,6 @@ import { STATUS } from "@/constants/status.constant";
 import { RefundRepository } from "@/repositories/refund.repository";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { WalletService } from "@/services/wallet.service";
-import { PayoutService } from "@/services/payout.service";
 import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
@@ -17,7 +16,6 @@ export class RefundServices {
         private readonly refundRepository: RefundRepository,
         private readonly walletService: WalletService,
         private readonly paymentRepository: PaymentRepository,
-        private readonly payoutService: PayoutService,
         private readonly customerRepository: CustomerRepository,
     ) { }
 
@@ -31,14 +29,12 @@ export class RefundServices {
         mode: Mode
     ) {
 
-        const derivedWalletBuffer = await deriveWallet(<number>wallet?.derivationIndex);
+        const derivedWalletBuffer = await deriveWallet(wallet?.derivationIndex!);
         const secretKey = await this.walletService.serializeDerivedKeyToSuiSecretKey(derivedWalletBuffer);
-        const primaryCoinObjectId = await this.payoutService.getPrimaryCoin(<Wallet>wallet, mode);
 
         const amountAfterOnePercentChargeDeduction = amountInUSDC - ( 0.01 * amountInUSDC);
         const result = await this.walletService.splitAndSend(
             secretKey,
-            primaryCoinObjectId,
             amountAfterOnePercentChargeDeduction,
             reciever,
             mode

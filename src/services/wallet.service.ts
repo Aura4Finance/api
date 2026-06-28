@@ -234,20 +234,23 @@ export class WalletService {
 
   async withdrawlToMerchant(
     secret_key: string,
-    primaryCoinObjectId: string,
     amount: number,
     to: string,
     mode: Mode,
   ) {
     const smart_contract_address = await this.setActiveNetwork(mode);
-    const coinRef = await this.getObjectRef(primaryCoinObjectId);
+    const balance = decimalToBigInt(amount, getCoinDecimal("USDC"));
+    const network = mode === "live" ? "mainnet" : "testnet";
 
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::withdraw_to_merchant`,
       arguments: [
-        tx.objectRef(coinRef),
-        tx.pure.u64(amount * 1000000),
+        tx.coin({
+          balance,
+          type: getCoinType("USDC", network)!
+        }),
+        tx.pure.u64(balance),
         tx.pure.address(to),
       ],
     });
@@ -257,18 +260,21 @@ export class WalletService {
 
   async splitAndSend(
     secret_key: string,
-    primaryCoinObjectId: string,
     amount: number,
     to: string,
     mode: Mode,
   ) {
     await this.setActiveNetwork(mode);
-    const coinRef = await this.getObjectRef(primaryCoinObjectId);
+    const network = mode === "live" ? "mainnet" : "testnet";
+    const balance = decimalToBigInt(amount, getCoinDecimal("USDC"));
 
-    const amountU64 = BigInt(Math.round(amount * 1_000_000));
     const tx = new Transaction();
-    const [splitCoin] = tx.splitCoins(tx.objectRef(coinRef), [tx.pure.u64(amountU64)]);
-    tx.transferObjects([splitCoin], tx.pure.address(to));
+    tx.transferObjects(
+      tx.coin({
+        balance,
+        type: getCoinType("USDC", network)!
+      }),
+      tx.pure.address(to));
 
     return this.sponsoredTransaction(tx, secret_key);
   }
@@ -283,9 +289,9 @@ export class WalletService {
   ) {
     await this.setActiveNetwork(mode);
     const coinRef = await this.getObjectRef(primaryCoinObjectId);
-
     const network = mode === "live" ? "mainnet" : "testnet";
     const coinTypeOut = getCoinType(Token.USDC, network);
+
     if (!coinTypeOut) {
       throw new APIError(`Could not resolve USDC coin type for network: ${network}`, STATUS.serverError);
     }
@@ -298,7 +304,6 @@ export class WalletService {
     let totalUsdcAmount: bigint;
 
     if (coinTypeIn === coinTypeOut) {
-      // Use objectRef — SDK won't resolve this at build time
       coinOut = tx.objectRef(coinRef);
       totalUsdcAmount = totalAmount;
     } else {
@@ -357,27 +362,28 @@ export class WalletService {
   }
 
   async offrampSmartContractCall(
-    amount: bigint,
-    primaryCoinObjectId: string,
+    amount: number,
     secret_key: string,
     mode: Mode
   ) {
     if (mode == "test") {
       throw new APIError("Fiat payouts are not available in test mode.", STATUS.bad);
     }
-
     await this.setActiveNetwork(mode);
-    const coinRef = await this.getObjectRef(primaryCoinObjectId);
 
     const tx = new Transaction();
     const coinType = getCoinType(Token.USDC, "mainnet")!;
+    const balance = decimalToBigInt(amount, getCoinDecimal(Token.USDC));
+    const payfrica_config_ref = await this.getObjectRef(this.PAYFRICA_CONFIG_ID);
 
-    const [splitCoin] = tx.splitCoins(tx.objectRef(coinRef), [amount]);
     tx.moveCall({
       target: `${this.PAYFRICA_ID}::payfrica_lite_v2::off_ramp`,
       arguments: [
-        tx.object(this.PAYFRICA_CONFIG_ID),
-        splitCoin,
+        tx.objectRef(payfrica_config_ref),
+        tx.coin({
+          type: coinType,
+          balance
+        }),
         tx.pure.string("NGN"),
         tx.object.clock(),
       ],
