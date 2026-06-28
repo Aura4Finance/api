@@ -162,7 +162,7 @@ export class WalletService {
       );
       throw new APIError("Deposit wallet creation failed.", STATUS.unprocessableEntity);
     }
-
+    return createdWallet.objectId;
   }
 
   async sponsoredTransaction(
