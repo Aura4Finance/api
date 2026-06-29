@@ -60,13 +60,13 @@ export class PaylinkController {
 
     try {
       for (const file of files) {
-        const { blobId, blobObject } = await this.walrusService.uploadImageToWalrus(
+        const { blobId, blobObjectId } = await this.walrusService.uploadImageToWalrus(
           file.buffer,
           mode
         );
         images.push({
           blobId,
-          blobObjectId: blobObject?.id
+          blobObjectId: blobObjectId || "",
         });
       }
     } catch (error: any) {

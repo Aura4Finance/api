@@ -97,12 +97,12 @@ export function normalizeAxiosError(error: AxiosError): HttpRequestError {
   const retryAfterMs = parseRetryAfterMs(error.response?.headers as Record<string, unknown> | undefined);
   const responseHeaders = error.response?.headers
     ? Object.entries(error.response.headers).reduce<Record<string, string>>(
-        (acc, [key, value]) => {
-          acc[key] = Array.isArray(value) ? String(value[0]) : String(value);
-          return acc;
-        },
-        {}
-      )
+      (acc, [key, value]) => {
+        acc[key] = Array.isArray(value) ? String(value[0]) : String(value);
+        return acc;
+      },
+      {}
+    )
     : undefined;
 
   return new HttpRequestError({
@@ -253,6 +253,18 @@ export function createHttpClient(
     ): Promise<AxiosResponse<T>> =>
       (
         await sendHttpRequest<T>(client, { ...config, method: "GET", url }, {
+          ...defaults,
+          ...options,
+        })
+      ).response,
+    put: async <T>(
+      url: string,
+      data?: unknown,
+      config: AxiosRequestConfig = {},
+      options: HttpRequestOptions = {}
+    ): Promise<AxiosResponse<T>> =>
+      (
+        await sendHttpRequest<T>(client, { ...config, method: "PUT", url, data }, {
           ...defaults,
           ...options,
         })
