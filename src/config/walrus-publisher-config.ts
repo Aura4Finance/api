@@ -5,8 +5,8 @@ import { Mode } from "@/generated/prisma/enums";
 export const createWalrusPublisherClient = (mode: Mode) => {
     const publisher = axios.create({
         baseURL: mode === "live"
-            ? "http://mainnet-publisher"
-            : "http://testnet-publisher",
+            ? "http://mainnet-publisher.railway.internal:31415"
+            : "http://testnet-publisher.railway.internal:31415",
         headers: {
             "Content-Type": "application/octet-stream",
         },
