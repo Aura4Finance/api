@@ -60,9 +60,6 @@ const RENEWAL_CONFIG = {
 
 const DAY_MS = 1_000 * 60 * 60 * 24;
 
-// ---------------------------------------------------------------------------
-// Date helpers
-// ---------------------------------------------------------------------------
 function startOfUtcDay(date: Date): Date {
     return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
@@ -92,10 +89,6 @@ function billingCycleKey(subscriptionId: string, endsAt: Date): string {
     return `${subscriptionId}:${dayKey(endsAt)}`;
 }
 
-// ---------------------------------------------------------------------------
-// Redis distributed lock
-// ---------------------------------------------------------------------------
-
 /**
  * Atomically acquires a lock using SET NX EX.
  *
@@ -108,9 +101,6 @@ async function acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
     return result === "OK";
 }
 
-// ---------------------------------------------------------------------------
-// Metrics / observability stub
-// ---------------------------------------------------------------------------
 interface BatchStats {
     phase: "reminder" | "trial" | "expiry" | "cancellation" | "reconciliation";
     attempted: number;
@@ -138,9 +128,6 @@ function logStats(stats: BatchStats | ReconciliationStats): void {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Renewal-transaction helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Finds an existing renewal transaction for this billing cycle or creates

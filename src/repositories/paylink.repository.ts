@@ -2,6 +2,8 @@ import db from "@/config/db-config";
 import { CreatePaylinkDto } from "@/dto/paylink.dto";
 import { Service } from "typedi";
 import { Mode } from "@/generated/prisma/client";
+import { APIError } from "@/utils/error-handler";
+import { STATUS } from "@/constants/status.constant";
 
 @Service()
 export class PaylinkRepository {
@@ -50,7 +52,7 @@ export class PaylinkRepository {
   async getAllPaylinks(
     profileId: string,
     mode: Mode = "test"
-  ){
+  ) {
     const result = await db.paylink.findMany({
       where: {
         profileId,
@@ -64,22 +66,36 @@ export class PaylinkRepository {
     return result;
   }
 
-  async deletepaylink(profileId: string, paylinkId: string) {
-    await db.paylink.delete({
-      where: {
-        profileId,
+  async deletepaylink(profileId: string, paylinkId: string, mode: Mode) {
+    // fetch images before deleting so we have blobObjectIds for Walrus
+    const paylink = await db.paylink.findFirst({
+      where: { 
         id: paylinkId,
-      },
+        profileId,
+        mode
+    },
+      include: { images: true },
+    });
+
+    if (!paylink) throw new APIError("Paylink not found", STATUS.notFound);
+
+    return paylink;
+  }
+
+  async hardDeletePaylink(profileId: string, paylinkId: string) {
+    await db.paylink.delete({
+      where: { id: paylinkId, profileId },
     });
   }
 
-  async editPaylink(profileId: string, data: Partial<CreatePaylinkDto>, paylinkId: string) {
+  async editPaylink(profileId: string, data: Partial<CreatePaylinkDto>, paylinkId: string, mode: Mode) {
     const { images, ...paylinkData } = data;
 
     const result = await db.paylink.update({
       where: {
         id: paylinkId,
-        profileId
+        profileId,
+        mode
       },
       data: {
         ...paylinkData,

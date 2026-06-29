@@ -128,10 +128,9 @@ export class PaylinkController {
 
   async getAllPaylinks(req: RequestAuth, res: Response) {
     const profileId = req.user?.businessProfile.id as string;
-    const isLive = req.user.businessProfile.isLive;
 
     const { message, payload } =
-      await this.paylinkService.getAllPaylink(profileId, isLive);
+      await this.paylinkService.getAllPaylink(profileId, req.mode);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -152,7 +151,7 @@ export class PaylinkController {
     }
 
     const { message, payload } =
-      await this.paylinkService.deletePaylink(profileId, value.paylinkId);
+      await this.paylinkService.deletePaylink(profileId, value.paylinkId, req.mode);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -215,7 +214,8 @@ export class PaylinkController {
       await this.paylinkService.editPaylink(
         profileId,
         refValue.paylinkId,
-        body
+        body,
+        req.mode
       );
 
     return res.status(STATUS.ok).json({

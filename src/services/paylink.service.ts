@@ -11,13 +11,13 @@ import axios from "axios";
 @Service()
 export class PaylinkService {
   constructor
-  (private readonly paylinkRepository: PaylinkRepository,
-    private readonly walrusService: WalrusService
-  ) {}
+    (private readonly paylinkRepository: PaylinkRepository,
+      private readonly walrusService: WalrusService
+    ) { }
 
   async createPaylink(profileId: string, body: CreatePaylinkDto, mode: Mode) {
     const paylink = await this.paylinkRepository.createPaylink(
-      profileId, 
+      profileId,
       body,
       mode
     );
@@ -41,8 +41,8 @@ export class PaylinkService {
     };
   }
 
-  async getAllPaylink(profileId: string, isLive: boolean) {
-      const paylinks = await this.paylinkRepository.getAllPaylinks(profileId, isLive? "live": undefined);
+  async getAllPaylink(profileId: string, mode: Mode) {
+    const paylinks = await this.paylinkRepository.getAllPaylinks(profileId, mode);
 
     return {
       message: "Paylinks retrived successfully",
@@ -50,16 +50,34 @@ export class PaylinkService {
     };
   }
 
-  async deletePaylink(profileId: string, paylinkId: string) {
-    await this.paylinkRepository.deletepaylink(profileId, paylinkId);
+  async deletePaylink(profileId: string, paylinkId: string, mode: Mode) {
+    const paylink = await this.paylinkRepository.deletepaylink(profileId, paylinkId, mode);
+
+    // delete images from Walrus in parallel, skip if no blobObjectId
+    await Promise.allSettled(
+      paylink.images
+        .filter(img => img.blobObjectId)
+        .map(img =>
+          this.walrusService.deleteImageFromWalrus(img.blobObjectId!, paylink.mode)
+        )
+    );
+
+    // delete paylink from DB — cascades Images records
+    await this.paylinkRepository.hardDeletePaylink(profileId, paylinkId);
+
     return {
       message: "Paylink deleted successfully",
-      payload: null
-    }
+      payload: null,
+    };
   }
 
-  async editPaylink(profileId: string, paylinkId: string, body: Partial<CreatePaylinkDto>) {
-    const paylink = await this.paylinkRepository.editPaylink(profileId, body, paylinkId);
+  async editPaylink(
+    profileId: string, 
+    paylinkId: string, 
+    body: Partial<CreatePaylinkDto>,
+    mode: Mode
+  ) {
+    const paylink = await this.paylinkRepository.editPaylink(profileId, body, paylinkId, mode);
 
     return {
       message: "Paylink updated successfully",
