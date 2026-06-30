@@ -94,7 +94,7 @@ export class RefundServices {
             refundTransaction.type !== TransactionType.REFUND) {
             throw new APIError("Refund transaction is not eligible for retry.", STATUS.bad);
         }
-        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, profileId);
+        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, mode, profileId);
         if (paymentTx?.payment?.refunded) {
             throw new APIError("Payment has already been refunded.", STATUS.bad);
         }
@@ -117,7 +117,7 @@ export class RefundServices {
         profileId: string,
         mode: Mode
     ) {
-        const paymentTx = await this.paymentRepository.findPaymentById(txId, profileId);
+        const paymentTx = await this.paymentRepository.findPaymentById(txId, mode, profileId);
         if (!paymentTx) {
             throw new APIError("Original transaction not found.", STATUS.notFound);
         }

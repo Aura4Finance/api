@@ -119,33 +119,43 @@ export class PaymentRepository {
     return tx;
   }
 
-  async findPaymentById(id: string, profileId?: string) {
+async findPaymentById(id: string, mode?: Mode, profileIdOrWalletAddress?: string) {
+  const where: any = { id, mode };
 
-    const where: any = { id };
-    if (profileId) {
-      where.profileId = profileId;
-    }
-    const result = await db.transaction.findFirst({
-      where,
-      include: {
-        payment: {
-          include: {
-            wallet: true,
+  if (profileIdOrWalletAddress) {
+    where.OR = [
+      { profileId: profileIdOrWalletAddress },
+      {
+        profile: {
+          wallet: {
+            some: { address: profileIdOrWalletAddress },
           },
         },
-        refund: true,
-        profile: {
-          include: {
-            wallet: true,
-            user: true,
-          }
-        },
-        customer: true,
-      }
-    });
-
-    return result;
+      },
+    ];
   }
+
+  const result = await db.transaction.findFirst({
+    where,
+    include: {
+      payment: {
+        include: {
+          wallet: true,
+        },
+      },
+      refund: true,
+      profile: {
+        include: {
+          wallet: true,
+          user: true,
+        },
+      },
+      customer: true,
+    },
+  });
+
+  return result;
+}
 
   async findSubscriptionPaymentByBillingCycleKey(billingCycleKey: string) {
     const payment = await db.payment.findFirst({

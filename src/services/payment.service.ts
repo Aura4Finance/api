@@ -6,7 +6,7 @@ import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { TatumRpcClient } from "@/services/tatum.service";
-import { Customer, Mode, PaymentMethod, Token } from "@/generated/prisma/client";
+import { Customer, Mode, PaymentMethod, Token, Transaction } from "@/generated/prisma/client";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
@@ -299,44 +299,31 @@ export class PaymentService {
   }
 
 
-  private async confirmPayment(
-    paymentId: string,
-    customerId: string,
-    amount: number,
-    amountInUSDC: number,
-    customerEmail: string,
-    customerName: string,
-    businessName: string,
-    businessEmail: string,
-    currency: string,
-    mode: Mode,
-    token?: Token
-  ) {
-    await this.paymentRepository.confirmPaymentStatus(paymentId, token);
-    if (mode == "live") await this.customerRepository.updateAmountSpent(customerId, amountInUSDC);
+  async confirmPayment(tx: Transaction) {
+    await this.paymentRepository.confirmPaymentStatus(tx.id, tx.token);
+    if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId, tx.amountInUSDC);
 
-    await this.sendEmailIfNotSent(paymentId, "success", async () => {
+    await this.sendEmailIfNotSent(tx.id, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
-        customerEmail,
-        customerName,
-        amount,
-        paymentId,
-        businessName,
-        businessEmail,
-        currency
+        tx.customer.email,
+        tx.customer.firstname,
+        tx.amount,
+        tx.id,
+        tx.profile.businessName,
+        tx.profile.user.email,
+        tx.currency
       );
     });
   }
 
   private async markPaymentFailed(
-    tx: Awaited<ReturnType<typeof this.paymentRepository.findPaymentById>> | null,
-    customer: Customer | null
+    tx: Transaction
   ) {
-    if (!tx || !customer) return;
+    if (!tx) return;
     await this.sendEmailIfNotSent(tx.id, "failed", async () => {
       await this.emailQueue.addPaymentFailedScheduler(
-        String(customer?.email),
-        String(customer?.firstname),
+        tx.customer.email,
+        tx.customer.firstname,
         tx.amount,
         tx.id
       );
@@ -351,25 +338,9 @@ export class PaymentService {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
 
-    const customer = await this.customerRepository.findCustomerById(
-      String(tx.customerId)
-    );
-
-    const merchantEmail = tx.profile?.user?.email;
     let event: EventType;
     if (tx.status === "COMPLETED") {
-      await this.confirmPayment(
-        tx.id,
-        String(tx.customerId),
-        tx.amount,
-        tx.amountInUSDC,
-        String(customer?.email),
-        String(customer?.firstname),
-        tx.profile.businessName,
-        String(merchantEmail),
-        tx.currency,
-        tx.mode
-      );
+      await this.confirmPayment(tx);
 
       event = "payment.success";
     }
@@ -382,29 +353,18 @@ export class PaymentService {
         });
 
         if (result.error?.code === "deleted") {
-          await this.confirmPayment(
-            tx.id,
-            String(tx.customerId),
-            tx.amount,
-            tx.amountInUSDC,
-            String(customer?.email),
-            String(customer?.firstname),
-            tx.profile.businessName,
-            String(merchantEmail),
-            tx.currency,
-            tx.mode
-          );
+          await this.confirmPayment(tx);
 
           event = "payment.success";
         }
         else {
-          await this.markPaymentFailed(tx, customer);
+          await this.markPaymentFailed(tx);
           event = "payment.failed";
         }
       } catch (error: unknown) {
         const typedError = error as { message?: string };
         logger.error("[verifyPayment] Error verifying payment:", typedError.message);
-        await this.markPaymentFailed(tx, customer);
+        await this.markPaymentFailed(tx);
         event = "payment.failed";
       }
     }
@@ -439,15 +399,15 @@ export class PaymentService {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
 
-    // if (tx.status === "COMPLETED") {
-    //     return {
-    //         message: `Transfer is already completed`,
-    //         payload: { 
-    //           status: tx.status,
-    //           paymentId
-    //            }
-    //     };
-    // }
+    if (tx.status === "COMPLETED") {
+        return {
+            message: `Transfer is already completed`,
+            payload: { 
+              status: tx.status,
+              paymentId
+               }
+        };
+    }
 
     const paymentWallet = tx.payment?.wallet;
     if (!paymentWallet?.address) {
@@ -522,19 +482,7 @@ export class PaymentService {
       }
     );
 
-    await this.confirmPayment(
-      tx.id,
-      <string>tx.customerId,
-      tx.amount,
-      tx.amountInUSDC,
-      <string>tx.customer?.email,
-      <string>tx.customer?.firstname,
-      tx.profile.businessName,
-      <string>tx.profile.user?.email,
-      tx.currency,
-      tx.mode,
-      token,
-    );
+    await this.confirmPayment(tx);
 
     return {
       message: "Transfer verification completed",
@@ -544,4 +492,7 @@ export class PaymentService {
       }
     };
   }
+
+
+
 }
