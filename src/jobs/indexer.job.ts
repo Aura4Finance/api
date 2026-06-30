@@ -16,7 +16,7 @@ import {
 } from "@/queues/indexer.queue";
 import { Mode, Token } from "@/generated/prisma/client";
 import { TatumRpcClient } from "@/services/tatum.service";
-
+import { WebhookQueue } from "@/services/schedule.webhook.service";
 
 const keys = {
     walletCursor: (mode: string) => `sui:cursor:wallet:${mode}`,
@@ -122,7 +122,8 @@ async function handleTrackPaymentEvent(
     data: TrackPaymentEventData,
     paymentRepo: PaymentRepository,
     paymentService: PaymentService,
-    tatumRpcClient: TatumRpcClient
+    tatumRpcClient: TatumRpcClient,
+    webhookQueue: WebhookQueue
 ) {
     const { mode, walletId, transactionId, merchantAddress, spawnedAt } = data;
 
@@ -178,8 +179,19 @@ async function handleTrackPaymentEvent(
             if (p.wallet_id !== walletId) continue;
 
             const tx = await paymentRepo.findPaymentById(transactionId, mode as Mode, merchantAddress);
-            if (tx) await paymentService.confirmPayment(tx);
-
+            if (tx) {
+                await paymentService.confirmPayment(tx);
+                await webhookQueue.addScheduler(tx.profileId, {
+      event: "payment.success",
+      data: {
+        transactionId: tx.id,
+        amount: tx.amount,
+        currency: tx.currency,
+        status: "success",
+        occuredAt: new Date().toISOString(),
+      },
+    });
+            }
             await redisClient.set(keys.resolved(walletId), "1", "EX", 700);
             await redisClient.del(keys.paymentCursor(walletId));
             logger.info(`[PaymentTracker] Confirmed via on-chain event for wallet ${walletId}`);
@@ -197,7 +209,8 @@ async function handleTrackPaymentEvent(
 
 async function handleTrackCoinBalance(
     data: TrackCoinBalanceData,
-    paymentService: PaymentService
+    paymentService: PaymentService,
+    webhookQueue: WebhookQueue
 ) {
     const { transactionId, token, spawnedAt } = data;
 
@@ -207,6 +220,19 @@ async function handleTrackCoinBalance(
         return;
     }
         await paymentService.verifyTransfer({ paymentId: transactionId, token });
+        const tx = await paymentRepo.findPaymentById(transactionId);
+        if (!tx) return;
+        await webhookQueue.addScheduler(tx.profileId, {
+      event: "payment.success",
+      data: {
+        transactionId: tx.id,
+        amount: tx.amount,
+        currency: tx.currency,
+        status: "success",
+        occuredAt: new Date().toISOString(),
+      },
+    });
+    
         logger.info(`[BalanceTracker] Payment confirmed tx=${transactionId}`);
 }
 
@@ -216,6 +242,7 @@ export function startSuiIndexerWorker(): Worker {
     const paymentRepo = Container.get(PaymentRepository);
     const paymentService = Container.get(PaymentService);
     const tatumRpcClient = Container.get(TatumRpcClient);
+    const webhookQueue = Container.get(WebhookQueue);
 
     const worker = new Worker<SuiJobData>(
         SUI_INDEXER_QUEUE,
@@ -225,10 +252,10 @@ export function startSuiIndexerWorker(): Worker {
                     return handlePollWalletCreated(job.data as PollWalletCreatedData, paymentRepo, tatumRpcClient);
 
                 case SuiJobs.TRACK_PAYMENT_EVENT:
-                    return handleTrackPaymentEvent(job.data as TrackPaymentEventData, paymentRepo, paymentService, tatumRpcClient);
+                    return handleTrackPaymentEvent(job.data as TrackPaymentEventData, paymentRepo, paymentService, tatumRpcClient, webhookQueue);
 
                 case SuiJobs.TRACK_COIN_BALANCE:
-                    return handleTrackCoinBalance(job.data as TrackCoinBalanceData, paymentService);
+                    return handleTrackCoinBalance(job.data as TrackCoinBalanceData, paymentService, webhookQueue);
 
                 default:
                     logger.warn(`[SuiIndexer] Unknown job name: ${job.name}`);
