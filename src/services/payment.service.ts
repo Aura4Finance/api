@@ -323,8 +323,8 @@ export class PaymentService {
 
     await this.sendEmailIfNotSent(tx.id, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
-        tx.customer.email!,
-        tx.customer.firstname!,
+        tx.customer?.email!,
+        tx.customer?.firstname!,
         tx.amount,
         tx.id,
         tx.profile.businessName!,
@@ -339,8 +339,8 @@ export class PaymentService {
   ) {
     await this.sendEmailIfNotSent(tx.id, "failed", async () => {
       await this.emailQueue.addPaymentFailedScheduler(
-        tx.customer.email,
-        tx.customer.firstname,
+        tx.customer?.email!,
+        tx.customer?.firstname!,
         tx.amount,
         tx.id
       );
