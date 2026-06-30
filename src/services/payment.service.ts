@@ -6,8 +6,7 @@ import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { TatumRpcClient } from "@/services/tatum.service";
-import { Customer, Mode, PaymentMethod, Token, Transaction } from "@/generated/prisma/client";
-import { Prisma } from "@prisma/client";
+import { Customer, Mode, PaymentMethod, Token, Transaction, Prisma } from "@/generated/prisma/client";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
@@ -336,9 +335,8 @@ export class PaymentService {
   }
 
   private async markPaymentFailed(
-    tx: Transaction
+    tx: TransactionWithRelations
   ) {
-    if (!tx) return;
     await this.sendEmailIfNotSent(tx.id, "failed", async () => {
       await this.emailQueue.addPaymentFailedScheduler(
         tx.customer.email,
