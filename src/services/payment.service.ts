@@ -6,7 +6,7 @@ import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { TatumRpcClient } from "@/services/tatum.service";
-import { Customer, Mode, PaymentMethod, Token, Transaction, Prisma } from "@/generated/prisma/client";
+import { Customer, Mode, PaymentMethod, Token, Prisma } from "@/generated/prisma/client";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
@@ -319,16 +319,16 @@ export class PaymentService {
 
   async confirmPayment(tx: TransactionWithRelations, token?: Token) {
     await this.paymentRepository.confirmPaymentStatus(tx.id, token);
-    if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId, tx.amountInUSDC);
+    if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId!, tx.amountInUSDC);
 
     await this.sendEmailIfNotSent(tx.id, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
-        tx.customer.email,
-        tx.customer.firstname,
+        tx.customer.email!,
+        tx.customer.firstname!,
         tx.amount,
         tx.id,
-        tx.profile.businessName,
-        tx.profile.user.email,
+        tx.profile.businessName!,
+        tx.profile.user.email!,
         tx.currency
       );
     });
