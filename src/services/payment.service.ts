@@ -42,6 +42,7 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly walletService: WalletService,
     private readonly customerRepository: CustomerRepository,
+    private readonly emailQueue: EmailQueue,
     private readonly quoteService: QuoteService,
     private readonly tatumRpcClient: TatumRpcClient
   ) { }
