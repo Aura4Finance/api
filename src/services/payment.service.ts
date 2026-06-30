@@ -7,6 +7,7 @@ import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { TatumRpcClient } from "@/services/tatum.service";
 import { Customer, Mode, PaymentMethod, Token, Transaction } from "@/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
 import { EmailQueue } from "@/services/schedule.email.service";
@@ -18,6 +19,24 @@ import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
+
+type TransactionWithRelations = Prisma.TransactionGetPayload<{
+  include: {
+    payment: {
+      include: {
+        wallet: true;
+      };
+    };
+    refund: true;
+    profile: {
+      include: {
+        wallet: true;
+        user: true;
+      };
+    };
+    customer: true;
+  };
+}>;
 
 @Service()
 export class PaymentService {
@@ -299,8 +318,8 @@ export class PaymentService {
   }
 
 
-  async confirmPayment(tx: Transaction) {
-    await this.paymentRepository.confirmPaymentStatus(tx.id, tx.token);
+  async confirmPayment(tx: TransactionWithRelations, token?: Token) {
+    await this.paymentRepository.confirmPaymentStatus(tx.id, token);
     if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId, tx.amountInUSDC);
 
     await this.sendEmailIfNotSent(tx.id, "success", async () => {
@@ -482,7 +501,7 @@ export class PaymentService {
       }
     );
 
-    await this.confirmPayment(tx);
+    await this.confirmPayment(tx, token);
 
     return {
       message: "Transfer verification completed",
