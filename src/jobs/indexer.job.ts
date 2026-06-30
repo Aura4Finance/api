@@ -210,6 +210,7 @@ async function handleTrackPaymentEvent(
 async function handleTrackCoinBalance(
     data: TrackCoinBalanceData,
     paymentService: PaymentService,
+    paymentRepo: PaymentRepository,
     webhookQueue: WebhookQueue
 ) {
     const { transactionId, token, spawnedAt } = data;
@@ -255,7 +256,7 @@ export function startSuiIndexerWorker(): Worker {
                     return handleTrackPaymentEvent(job.data as TrackPaymentEventData, paymentRepo, paymentService, tatumRpcClient, webhookQueue);
 
                 case SuiJobs.TRACK_COIN_BALANCE:
-                    return handleTrackCoinBalance(job.data as TrackCoinBalanceData, paymentService, webhookQueue);
+                    return handleTrackCoinBalance(job.data as TrackCoinBalanceData, paymentService, paymentRepo, webhookQueue);
 
                 default:
                     logger.warn(`[SuiIndexer] Unknown job name: ${job.name}`);
