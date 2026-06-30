@@ -8,7 +8,6 @@ import { STATUS } from "@/constants/status.constant";
 import { TatumRpcClient } from "@/services/tatum.service";
 import { Customer, Mode, PaymentMethod, Token, Prisma } from "@/generated/prisma/client";
 import { EmailQueue } from "@/services/schedule.email.service";
-import { EventType } from "@/dto/webhook.dto";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
