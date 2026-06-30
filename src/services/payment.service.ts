@@ -9,7 +9,6 @@ import { TatumRpcClient } from "@/services/tatum.service";
 import { Customer, Mode, PaymentMethod, Token, Prisma } from "@/generated/prisma/client";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { EventType } from "@/dto/webhook.dto";
-import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
@@ -44,7 +43,6 @@ export class PaymentService {
     private readonly walletService: WalletService,
     private readonly customerRepository: CustomerRepository,
     private readonly webhookQueue: WebhookQueue,
-    private readonly emailQueue: EmailQueue,
     private readonly quoteService: QuoteService,
     private readonly tatumRpcClient: TatumRpcClient
   ) { }
@@ -354,14 +352,13 @@ export class PaymentService {
     if (!tx) {
       throw new APIError("Payment session not found.", STATUS.notFound);
     }
-
-    let event: EventType;
+    const event: EventType;
     if (tx.status === "COMPLETED") {
-      await this.confirmPayment(tx);
-
-      event = "payment.success";
+      return {
+        message: "Payment already verified",
+        payload: null
+      }
     }
-
     else {
       try {
         const result = await this.tatumRpcClient.getObject({
@@ -371,7 +368,6 @@ export class PaymentService {
 
         if (result.error?.code === "deleted") {
           await this.confirmPayment(tx);
-
           event = "payment.success";
         }
         else {
@@ -386,17 +382,7 @@ export class PaymentService {
       }
     }
 
-    await this.webhookQueue.addScheduler(tx.profileId, {
-      event,
-      data: {
-        transactionId: tx.id,
-        amount: tx.amount,
-        currency: tx.currency,
-        status: event === "payment.success" ? "success" : "failed",
-        occuredAt: new Date().toISOString(),
-      },
-    });
-
+    
     return {
       message: "Payment verification completed",
       payload: {
