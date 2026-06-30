@@ -16,8 +16,7 @@ export class WebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
   async registerWebhook(req: RequestAuth, res: Response) {
-    const businessProfileId = req.user.id;
-
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = registerWebhhookValidation(req.body);
 
     if (error) {
@@ -29,7 +28,7 @@ export class WebhookController {
 
     const { message, payload } = await this.webhookService.registerWebhook(
       value.url,
-      businessProfileId
+      profileId
     );
 
     return res.status(STATUS.ok).json({
@@ -40,11 +39,8 @@ export class WebhookController {
   }
 
   async getWebhookDetails(req: RequestAuth, res: Response) {
-    const profileId = req.user.businessProfile.id;
-
-    const { message, payload } = await this.webhookService.getWebhookDetails(
-      profileId
-    );
+    const profileId = req.user?.businessProfile.id as string;
+    const { message, payload } = await this.webhookService.getWebhookDetails(profileId);
 
     return res.status(STATUS.ok).json({
       success: true,
@@ -62,8 +58,7 @@ export class WebhookController {
   }
 
   async subscribeToEvent(req: RequestAuth, res: Response) {
-    const profileId = req.user.businessProfile.id;
-
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = subscribeToEventSchemaValidation(req.body);
 
     if (error) {
@@ -86,7 +81,7 @@ export class WebhookController {
   }
 
   async retrieveWebhookDeliveries(req: RequestAuth, res: Response) {
-    const profileId = req.user.businessProfile.id;
+    const profileId = req.user?.businessProfile.id as string;
     const { error, value } = retrieveWebhookDeliveriesValidation(req.query);
 
     if (error) {
