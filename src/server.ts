@@ -21,7 +21,12 @@ if(process.env.PROCESS_TYPE === "worker") {
 
   import("@/jobs/subscription.job").then(({ startSubscriptionWorker }) => {
     startSubscriptionWorker();
+  });
+
+  import("@/jobs/indexer.job").then(({ startSuiIndexerWorker }) => {
+    startSuiIndexerWorker();
   })
+  
 
 } else {
   (async () => {

@@ -6,9 +6,7 @@ import { CustomerRepository } from "@/repositories/customer.repository";
 import { APIError } from "@/utils/error-handler";
 import { STATUS } from "@/constants/status.constant";
 import { TatumRpcClient } from "@/services/tatum.service";
-import { Customer, Mode, PaymentMethod, Token, Transaction } from "@/generated/prisma/client";
-import { WebhookQueue } from "@/services/schedule.webhook.service";
-import { EventType } from "@/dto/webhook.dto";
+import { Customer, Mode, PaymentMethod, Token, Prisma } from "@/generated/prisma/client";
 import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
@@ -18,6 +16,25 @@ import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
+import { initSuiAccountIndexerJob } from "@/queues/indexer.queue";
+
+type TransactionWithRelations = Prisma.TransactionGetPayload<{
+  include: {
+    payment: {
+      include: {
+        wallet: true;
+      };
+    };
+    refund: true;
+    profile: {
+      include: {
+        wallet: true;
+        user: true;
+      };
+    };
+    customer: true;
+  };
+}>;
 
 @Service()
 export class PaymentService {
@@ -25,7 +42,6 @@ export class PaymentService {
     private readonly paymentRepository: PaymentRepository,
     private readonly walletService: WalletService,
     private readonly customerRepository: CustomerRepository,
-    private readonly webhookQueue: WebhookQueue,
     private readonly emailQueue: EmailQueue,
     private readonly quoteService: QuoteService,
     private readonly tatumRpcClient: TatumRpcClient
@@ -276,7 +292,14 @@ export class PaymentService {
       tx.id,
       wallet.address,
       wallet.derivationIndex
-    )
+    );
+
+    await initSuiAccountIndexerJob({
+      transactionId: tx.id,
+      txWallet: wallet.address,
+      mode: tx.mode,
+      spawnedAt: Date.now().toString()
+    });
 
     return {
       message: "Transfer address created successfully!",
@@ -299,31 +322,30 @@ export class PaymentService {
   }
 
 
-  async confirmPayment(tx: Transaction) {
-    await this.paymentRepository.confirmPaymentStatus(tx.id, tx.token);
-    if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId, tx.amountInUSDC);
+  async confirmPayment(tx: TransactionWithRelations, token?: Token) {
+    await this.paymentRepository.confirmPaymentStatus(tx.id, token);
+    if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId!, tx.amountInUSDC);
 
     await this.sendEmailIfNotSent(tx.id, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
-        tx.customer.email,
-        tx.customer.firstname,
+        tx.customer?.email!,
+        tx.customer?.firstname!,
         tx.amount,
         tx.id,
-        tx.profile.businessName,
-        tx.profile.user.email,
+        tx.profile.businessName!,
+        tx.profile.user.email!,
         tx.currency
       );
     });
   }
 
   private async markPaymentFailed(
-    tx: Transaction
+    tx: TransactionWithRelations
   ) {
-    if (!tx) return;
     await this.sendEmailIfNotSent(tx.id, "failed", async () => {
       await this.emailQueue.addPaymentFailedScheduler(
-        tx.customer.email,
-        tx.customer.firstname,
+        tx.customer?.email!,
+        tx.customer?.firstname!,
         tx.amount,
         tx.id
       );
@@ -331,63 +353,82 @@ export class PaymentService {
   }
 
   async verifyPayment(data: Omit<VerifyPaymentDto, "token">) {
-    const { paymentId } = data;
-    const tx = await this.paymentRepository.findPaymentById(paymentId);
+  const { paymentId } = data;
 
-    if (!tx) {
-      throw new APIError("Payment session not found.", STATUS.notFound);
-    }
+  const tx = await this.paymentRepository.findPaymentById(paymentId);
 
-    let event: EventType;
-    if (tx.status === "COMPLETED") {
-      await this.confirmPayment(tx);
+  if (!tx) {
+    throw new APIError("Payment session not found.", STATUS.notFound);
+  }
 
-      event = "payment.success";
-    }
-
-    else {
-      try {
-        const result = await this.tatumRpcClient.getObject({
-          objectId: <string>tx.payment?.depositAddress,
-          mode: tx.mode
-        });
-
-        if (result.error?.code === "deleted") {
-          await this.confirmPayment(tx);
-
-          event = "payment.success";
-        }
-        else {
-          await this.markPaymentFailed(tx);
-          event = "payment.failed";
-        }
-      } catch (error: unknown) {
-        const typedError = error as { message?: string };
-        logger.error("[verifyPayment] Error verifying payment:", typedError.message);
-        await this.markPaymentFailed(tx);
-        event = "payment.failed";
-      }
-    }
-
-    await this.webhookQueue.addScheduler(tx.profileId, {
-      event,
-      data: {
-        transactionId: tx.id,
-        amount: tx.amount,
-        currency: tx.currency,
-        status: event === "payment.success" ? "success" : "failed",
-        occuredAt: new Date().toISOString(),
-      },
-    });
-
+  // Payment already completed
+  if (tx.status === "COMPLETED") {
     return {
-      message: "Payment verification completed",
+      message: "Payment already verified.",
       payload: {
-        status: event === "payment.success" ? "completed" : "failed",
+        status: "completed",
         paymentId,
       },
     };
   }
+
+  // Payment already failed
+  if (tx.status === "FAILED") {
+    return {
+      message: "Payment already failed.",
+      payload: {
+        status: "failed",
+        paymentId,
+      },
+    };
+  }
+
+  // Only pending payments reach here
+  try {
+    const result = await this.tatumRpcClient.getObject({
+      objectId: tx.payment!.depositAddress as string,
+      mode: tx.mode,
+    });
+
+    if (result.error?.code === "deleted") {
+      await this.confirmPayment(tx);
+
+      return {
+        message: "Payment verification completed.",
+        payload: {
+          status: "completed",
+          paymentId,
+        },
+      };
+    }
+
+    // Still exists -> payment is still pending
+    return {
+      message: "Payment is still pending.",
+      payload: {
+        status: "pending",
+        paymentId,
+      },
+    };
+  } catch (error: unknown) {
+    const typedError = error as { message?: string };
+
+    logger.error(
+      "[verifyPayment] Error verifying payment:",
+      typedError.message
+    );
+
+    await this.markPaymentFailed(tx);
+
+    return {
+      message: "Payment verification completed.",
+      payload: {
+        status: "failed",
+        paymentId,
+      },
+    };
+  }
+}
 
 
   async verifyTransfer(data: VerifyPaymentDto) {
@@ -482,7 +523,7 @@ export class PaymentService {
       }
     );
 
-    await this.confirmPayment(tx);
+    await this.confirmPayment(tx, token);
 
     return {
       message: "Transfer verification completed",

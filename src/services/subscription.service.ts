@@ -4,7 +4,6 @@ import { APIError } from "@/utils/error-handler";
 import { SubscriptionRepository } from "@/repositories/subscription.repository";
 import { CustomerRepository } from "@/repositories/customer.repository";
 import { PaymentService } from "@/services/payment.service";
-import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import {
   CreateSubscriptionDto,
   CreateSubscriptionPlanDto,
@@ -90,7 +89,8 @@ export class SubscriptionService {
 
     let txId: string = "";
     if (!hasTrial) {
-      // Create an initial subscription payment transaction and schedule verification
+      // Create an initial subscription payment transaction.
+      // Verification is now orchestrated by indexer after on-chain confirmation.
       try {
         const paymentData: CreatePaymentDto = {
           amount: <number>plan.amount,
@@ -103,18 +103,7 @@ export class SubscriptionService {
         };
 
         const paymentResult = await this.paymentService.createPayment(paymentData, profileId, mode);
-
-        // schedule verification after 10 minutes
         txId = paymentResult.payload.transaction.id;
-        await transactionQueue.add(
-          jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
-          { paymentId: txId, subscriptionId: subscription.id, failureEmailTemplate: "abandoned" },
-          {
-            delay: 10 * 60 * 1000,
-            removeOnComplete: true,
-            jobId: `verify-initial-subscription-payment_${subscription.id}`,
-          }
-        );
       } catch (err: any) {
         logger.error(`Failed to create initial payment transaction for subscription(${subscription.id}). Reason: ${err?.message}`)
       }
