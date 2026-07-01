@@ -17,6 +17,7 @@ import {
 import { Mode, Token } from "@/generated/prisma/client";
 import { TatumRpcClient } from "@/services/tatum.service";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
+import { jobs, transactionQueue } from "@/queues/transaction.queue";
 
 const keys = {
     walletCursor: (mode: string) => `sui:cursor:wallet:${mode}`,
@@ -25,6 +26,43 @@ const keys = {
 };
 
 const TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+async function triggerPostPaymentQueues(
+    tx: Awaited<ReturnType<PaymentRepository["findPaymentById"]>>,
+    webhookQueue: WebhookQueue,
+) {
+    if (!tx) return;
+
+    // 1) Always emit payment success webhook
+    await webhookQueue.addScheduler(tx.profileId, {
+        event: "payment.success",
+        data: {
+            transactionId: tx.id,
+            amount: tx.amount,
+            currency: tx.currency,
+            status: "success",
+            occuredAt: new Date().toISOString(),
+        },
+    });
+
+    // 2) If linked to subscription, enqueue initial-subscription post-processing
+    const subscriptionId = tx.payment?.subscriptionId;
+    if (subscriptionId) {
+        await transactionQueue.add(
+            jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
+            {
+                paymentId: tx.id,
+                subscriptionId,
+                failureEmailTemplate: "abandoned",
+            },
+            {
+                removeOnComplete: true,
+                removeOnFail: false,
+                jobId: `verify-initial-subscription-payment_${subscriptionId}`,
+            },
+        );
+    }
+}
 
 
 async function handlePollWalletCreated(
@@ -181,16 +219,7 @@ async function handleTrackPaymentEvent(
             const tx = await paymentRepo.findPaymentById(transactionId, mode as Mode, merchantAddress);
             if (tx) {
                 await paymentService.confirmPayment(tx);
-                await webhookQueue.addScheduler(tx.profileId, {
-      event: "payment.success",
-      data: {
-        transactionId: tx.id,
-        amount: tx.amount,
-        currency: tx.currency,
-        status: "success",
-        occuredAt: new Date().toISOString(),
-      },
-    });
+                await triggerPostPaymentQueues(tx, webhookQueue);
             }
             await redisClient.set(keys.resolved(walletId), "1", "EX", 700);
             await redisClient.del(keys.paymentCursor(walletId));
@@ -220,21 +249,13 @@ async function handleTrackCoinBalance(
         logger.warn(`[BalanceTracker] TTL expired`);
         return;
     }
-        await paymentService.verifyTransfer({ paymentId: transactionId, token });
-        const tx = await paymentRepo.findPaymentById(transactionId);
-        if (!tx) return;
-        await webhookQueue.addScheduler(tx.profileId, {
-      event: "payment.success",
-      data: {
-        transactionId: tx.id,
-        amount: tx.amount,
-        currency: tx.currency,
-        status: "success",
-        occuredAt: new Date().toISOString(),
-      },
-    });
-    
-        logger.info(`[BalanceTracker] Payment confirmed tx=${transactionId}`);
+    await paymentService.verifyTransfer({ paymentId: transactionId, token });
+    const tx = await paymentRepo.findPaymentById(transactionId);
+    if (!tx) return;
+
+    await triggerPostPaymentQueues(tx, webhookQueue);
+
+    logger.info(`[BalanceTracker] Payment confirmed tx=${transactionId}`);
 }
 
 

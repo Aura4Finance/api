@@ -84,92 +84,85 @@ export const startTransactionWorker = () => {
     TRANSACTION_WORKER,
     async (job) => {
       if (job.name === jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT) {
-        const { paymentId, subscriptionId, failureEmailTemplate } = job.data;
+        const { subscriptionId, failureEmailTemplate } = job.data;
         const emailQueue = Container.get(EmailQueue);
         const stats: BatchStats = { phase: "subscription-verification", attempted: 1, skipped: 0, succeeded: 0, failed: 0 };
 
         try {
-          const result = await paymentService.verifyPayment({ paymentId });
-
-          // on success -> activate subscription
-          if (result.payload.status === "completed") {
-            const subscription = await db.subscription.findUnique({
-              where: { id: subscriptionId },
-              include: { plan: { include: { profile: true } }, customer: true },
-            });
-            if (!subscription) {
-              stats.skipped++;
-              logStats(stats);
-              return;
-            }
-
-            const now = new Date();
-            // compute endsAt based on plan duration
-            const endsAt = (() => {
-              const d = subscription.plan.duration as SubscriptionDuration;
-              const out = new Date(now);
-              switch (d) {
-                case SubscriptionDuration.WEEKLY:
-                  out.setDate(out.getDate() + 7);
-                  break;
-                case SubscriptionDuration.MONTHLY:
-                  out.setMonth(out.getMonth() + 1);
-                  break;
-                case SubscriptionDuration.SIX_MONTHS:
-                  out.setMonth(out.getMonth() + 6);
-                  break;
-                case SubscriptionDuration.YEARLY:
-                  out.setFullYear(out.getFullYear() + 1);
-                  break;
-              }
-              return out;
-            })();
-
-            await db.subscription.update({
-              where: { id: subscription.id },
-              data: {
-                status: SubscriptionStatus.ACTIVE,
-                startsAt: now,
-                endsAt,
-              },
-              include: { customer: true, plan: true },
-            });
-
-            try {
-              await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
-                event: "subscription.active",
-                data: {
-                  transactionId: subscription.id,
-                  amount: subscription.plan.amount,
-                  currency: subscription.plan.currency,
-                  status: "active",
-                  occuredAt: new Date().toISOString()
-                }
-              });
-            } catch { }
-
-            // schedule active email
-            await emailQueue.addSubscriptionActiveScheduler({
-              email: subscription.customer.email,
-              customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
-              merchantName: subscription.plan.profile?.businessName ?? "",
-              planName: subscription.plan.name,
-              duration: String(subscription.plan.duration),
-              amount: subscription.plan.amount,
-              currency: subscription.plan.currency,
-              startsAt: now.toISOString(),
-              expiresAt: endsAt.toISOString(),
-            });
-
-            stats.succeeded++;
-          } else {
-            // payment not completed but no error thrown — treat as skipped
+          // Payment is already verified/confirmed by the indexer flow before this job is queued.
+          const subscription = await db.subscription.findUnique({
+            where: { id: subscriptionId },
+            include: { plan: { include: { profile: true } }, customer: true },
+          });
+          if (!subscription) {
             stats.skipped++;
+            logStats(stats);
+            return;
           }
+
+          const now = new Date();
+          // compute endsAt based on plan duration
+          const endsAt = (() => {
+            const d = subscription.plan.duration as SubscriptionDuration;
+            const out = new Date(now);
+            switch (d) {
+              case SubscriptionDuration.WEEKLY:
+                out.setDate(out.getDate() + 7);
+                break;
+              case SubscriptionDuration.MONTHLY:
+                out.setMonth(out.getMonth() + 1);
+                break;
+              case SubscriptionDuration.SIX_MONTHS:
+                out.setMonth(out.getMonth() + 6);
+                break;
+              case SubscriptionDuration.YEARLY:
+                out.setFullYear(out.getFullYear() + 1);
+                break;
+            }
+            return out;
+          })();
+
+          await db.subscription.update({
+            where: { id: subscription.id },
+            data: {
+              status: SubscriptionStatus.ACTIVE,
+              startsAt: now,
+              endsAt,
+            },
+            include: { customer: true, plan: true },
+          });
+
+          try {
+            await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
+              event: "subscription.active",
+              data: {
+                transactionId: subscription.id,
+                amount: subscription.plan.amount,
+                currency: subscription.plan.currency,
+                status: "active",
+                occuredAt: new Date().toISOString()
+              }
+            });
+          } catch { }
+
+          // schedule active email
+          await emailQueue.addSubscriptionActiveScheduler({
+            email: subscription.customer.email,
+            customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
+            merchantName: subscription.plan.profile?.businessName ?? "",
+            planName: subscription.plan.name,
+            duration: String(subscription.plan.duration),
+            amount: subscription.plan.amount,
+            currency: subscription.plan.currency,
+            startsAt: now.toISOString(),
+            expiresAt: endsAt.toISOString(),
+          });
+
+          stats.succeeded++;
         } catch (error) {
           stats.failed++;
 
-          // verification failed -> mark subscription abandoned and notify customer
+          // processing failed -> mark subscription abandoned and notify customer
           try {
             const subscription = await db.subscription.findUnique({ where: { id: subscriptionId }, include: { plan: { include: { profile: true } }, customer: true } });
             if (subscription) {
