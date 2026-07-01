@@ -84,130 +84,71 @@ export const startTransactionWorker = () => {
     TRANSACTION_WORKER,
     async (job) => {
       if (job.name === jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT) {
-        const { subscriptionId, failureEmailTemplate } = job.data;
-        const emailQueue = Container.get(EmailQueue);
-        const stats: BatchStats = { phase: "subscription-verification", attempted: 1, skipped: 0, succeeded: 0, failed: 0 };
+          const { subscriptionId } = job.data;
+          const emailQueue = Container.get(EmailQueue);
+          const stats: BatchStats = { phase: "subscription-verification", attempted: 1, skipped: 0, succeeded: 0, failed: 0 };
 
-        try {
-          // Payment is already verified/confirmed by the indexer flow before this job is queued.
-          const subscription = await db.subscription.findUnique({
-            where: { id: subscriptionId },
-            include: { plan: { include: { profile: true } }, customer: true },
-          });
-          if (!subscription) {
-            stats.skipped++;
-            logStats(stats);
-            return;
-          }
+  try {
+    const subscription = await db.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: { plan: { include: { profile: true } }, customer: true },
+    });
 
-          const now = new Date();
-          // compute endsAt based on plan duration
-          const endsAt = (() => {
-            const d = subscription.plan.duration as SubscriptionDuration;
-            const out = new Date(now);
-            switch (d) {
-              case SubscriptionDuration.WEEKLY:
-                out.setDate(out.getDate() + 7);
-                break;
-              case SubscriptionDuration.MONTHLY:
-                out.setMonth(out.getMonth() + 1);
-                break;
-              case SubscriptionDuration.SIX_MONTHS:
-                out.setMonth(out.getMonth() + 6);
-                break;
-              case SubscriptionDuration.YEARLY:
-                out.setFullYear(out.getFullYear() + 1);
-                break;
-            }
-            return out;
-          })();
+    if (!subscription) {
+      stats.skipped++;
+      logStats(stats);
+      return;
+    }
 
-          await db.subscription.update({
-            where: { id: subscription.id },
-            data: {
-              status: SubscriptionStatus.ACTIVE,
-              startsAt: now,
-              endsAt,
-            },
-            include: { customer: true, plan: true },
-          });
+    if (subscription.status === SubscriptionStatus.ACTIVE) {
+      stats.skipped++;
+      logStats(stats);
+      return;
+    }
 
-          try {
-            await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
-              event: "subscription.active",
-              data: {
-                transactionId: subscription.id,
-                amount: subscription.plan.amount,
-                currency: subscription.plan.currency,
-                status: "active",
-                occuredAt: new Date().toISOString()
-              }
-            });
-          } catch { }
+    const now = new Date();
+    const endsAt = computeEndsAt(now, subscription.plan.duration as SubscriptionDuration);
+    const updated = await db.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: SubscriptionStatus.ACTIVE,
+        startsAt: now,
+        endsAt,
+      },
+      include: { customer: true, plan: { include: { profile: true } } },
+    });
 
-          // schedule active email
-          await emailQueue.addSubscriptionActiveScheduler({
-            email: subscription.customer.email,
-            customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
-            merchantName: subscription.plan.profile?.businessName ?? "",
-            planName: subscription.plan.name,
-            duration: String(subscription.plan.duration),
-            amount: subscription.plan.amount,
-            currency: subscription.plan.currency,
-            startsAt: now.toISOString(),
-            expiresAt: endsAt.toISOString(),
-          });
+    await webhookQueueSvc.addScheduler(updated.plan.profileId, {
+      event: "subscription.active",
+      data: {
+        transactionId: updated.id,
+        amount: updated.plan.amount,
+        currency: updated.plan.currency,
+        status: "active",
+        occuredAt: new Date().toISOString(),
+      },
+    });
+    await emailQueue.addSubscriptionActiveScheduler({
+      email: updated.customer.email,
+      customerName: `${updated.customer.firstname} ${updated.customer.lastname}`,
+      merchantName: updated.plan.profile?.businessName ?? "",
+      planName: updated.plan.name,
+      duration: String(updated.plan.duration),
+      amount: updated.plan.amount,
+      currency: updated.plan.currency,
+      startsAt: now.toISOString();
+      expiresAt: endsAt.toISOString(),
+    });
+    stats.succeeded++;
+    logStats(stats);
+  } catch (error) {
+    stats.failed++;
+    logStats(stats);
+    throw error; // let BullMQ retry — do not reinterpret as abandonment here
 
-          stats.succeeded++;
-        } catch (error) {
-          stats.failed++;
-
-          // processing failed -> mark subscription abandoned and notify customer
-          try {
-            const subscription = await db.subscription.findUnique({ where: { id: subscriptionId }, include: { plan: { include: { profile: true } }, customer: true } });
-            if (subscription) {
-              await db.subscription.update({ where: { id: subscription.id }, data: { status: "ABANDONED" } });
-
-              await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
-                event: "subscription.abandoned",
-                data: {
-                  transactionId: subscription.id,
-                  amount: subscription.plan.amount,
-                  currency: subscription.plan.currency,
-                  status: "abandoned",
-                  occuredAt: new Date().toISOString()
-                }
-              });
-
-              const emailQueueSvc = Container.get(EmailQueue);
-              if (failureEmailTemplate === "cancelled") {
-                await emailQueueSvc.addSubscriptionCancelledScheduler({
-                  email: subscription.customer.email,
-                  customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
-                  merchantName: subscription.plan.profile?.businessName ?? "",
-                  planName: subscription.plan.name,
-                  duration: String(subscription.plan.duration),
-                  cancelledAt: new Date().toISOString(),
-                  expiresAt: subscription.trialEndsAt?.toISOString() ?? "",
-                });
-              } else {
-                await emailQueueSvc.addSubscriptionAbandonedScheduler({
-                  email: subscription.customer.email,
-                  customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
-                  merchantName: subscription.plan.profile?.businessName ?? "",
-                  planName: subscription.plan.name,
-                });
-              }
-            }
-          } catch (e) {
-            // swallow
-          }
-        } finally {
-          logStats(stats);
-        }
-
+  }
         return;
-      }
+}      
       if (job.name === jobs.EXPIRE_PENDING) {
         try {
           logger.info("⏱ Transaction expiry job running");
