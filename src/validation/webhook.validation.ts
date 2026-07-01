@@ -16,7 +16,7 @@ export const registerWebhhookValidation = (data: RegisterWebhookDto) => {
 
 export const subscribeToEventSchemaValidation = (data: subscribeToEventDto) => {
   const schema = Joi.object({
-    event: Joi.string().valid("payment.failed", "payment.success", "payment.create", "subscription.create", "subscription.not_renew", "subscription.disable").required().messages({
+    event: Joi.string().valid("payment.failed", "payment.success", "payment.create", "subscription.create", "subscription.not_renew", "subscription.disable", "subscription.abandonded", "subscription.active").required().messages({
       'any.only': 'Event must be one of the supported webhook event types',
       'any.required': 'Event is required',
     }),
