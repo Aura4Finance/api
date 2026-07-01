@@ -4,7 +4,6 @@ import { RefundQueryDto } from "@/dto/refund.dto";
 import { Mode, Network } from "@/generated/prisma/client";
 
 
-
 @Service()
 export class RefundRepository {
     async createRefund(
@@ -53,23 +52,39 @@ export class RefundRepository {
     }
 
     async confirmRefund(
-        txId: string,
+        refundTx: string,
+        paymentTx: string,
         txDigest: string
     ) {
-        const tx = await db.transaction.update({
-            where: {
-                id: txId
-            },
-            data: {
-                status: "COMPLETED",
-                confirmedAt: new Date(),
-                refund: {
-                    update: {
-                        txDigest
+        const tx = await db.$transaction(async (tx) => {
+            await tx.transaction.update({
+                where: {
+                    id: refundTx
+                },
+                data: {
+                    status: "COMPLETED",
+                    confirmedAt: new Date(),
+                    refund: {
+                        update: {
+                            txDigest
+                        },
                     },
                 },
-            },
-        });
+            });
+
+            await tx.transaction.update({
+                where: {
+                    id: paymentTx
+                },
+                data: {
+                    payment: {
+                        update: {
+                            refunded: true
+                        }
+                    }
+                }
+            })
+        })
         return tx;
     }
 

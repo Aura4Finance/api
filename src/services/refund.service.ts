@@ -1,7 +1,6 @@
 import { Service } from "typedi";
 import { STATUS } from "@/constants/status.constant";
 import { RefundRepository } from "@/repositories/refund.repository";
-import { CustomerRepository } from "@/repositories/customer.repository";
 import { WalletService } from "@/services/wallet.service";
 import { APIError } from "@/utils/error-handler";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
@@ -16,7 +15,6 @@ export class RefundServices {
         private readonly refundRepository: RefundRepository,
         private readonly walletService: WalletService,
         private readonly paymentRepository: PaymentRepository,
-        private readonly customerRepository: CustomerRepository,
     ) { }
 
     private async finalizeRefund(
@@ -60,9 +58,7 @@ export class RefundServices {
         }
 
 
-        await this.refundRepository.confirmRefund(refundTxId, result?.Transaction.digest);
-        const refundedPayment = await this.paymentRepository.refundPayment(paymentTxId);
-        await this.customerRepository.updateAmountSpent(<string>refundedPayment?.customer?.id, amountInUSDC, "remove");
+        await this.refundRepository.confirmRefund(refundTxId, paymentTxId, result?.Transaction.digest);
         const gasUsed = result.Transaction?.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
 
@@ -86,25 +82,22 @@ export class RefundServices {
         profileId: string,
         mode: Mode
     ) {
-        const refundTransaction = await this.refundRepository.getRefundById(txId, profileId);
+        const tx = await this.refundRepository.getRefundById(txId, profileId);
         if (
-            !refundTransaction ||
-            refundTransaction.confirmedAt ||
-            refundTransaction.status !== TransactionStatus.FAILED ||
-            refundTransaction.type !== TransactionType.REFUND) {
+            !tx ||
+            tx.confirmedAt ||
+            tx.status !== TransactionStatus.FAILED ||
+            tx.type !== TransactionType.REFUND) {
             throw new APIError("Refund transaction is not eligible for retry.", STATUS.bad);
         }
-        const paymentTx = await this.paymentRepository.findPaymentById(<string>refundTransaction.refund?.originalTxId, mode, profileId);
-        if (paymentTx?.payment?.refunded) {
-            throw new APIError("Payment has already been refunded.", STATUS.bad);
-        }
+
         return await this.finalizeRefund(
             wallet,
-            refundTransaction.amount,
-            <number>paymentTx?.amountInUSDC,
-            <string>refundTransaction.refund?.walletAddress,
-            refundTransaction.id,
-            <string>paymentTx?.id,
+            tx.amount,
+            tx.amountInUSDC,
+            <string>tx.refund?.walletAddress,
+            tx.id,
+            <string>tx.refund?.originalTxId,
             mode
         );
     }
