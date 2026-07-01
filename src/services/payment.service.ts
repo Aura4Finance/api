@@ -16,6 +16,7 @@ import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
+Import { initSuiAccountIndexerJob } from "@/queues/indexer.queue.ts";
 
 type TransactionWithRelations = Prisma.TransactionGetPayload<{
   include: {
@@ -291,7 +292,14 @@ export class PaymentService {
       tx.id,
       wallet.address,
       wallet.derivationIndex
-    )
+    );
+
+    await initSuiAccountIndexerJob({
+      transactionId: tx.id,
+      txWallet: wallet.address,
+      mode: tx.mode,
+      spawnedAt: Date.now()
+    });
 
     return {
       message: "Transfer address created successfully!",
