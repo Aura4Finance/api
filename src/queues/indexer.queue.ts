@@ -27,7 +27,8 @@ export interface TrackPaymentEventData {
 export interface TrackCoinBalanceData {
     transactionId: string;
     txWallet: string;
-    mode: Mode,
+    mode: Mode;
+    token: Token;
     spawnedAt: string;
 }
 
@@ -42,7 +43,7 @@ export const suiIndexerQueue = new Queue<SuiJobData>(SUI_INDEXER_QUEUE, {
     defaultJobOptions: { removeOnComplete: 100, removeOnFail: 500 },
 });
 
-export async function initSuiAccountIndexerJob(data: TrackCoinBalanceData): Promise<void> {
+export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, "token">): Promise<void> {
     const { mode, transactionId, spawnedAt, txWallet } = data; 
 
     for (const token of Object.values(Token)) {
