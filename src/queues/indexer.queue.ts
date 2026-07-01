@@ -27,7 +27,6 @@ export interface TrackPaymentEventData {
 export interface TrackCoinBalanceData {
     transactionId: string;
     txWallet: string;
-    token: Token;
     mode: Mode,
     spawnedAt: string;
 }
@@ -58,7 +57,7 @@ export async function initSuiAccountIndexerJob(data: TrackCoinBalanceData): Prom
                     spawnedAt,
                     mode,
                     txWallet
-                } satisfies Partial<TrackCoinBalanceData>,
+                },
                 {
                     jobId: subJobId,
                     attempts: 60,                          // 60 × 10 s = 10 min
