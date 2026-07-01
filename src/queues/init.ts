@@ -12,7 +12,8 @@ export async function executeInits() {
     await initializeTransactionJobs();
     await initializeWebhookDeadLetterJob();
     await initializeSubscriptionJobs();
-    await initSuiWalletIndexerJob();
+    await initSuiWalletIndexerJob("test");
+    await initSuiWalletIndexerJob("live");
     const emailQueue = Container.get(EmailQueue);
     await emailQueue.addOnboardEmailScheduler();
 
