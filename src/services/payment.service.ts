@@ -298,7 +298,7 @@ export class PaymentService {
       transactionId: tx.id,
       txWallet: wallet.address,
       mode: tx.mode,
-      spawnedAt: Date.now()
+      spawnedAt: Date.now().toString()
     });
 
     return {
