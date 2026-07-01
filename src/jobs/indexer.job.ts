@@ -90,7 +90,7 @@ async function handlePollWalletCreated(
         logger.info(`[WalletIndexer] Wallet ${walletData.wallet_id} linked to tx ${tx.id}`);
 
         // Spawn payment-event tracker (dedup by walletId)
-        const jobId = `track-payment:${walletData.wallet_id}`;
+        const jobId = `track-payment-${walletData.wallet_id}`;
         if (!(await suiIndexerQueue.getJob(jobId))) {
             await suiIndexerQueue.add(
                 SuiJobs.TRACK_PAYMENT_EVENT,
