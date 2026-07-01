@@ -16,7 +16,7 @@ import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
-import { initSuiAccountIndexerJob } from "@/queues/indexer.queue.ts";
+import { initSuiAccountIndexerJob } from "@/queues/indexer.queue";
 
 type TransactionWithRelations = Prisma.TransactionGetPayload<{
   include: {
