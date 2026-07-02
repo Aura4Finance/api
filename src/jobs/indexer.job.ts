@@ -177,6 +177,7 @@ export function startSuiIndexerWorker(): Worker {
 
                 default:
                     logger.warn(`[SuiIndexer] Unknown job name: ${job.name}`);
+            logger.info("Sui indexer worker started"); 
             }
         },
         {
