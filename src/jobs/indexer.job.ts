@@ -74,11 +74,6 @@ async function handleTrackPaymentEvent(
     const { mode, walletId, transactionId, spawnedAt } = data;
 
     const spawnedAtMs = new Date(spawnedAt).getTime();
-    if (Number.isNaN(spawnedAtMs)) {
-        logger.warn(`[PaymentTracker] Invalid spawnedAt for wallet ${walletId}: ${spawnedAt}`);
-        return;
-    }
-
     // TTL guard
     if (Date.now() - spawnedAtMs >= TTL_MS) {
         logger.warn(`[PaymentTracker] TTL expired for wallet ${walletId}`);
