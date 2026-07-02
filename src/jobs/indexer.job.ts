@@ -10,7 +10,7 @@ import {
     SuiJobs,
     SuiJobData,
     TrackPaymentEventData,
-    TrackCoinBalanceData
+    TrackCoinBalanceData,
 } from "@/queues/indexer.queue";
 import { TatumRpcClient } from "@/services/tatum.service";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
@@ -23,6 +23,9 @@ const keys = {
 };
 
 const TTL_MS = 10 * 60 * 1000; // 10 minutes
+const POLL_DELAY_MS = 500;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function triggerPostPaymentQueues(
     tx: Awaited<ReturnType<PaymentRepository["findPaymentById"]>>,
@@ -61,18 +64,23 @@ async function triggerPostPaymentQueues(
     }
 }
 
-
 async function handleTrackPaymentEvent(
     data: TrackPaymentEventData,
     paymentRepo: PaymentRepository,
     paymentService: PaymentService,
     tatumRpcClient: TatumRpcClient,
-    webhookQueue: WebhookQueue
+    webhookQueue: WebhookQueue,
 ) {
     const { mode, walletId, transactionId, spawnedAt } = data;
 
+    const spawnedAtMs = new Date(spawnedAt).getTime();
+    if (Number.isNaN(spawnedAtMs)) {
+        logger.warn(`[PaymentTracker] Invalid spawnedAt for wallet ${walletId}: ${spawnedAt}`);
+        return;
+    }
+
     // TTL guard
-    if (Date.now() - new Date(spawnedAt).getTime() >= TTL_MS) {
+    if (Date.now() - spawnedAtMs >= TTL_MS) {
         logger.warn(`[PaymentTracker] TTL expired for wallet ${walletId}`);
         await redisClient.del(keys.paymentCursor(walletId));
         return;
@@ -86,23 +94,34 @@ async function handleTrackPaymentEvent(
     }
 
     const network = mode === "live" ? "mainnet" : "testnet";
-    const packageId = getSmartContractId(network)!;
-    const MoveEventType = `${packageId}::main::PaymentProcessed`;
+    const packageId = getSmartContractId(network);
+    if (!packageId) {
+        throw new Error(`[PaymentTracker] Missing smart contract package id for network ${network}`);
+    }
+
+    const moveEventType = `${packageId}::main::PaymentProcessed`;
 
     const raw = await redisClient.get(keys.paymentCursor(walletId));
-    const cursor = raw ? JSON.parse(raw) : null;
+    let cursor = raw ? JSON.parse(raw) : null;
 
-    const spawnedAtMs = new Date(spawnedAt).getTime();
     const deadlineMs = spawnedAtMs + TTL_MS;
 
     while (Date.now() < deadlineMs) {
+        // Re-check resolved state while polling
+        if (await redisClient.get(keys.resolved(walletId))) {
+            logger.info(`[PaymentTracker] Wallet ${walletId} resolved by sibling tracker during polling`);
+            await redisClient.del(keys.paymentCursor(walletId));
+            return;
+        }
+
         const result = await tatumRpcClient.queryEvents({
-            filter: { MoveEventType },
+            filter: { MoveEventType: moveEventType },
             cursor,
             limit: 50,
             mode,
             descending: false,
         });
+
         for (const event of result.data) {
             if (Number(event.timestampMs) < spawnedAtMs) continue;
 
@@ -117,29 +136,32 @@ async function handleTrackPaymentEvent(
             if (p.wallet_id !== walletId) continue;
 
             const tx = await paymentRepo.findPaymentById(transactionId, mode);
-            if (tx) {
-                await paymentService.confirmPayment(tx);
-                await triggerPostPaymentQueues(tx, webhookQueue);
-                await redisClient.set(keys.resolved(walletId), "1", "EX", 700);
-                await redisClient.del(keys.paymentCursor(walletId));
-                logger.info(`[PaymentTracker] Confirmed via on-chain event for wallet ${walletId}`);
-                return;
+            if (!tx) continue;
+
+            await paymentService.confirmPayment(tx);
+            await triggerPostPaymentQueues(tx, webhookQueue);
+            await redisClient.set(keys.resolved(walletId), "1", "EX", 700);
+            await redisClient.del(keys.paymentCursor(walletId));
+            logger.info(`[PaymentTracker] Confirmed via on-chain event for wallet ${walletId}`);
+            return;
         }
 
         if (result.nextCursor) {
-            await redisClient.set(keys.paymentCursor(walletId), JSON.stringify(result.nextCursor));
+            cursor = result.nextCursor;
+            await redisClient.set(keys.paymentCursor(walletId), JSON.stringify(cursor));
         }
+
+        await sleep(POLL_DELAY_MS);
     }
 
     throw new Error(`PaymentProcessed not yet seen for wallet ${walletId}`);
-}
 }
 
 async function handleTrackCoinBalance(
     data: TrackCoinBalanceData,
     paymentService: PaymentService,
     paymentRepo: PaymentRepository,
-    webhookQueue: WebhookQueue
+    webhookQueue: WebhookQueue,
 ) {
     const { transactionId, token, spawnedAt } = data;
 
@@ -148,6 +170,7 @@ async function handleTrackCoinBalance(
         logger.warn(`[BalanceTracker] TTL expired`);
         return;
     }
+
     await paymentService.verifyTransfer({ paymentId: transactionId, token });
     const tx = await paymentRepo.findPaymentById(transactionId);
     if (!tx) return;
@@ -156,8 +179,6 @@ async function handleTrackCoinBalance(
 
     logger.info(`[BalanceTracker] Payment confirmed tx=${transactionId}`);
 }
-
-
 
 export function startSuiIndexerWorker(): Worker {
     const paymentRepo = Container.get(PaymentRepository);
@@ -170,14 +191,25 @@ export function startSuiIndexerWorker(): Worker {
         async (job: Job<SuiJobData>) => {
             switch (job.name as (typeof SuiJobs)[keyof typeof SuiJobs]) {
                 case SuiJobs.TRACK_PAYMENT_EVENT:
-                    return handleTrackPaymentEvent(job.data as TrackPaymentEventData, paymentRepo, paymentService, tatumRpcClient, webhookQueue);
+                    return handleTrackPaymentEvent(
+                        job.data as TrackPaymentEventData,
+                        paymentRepo,
+                        paymentService,
+                        tatumRpcClient,
+                        webhookQueue,
+                    );
 
                 case SuiJobs.TRACK_COIN_BALANCE:
-                    return handleTrackCoinBalance(job.data as TrackCoinBalanceData, paymentService, paymentRepo, webhookQueue);
+                    return handleTrackCoinBalance(
+                        job.data as TrackCoinBalanceData,
+                        paymentService,
+                        paymentRepo,
+                        webhookQueue,
+                    );
 
                 default:
                     logger.warn(`[SuiIndexer] Unknown job name: ${job.name}`);
-            logger.info("Sui indexer worker started"); 
+                    return;
             }
         },
         {
@@ -186,8 +218,17 @@ export function startSuiIndexerWorker(): Worker {
         },
     );
 
+    logger.info("Sui indexer worker started");
+
     worker.on("failed", (job, err) => {
+        // Suppress expected retry noise
+        const isRetryNoise =
+            err.message.startsWith("Balance ") ||
+            err.message.startsWith("PaymentProcessed not yet");
+
+        if (!isRetryNoise) {
             logger.error(`[SuiIndexer] Job ${job?.id} (${job?.name}) hard-failed: ${err.message}`, err);
+        }
     });
 
     return worker;
