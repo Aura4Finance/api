@@ -187,20 +187,15 @@ async function handleTrackPaymentEvent(
     while (Date.now() < deadlineMs) {
         const nowMs = Date.now();
         const result = await tatumRpcClient.queryEvents({
-            filter: {
-                MoveEventType,
-                TimeRange: {
-                    startTime: String(spawnedAtMs),
-                    endTime: String(nowMs)
-                },
-            },
+            filter: { MoveEventType },
             cursor,
             limit: 50,
             mode,
             descending: false,
         });
-
         for (const event of result.data) {
+            if (Number(event.timestampMs) < spawnedAtMs) continue;
+
             const p = event.parsedJson as {
                 wallet_id: string;
                 merchant: string;
@@ -215,11 +210,10 @@ async function handleTrackPaymentEvent(
             if (tx) {
                 await paymentService.confirmPayment(tx);
                 await triggerPostPaymentQueues(tx, webhookQueue);
-            }
-            await redisClient.set(keys.resolved(walletId), "1", "EX", 700);
-            await redisClient.del(keys.paymentCursor(walletId));
-            logger.info(`[PaymentTracker] Confirmed via on-chain event for wallet ${walletId}`);
-            return;
+                await redisClient.set(keys.resolved(walletId), "1", "EX", 700);
+                await redisClient.del(keys.paymentCursor(walletId));
+                logger.info(`[PaymentTracker] Confirmed via on-chain event for wallet ${walletId}`);
+                return;
         }
 
         if (result.nextCursor) {
