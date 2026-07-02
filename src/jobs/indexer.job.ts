@@ -185,7 +185,6 @@ async function handleTrackPaymentEvent(
     const deadlineMs = spawnedAtMs + TTL_MS;
 
     while (Date.now() < deadlineMs) {
-        const nowMs = Date.now();
         const result = await tatumRpcClient.queryEvents({
             filter: { MoveEventType },
             cursor,
