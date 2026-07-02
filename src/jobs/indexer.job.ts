@@ -10,8 +10,7 @@ import {
     SuiJobs,
     SuiJobData,
     TrackPaymentEventData,
-    TrackCoinBalanceData,
-    suiIndexerQueue,
+    TrackCoinBalanceData
 } from "@/queues/indexer.queue";
 import { Mode, Token } from "@/generated/prisma/client";
 import { TatumRpcClient } from "@/services/tatum.service";
