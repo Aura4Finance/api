@@ -71,7 +71,7 @@ async function handleTrackPaymentEvent(
     tatumRpcClient: TatumRpcClient,
     webhookQueue: WebhookQueue
 ) {
-    const { mode, walletId, transactionId, merchantAddress, spawnedAt } = data;
+    const { mode, walletId, transactionId, spawnedAt } = data;
 
     // TTL guard
     if (Date.now() - new Date(spawnedAt).getTime() >= TTL_MS) {
@@ -118,7 +118,7 @@ async function handleTrackPaymentEvent(
 
             if (p.wallet_id !== walletId) continue;
 
-            const tx = await paymentRepo.findPaymentById(transactionId, mode as Mode, merchantAddress);
+            const tx = await paymentRepo.findPaymentById(transactionId, mode);
             if (tx) {
                 await paymentService.confirmPayment(tx);
                 await triggerPostPaymentQueues(tx, webhookQueue);
