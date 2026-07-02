@@ -9,7 +9,6 @@ import {
     SUI_INDEXER_QUEUE,
     SuiJobs,
     SuiJobData,
-    PollWalletCreatedData,
     TrackPaymentEventData,
     TrackCoinBalanceData,
     suiIndexerQueue,
