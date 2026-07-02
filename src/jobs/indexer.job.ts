@@ -223,7 +223,7 @@ async function handleTrackPaymentEvent(
 
     throw new Error(`PaymentProcessed not yet seen for wallet ${walletId}`);
 }
-
+}
 
 async function handleTrackCoinBalance(
     data: TrackCoinBalanceData,
