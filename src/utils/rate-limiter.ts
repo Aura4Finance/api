@@ -47,10 +47,11 @@ function getLimiterDefaults(key: string) {
   return { maxConcurrent, minTime };
 }
 
-async function cleanupLimiter(key: string, reason = "manual") {
-  const limiter = limiterCache.get(key);
-  if (!limiter) return false;
-
+async function disconnectLimiterInstance(
+  limiter: Bottleneck,
+  key: string,
+  reason: string
+) {
   try {
     await limiter.disconnect(false);
   } catch (error) {
@@ -60,13 +61,21 @@ async function cleanupLimiter(key: string, reason = "manual") {
       error: String(error),
     });
   } finally {
-    limiterCache.delete(key);
+    limiter.removeAllListeners();
   }
 
   logger.info("Limiter cleaned up", {
     limiter: key,
     reason,
   });
+}
+
+async function cleanupLimiter(key: string, reason = "manual") {
+  const limiter = limiterCache.get(key);
+  if (!limiter) return false;
+
+  limiterCache.delete(key);
+  await disconnectLimiterInstance(limiter, key, reason);
 
   return true;
 }
@@ -118,17 +127,27 @@ export function getLimiter(
     ...options,
   });
 
+  let cleaningUp = false;
+
   limiter.on("error", (error) => {
     const errorText = String(error);
 
     logger.error("Limiter error", { limiter: key, error: errorText });
 
-    if (errorText.includes("SETTINGS_KEY_NOT_FOUND")) {
-      logger.warn("Limiter settings key missing in Redis; recreating limiter", {
+    if (errorText.includes("SETTINGS_KEY_NOT_FOUND") && !cleaningUp) {
+      cleaningUp = true;
+
+      logger.warn("Limiter settings key missing in Redis; disconnecting orphaned limiter", {
         limiter: key,
       });
 
-      void cleanupLimiter(key, "redis-settings-key-not-found");
+      // Only remove from cache if this instance is still the cached one -
+      // a newer instance may have already replaced it under this key.
+      if (limiterCache.get(key) === limiter) {
+        limiterCache.delete(key);
+      }
+
+      void disconnectLimiterInstance(limiter, key, "redis-settings-key-not-found");
     }
   });
 
@@ -164,4 +183,4 @@ export function getLimiterForUrl(url: string) {
   return getLimiter(`domain:${hostname}`, {
     timeout: DEFAULT_LIMITER_TIMEOUT_MS,
   });
-}
+    }
