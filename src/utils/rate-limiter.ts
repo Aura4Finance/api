@@ -47,17 +47,54 @@ function getLimiterDefaults(key: string) {
   return { maxConcurrent, minTime };
 }
 
+async function cleanupLimiter(key: string, reason = "manual") {
+  const limiter = limiterCache.get(key);
+  if (!limiter) return false;
+
+  try {
+    await limiter.disconnect(false);
+  } catch (error) {
+    logger.warn("Limiter disconnect failed", {
+      limiter: key,
+      reason,
+      error: String(error),
+    });
+  } finally {
+    limiterCache.delete(key);
+  }
+
+  logger.info("Limiter cleaned up", {
+    limiter: key,
+    reason,
+  });
+
+  return true;
+}
+
+export async function cleanupLimiterForUrl(url: string, reason = "manual") {
+  try {
+    const hostname = new URL(url).hostname;
+    return cleanupLimiter(`domain:${hostname}`, reason);
+  } catch (error) {
+    logger.warn("Limiter cleanup skipped due to invalid URL", {
+      url,
+      reason,
+      error: String(error),
+    });
+
+    return false;
+  }
+}
+
 function registerShutdownHook() {
   if (shutdownHookRegistered) return;
   shutdownHookRegistered = true;
 
   const shutdown = async () => {
-    const limiters = Array.from(limiterCache.values());
-    if (limiters.length === 0) return;
+    const keys = Array.from(limiterCache.keys());
+    if (keys.length === 0) return;
 
-    await Promise.allSettled(
-      limiters.map((limiter) => limiter.stop({ dropWaitingJobs: false }))
-    );
+    await Promise.allSettled(keys.map((key) => cleanupLimiter(key, "shutdown")));
   };
 
   process.once("SIGTERM", shutdown);
@@ -82,7 +119,17 @@ export function getLimiter(
   });
 
   limiter.on("error", (error) => {
-    logger.error("Limiter error", { limiter: key, error: String(error) });
+    const errorText = String(error);
+
+    logger.error("Limiter error", { limiter: key, error: errorText });
+
+    if (errorText.includes("SETTINGS_KEY_NOT_FOUND")) {
+      logger.warn("Limiter settings key missing in Redis; recreating limiter", {
+        limiter: key,
+      });
+
+      void cleanupLimiter(key, "redis-settings-key-not-found");
+    }
   });
 
   limiter.on("failed", (error, jobInfo) => {
