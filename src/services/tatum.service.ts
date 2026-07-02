@@ -154,7 +154,18 @@ export class TatumRpcClient {
             params,
         });
 
-        return response.data.result;
+        if (response.data.error) {
+    throw new APIError(
+        `Tatum RPC error on ${method}: ${response.data.error.message} (code ${response.data.error.code})`,
+        STATUS.bad
+    );
+}
+
+if (response.data.result === undefined) {
+    throw new APIError(`Tatum RPC returned no result for ${method}`, STATUS.bad);
+}
+
+return response.data.result;
     }
 
     async listCoins(req: TatumRequest): Promise<CoinsResult> {
