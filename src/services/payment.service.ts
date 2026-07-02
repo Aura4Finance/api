@@ -265,10 +265,10 @@ export class PaymentService {
     );
 
    await initSuiWalletIndexerJob({
-     mode,
+     mode: tx.mode,
      walletId: depositAddress,
      transactionId: tx.id,
-     spawnedAt: Data.now().toString()
+     spawnedAt: Date.now().toString()
    })
 
     return {
