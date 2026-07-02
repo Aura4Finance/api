@@ -5,7 +5,6 @@ import { Mode, Token } from "@/generated/prisma/enums";
 export const SUI_INDEXER_QUEUE = "sui-indexer";
 
 export const SuiJobs = {
-    POLL_WALLET_CREATED: "poll-wallet-created",
     TRACK_PAYMENT_EVENT: "track-payment-event",
     TRACK_COIN_BALANCE: "track-coin-balance",
 } as const;
@@ -48,7 +47,7 @@ export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, 
 
     for (const token of Object.values(Token)) {
         if(mode === "test" && token !== "USDC") continue;
-        const subJobId = `track-balance:${txWallet}:${Buffer.from(token).toString("base64")}`;
+        const subJobId = `track-balance-${txWallet}:${Buffer.from(token).toString("base64")}`;
         if (!(await suiIndexerQueue.getJob(subJobId))) {
             await suiIndexerQueue.add(
                 SuiJobs.TRACK_COIN_BALANCE,
@@ -73,23 +72,23 @@ export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, 
 }
 
 
-export async function initSuiWalletIndexerJob(mode: Mode): Promise<void> {
-    const schedulerKey = `sui-wallet-indexer-scheduler-${mode}`;
-
-    const existing = await suiIndexerQueue.getJobSchedulers();
-    for (const s of existing) {
-        if (s.key === schedulerKey) {
-            await suiIndexerQueue.removeJobScheduler(schedulerKey);
-        }
-    }
-
-    await suiIndexerQueue.upsertJobScheduler(
-        schedulerKey,
-        { every: 5_000 },
-        {
-            name: SuiJobs.POLL_WALLET_CREATED,
-            data: { mode } satisfies PollWalletCreatedData,
-            opts: { removeOnComplete: true, removeOnFail: false },
-        },
-    );
+export async function initSuiWalletIndexerJob(data: Omit<TrackCoinBalanceData, "token">): Promise<void> {
+    const { mode, transactionId, spawnedAt, txWallet } = data;
+    const jobId = `track-wallet-object:${txWallet}`;
+            await suiIndexerQueue.add(
+                SuiJobs.TRACK_PAYMENT_EVENT,
+                {
+                    mode,
+                    walletId: walletData.wallet_id,
+                    transactionId: walletData.transaction_id,
+                    spawnedAt: new Date().toISOString(),
+                } satisfies TrackPaymentEventData,
+                {
+                    jobId,
+                    attempts: 120,                         // 120 × 5 s = 10 min
+                    backoff: { type: "fixed", delay: 5_000 },
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                },
+            );
 }
