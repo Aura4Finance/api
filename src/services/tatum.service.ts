@@ -81,6 +81,10 @@ type TatumRpcResponse<T> = {
     id: number;
     jsonrpc: string;
     result: T;
+    error?: {
+        code: number;
+        message: string;
+    };
 };
 
 type TatumRequestMethods = keyof MethodResponseMap;
