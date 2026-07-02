@@ -106,25 +106,20 @@ async function handlePollWalletCreated(
             logger.warn(`[WalletIndexer] Tx ${walletData.transaction_id} not found – skipping`);
             continue;
         }
-
-        // Resolve token type from wallet object generic param
-        const obj = await tatumRpcClient.getObject({
-            objectId: walletData.wallet_id,
-            mode
-        });
-
-        if (!obj.error) {
-            const match = obj.type.match(/<([^>]+)>/);
-            if (!match?.[1]) {
-                logger.warn(`[WalletIndexer] Cannot parse type for wallet ${walletData.wallet_id}`);
-                continue;
-            }
-
-            const parts = match[1].split("::");
-            const token = parts[parts.length - 1] as Token;
-
-            await paymentRepo.addDepositAddressToPayment(tx.id, walletData.wallet_id, token);
-        }
+const obj = await tatumRpcClient.getObject({
+    objectId: walletData.wallet_id,
+    mode
+});
+if (!obj.error && obj.data) {
+    const match = obj.data.type.match(/<([^>]+)>/);
+    if (!match?.[1]) {
+        logger.warn(`[WalletIndexer] Cannot parse type for wallet ${walletData.wallet_id}`);
+        continue;
+    }
+    const parts = match[1].split("::");
+    const token = parts[parts.length - 1] as Token;
+    await paymentRepo.addDepositAddressToPayment(tx.id, walletData.wallet_id, token);
+}
         logger.info(`[WalletIndexer] Wallet ${walletData.wallet_id} linked to tx ${tx.id}`);
 
         // Spawn payment-event tracker (dedup by walletId)
