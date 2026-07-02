@@ -171,9 +171,6 @@ export function startSuiIndexerWorker(): Worker {
         SUI_INDEXER_QUEUE,
         async (job: Job<SuiJobData>) => {
             switch (job.name as (typeof SuiJobs)[keyof typeof SuiJobs]) {
-                case SuiJobs.POLL_WALLET_CREATED:
-                    return handlePollWalletCreated(job.data as PollWalletCreatedData, paymentRepo, tatumRpcClient);
-
                 case SuiJobs.TRACK_PAYMENT_EVENT:
                     return handleTrackPaymentEvent(job.data as TrackPaymentEventData, paymentRepo, paymentService, tatumRpcClient, webhookQueue);
 
