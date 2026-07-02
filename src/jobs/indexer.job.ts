@@ -186,13 +186,7 @@ export function startSuiIndexerWorker(): Worker {
     );
 
     worker.on("failed", (job, err) => {
-        // Suppress expected retry noise
-        const isRetryNoise =
-            err.message.startsWith("Balance ") ||
-            err.message.startsWith("PaymentProcessed not yet");
-        if (!isRetryNoise) {
             logger.error(`[SuiIndexer] Job ${job?.id} (${job?.name}) hard-failed: ${err.message}`, err);
-        }
     });
 
     return worker;
