@@ -72,14 +72,14 @@ export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, 
 
 
 export async function initSuiWalletIndexerJob(data: TrackPaymentEventData): Promise<void> {
-    const { mode, transactionId, spawnedAt, txWallet } = data;
+    const { mode, transactionId, walletId, spawnedAt } = data;
     const jobId = `track-wallet-object:${txWallet}`;
             await suiIndexerQueue.add(
                 SuiJobs.TRACK_PAYMENT_EVENT,
                 {
                     mode,
-                    walletId: walletData.wallet_id,
-                    transactionId: walletData.transaction_id,
+                    walletId,
+                    transactionId,
                     spawnedAt: new Date().toISOString(),
                 } satisfies TrackPaymentEventData,
                 {
