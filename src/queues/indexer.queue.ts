@@ -19,7 +19,6 @@ export interface TrackPaymentEventData {
     mode: Mode;
     walletId: string;
     transactionId: string;
-    merchantAddress: string;
     spawnedAt: string;
 }
 
@@ -72,7 +71,7 @@ export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, 
 }
 
 
-export async function initSuiWalletIndexerJob(data: Omit<TrackCoinBalanceData, "token">): Promise<void> {
+export async function initSuiWalletIndexerJob(data: TrackPaymentEventData): Promise<void> {
     const { mode, transactionId, spawnedAt, txWallet } = data;
     const jobId = `track-wallet-object:${txWallet}`;
             await suiIndexerQueue.add(
