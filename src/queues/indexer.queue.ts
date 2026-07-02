@@ -80,7 +80,7 @@ export async function initSuiWalletIndexerJob(data: TrackPaymentEventData): Prom
                     mode,
                     walletId,
                     transactionId,
-                    spawnedAt: new Date().toISOString(),
+                    spawnedAt
                 } satisfies TrackPaymentEventData,
                 {
                     jobId,
