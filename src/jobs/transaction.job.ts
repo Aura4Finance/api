@@ -136,7 +136,7 @@ export const startTransactionWorker = () => {
       duration: String(updated.plan.duration),
       amount: updated.plan.amount,
       currency: updated.plan.currency,
-      startsAt: now.toISOString();
+      startsAt: now.toISOString(),
       expiresAt: endsAt.toISOString(),
     });
     stats.succeeded++;
