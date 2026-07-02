@@ -12,7 +12,6 @@ import {
     TrackPaymentEventData,
     TrackCoinBalanceData
 } from "@/queues/indexer.queue";
-import { Mode, Token } from "@/generated/prisma/client";
 import { TatumRpcClient } from "@/services/tatum.service";
 import { WebhookQueue } from "@/services/schedule.webhook.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
