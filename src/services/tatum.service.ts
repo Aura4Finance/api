@@ -26,20 +26,23 @@ type BalanceResult = {
 
 type ObjectResult =
     | {
-        error: null;
-        objectId: string;
-        version: string;
-        digest: string;
-        type: string;
-        owner: unknown;
-        content: {
-            dataType: "moveObject";
+        data: {
+            objectId: string;
+            version: string;
+            digest: string;
             type: string;
-            hasPublicTransfer: boolean;
-            fields: Record<string, unknown>;
-        } | null;
+            owner: unknown;
+            content: {
+                dataType: "moveObject";
+                type: string;
+                hasPublicTransfer: boolean;
+                fields: Record<string, unknown>;
+            } | null;
+        };
+        error?: null;
     }
     | {
+        data?: null;
         error: {
             code: "deleted" | "notExists" | "dynamicFieldNotFound" | "displayError";
             object_id: string;
