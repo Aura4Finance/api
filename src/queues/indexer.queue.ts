@@ -46,7 +46,7 @@ export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, 
 
     for (const token of Object.values(Token)) {
         if(mode === "test" && token !== "USDC") continue;
-        const subJobId = `track-balance-${txWallet}:${Buffer.from(token).toString("base64")}`;
+        const subJobId = `track-balance-${txWallet}-${Buffer.from(token).toString("base64")}`;
         if (!(await suiIndexerQueue.getJob(subJobId))) {
             await suiIndexerQueue.add(
                 SuiJobs.TRACK_COIN_BALANCE,
@@ -73,7 +73,7 @@ export async function initSuiAccountIndexerJob(data: Omit<TrackCoinBalanceData, 
 
 export async function initSuiWalletIndexerJob(data: TrackPaymentEventData): Promise<void> {
     const { mode, transactionId, walletId, spawnedAt } = data;
-    const jobId = `track-wallet-object:${walletId}`;
+    const jobId = `track-wallet-object-${walletId}`;
             await suiIndexerQueue.add(
                 SuiJobs.TRACK_PAYMENT_EVENT,
                 {
