@@ -52,9 +52,7 @@ async function triggerPostPaymentQueues(
         await transactionQueue.add(
             jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
             {
-                paymentId: tx.id,
-                subscriptionId,
-                failureEmailTemplate: "abandoned",
+                subscriptionId
             },
             {
                 removeOnComplete: true,

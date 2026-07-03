@@ -52,25 +52,6 @@ function logStats(stats: BatchStats): void {
   );
 }
 
-function computeEndsAt(now: Date, duration: SubscriptionDuration): Date {
-  const out = new Date(now);
-  switch (duration) {
-    case SubscriptionDuration.WEEKLY:
-      out.setDate(out.getDate() + 7);
-      break;
-    case SubscriptionDuration.MONTHLY:
-      out.setMonth(out.getMonth() + 1);
-      break;
-    case SubscriptionDuration.SIX_MONTHS:
-      out.setMonth(out.getMonth() + 6);
-      break;
-    case SubscriptionDuration.YEARLY:
-      out.setFullYear(out.getFullYear() + 1);
-      break;
-  }
-  return out;
-}
-
 async function processExpiredPendingTransactions(paymentService: PaymentService): Promise<BatchStats> {
   const stats: BatchStats = { phase: "expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
