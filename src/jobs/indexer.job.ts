@@ -227,5 +227,4 @@ export function startSuiIndexerWorker(): Worker {
         }
     });
 
-    return worker;
 }
