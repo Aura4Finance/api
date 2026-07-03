@@ -16,7 +16,8 @@ import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
 import { decimalToBigInt } from "@/utils/decimal-to-big-int";
-import { initSuiAccountIndexerJob, initSuiWalletIndexerJob} from "@/queues/indexer.queue";
+import { initSuiAccountIndexerJob, initSuiWalletIndexerJob } from "@/queues/indexer.queue";
+import { WebhookQueue } from "@/services/schedule.webhook.service";
 
 type TransactionWithRelations = Prisma.TransactionGetPayload<{
   include: {
@@ -43,6 +44,7 @@ export class PaymentService {
     private readonly walletService: WalletService,
     private readonly customerRepository: CustomerRepository,
     private readonly emailQueue: EmailQueue,
+    private readonly webhookQueue: WebhookQueue,
     private readonly quoteService: QuoteService,
     private readonly tatumRpcClient: TatumRpcClient
   ) { }
@@ -150,6 +152,18 @@ export class PaymentService {
         network: transaction.network
       }
     ), "EX", 6000);
+
+    // 1) Always emit payment success webhook
+    await this.webhookQueue.addScheduler(profileId, {
+      event: "payment.success",
+      data: {
+        transactionId: transaction.id,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        status: "success",
+        occuredAt: new Date().toISOString(),
+      },
+    });
 
     return {
       message: "Payment created successfully",
@@ -264,12 +278,12 @@ export class PaymentService {
       token
     );
 
-   await initSuiWalletIndexerJob({
-     mode: tx.mode,
-     walletId: depositAddress,
-     transactionId: tx.id,
-     spawnedAt: Date.now().toString()
-   })
+    await initSuiWalletIndexerJob({
+      mode: tx.mode,
+      walletId: depositAddress,
+      transactionId: tx.id,
+      spawnedAt: Date.now().toString()
+    })
 
     return {
       message: "Deposit address created successfully!",
@@ -360,48 +374,18 @@ export class PaymentService {
   }
 
   async verifyPayment(data: Omit<VerifyPaymentDto, "token">) {
-  const { paymentId } = data;
+    const { paymentId } = data;
 
-  const tx = await this.paymentRepository.findPaymentById(paymentId);
+    const tx = await this.paymentRepository.findPaymentById(paymentId);
 
-  if (!tx) {
-    throw new APIError("Payment session not found.", STATUS.notFound);
-  }
+    if (!tx) {
+      throw new APIError("Payment session not found.", STATUS.notFound);
+    }
 
-  // Payment already completed
-  if (tx.status === "COMPLETED") {
-    return {
-      message: "Payment already verified.",
-      payload: {
-        status: "completed",
-        paymentId,
-      },
-    };
-  }
-
-  // Payment already failed
-  if (tx.status === "FAILED") {
-    return {
-      message: "Payment already failed.",
-      payload: {
-        status: "failed",
-        paymentId,
-      },
-    };
-  }
-
-  // Only pending payments reach here
-  try {
-    const result = await this.tatumRpcClient.getObject({
-      objectId: tx.payment!.depositAddress as string,
-      mode: tx.mode,
-    });
-
-    if (result.error?.code === "deleted") {
-      await this.confirmPayment(tx);
-
+    // Payment already completed
+    if (tx.status === "COMPLETED") {
       return {
-        message: "Payment verification completed.",
+        message: "Payment already verified.",
         payload: {
           status: "completed",
           paymentId,
@@ -409,33 +393,63 @@ export class PaymentService {
       };
     }
 
-    // Still exists -> payment is still pending
-    return {
-      message: "Payment is still pending.",
-      payload: {
-        status: "pending",
-        paymentId,
-      },
-    };
-  } catch (error: unknown) {
-    const typedError = error as { message?: string };
+    // Payment already failed
+    if (tx.status === "FAILED") {
+      return {
+        message: "Payment already failed.",
+        payload: {
+          status: "failed",
+          paymentId,
+        },
+      };
+    }
 
-    logger.error(
-      "[verifyPayment] Error verifying payment:",
-      typedError.message
-    );
+    // Only pending payments reach here
+    try {
+      const result = await this.tatumRpcClient.getObject({
+        objectId: tx.payment!.depositAddress as string,
+        mode: tx.mode,
+      });
 
-    await this.markPaymentFailed(tx);
+      if (result.error?.code === "deleted") {
+        await this.confirmPayment(tx);
 
-    return {
-      message: "Payment verification completed.",
-      payload: {
-        status: "failed",
-        paymentId,
-      },
-    };
+        return {
+          message: "Payment verification completed.",
+          payload: {
+            status: "completed",
+            paymentId,
+          },
+        };
+      }
+
+      // Still exists -> payment is still pending
+      return {
+        message: "Payment is still pending.",
+        payload: {
+          status: "pending",
+          paymentId,
+        },
+      };
+    } catch (error: unknown) {
+      const typedError = error as { message?: string };
+
+      logger.error(
+        "[verifyPayment] Error verifying payment:",
+        typedError.message
+      );
+
+      await this.markPaymentFailed(tx);
+
+      return {
+        message: "Payment verification completed.",
+        payload: {
+          status: "failed",
+          paymentId,
+        },
+      };
+    }
   }
-}
 
 
   async verifyTransfer(data: VerifyPaymentDto) {
@@ -448,13 +462,13 @@ export class PaymentService {
     }
 
     if (tx.status === "COMPLETED") {
-        return {
-            message: `Transfer is already completed`,
-            payload: { 
-              status: tx.status,
-              paymentId
-               }
-        };
+      return {
+        message: `Transfer is already completed`,
+        payload: {
+          status: tx.status,
+          paymentId
+        }
+      };
     }
 
     const paymentWallet = tx.payment?.wallet;
