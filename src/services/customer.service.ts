@@ -10,9 +10,9 @@ export class CustomerService {
   constructor(
     private readonly customerRepository: CustomerRepository) { }
 
-  async createCustomer(data: 
-    CreateCustomerDto, 
-    profileId: string, 
+  async createCustomer(data:
+    CreateCustomerDto,
+    profileId: string,
     mode: Mode
   ) {
     const { firstname, lastname, email } = data;
@@ -38,16 +38,20 @@ export class CustomerService {
   }
 
   async getAllCustomers(
-    query: GetCustomersQueryDto, 
-    mode: Mode, 
+    query: GetCustomersQueryDto,
+    mode: Mode,
     profileId?: string
   ) {
-    let customers;
-    if (profileId) {
-      customers = await this.customerRepository.getAllCustomers(query, mode, profileId);
-    }else {
-      customers = await this.customerRepository.getAllCustomers(query, mode);
-    }
+
+    const customers = await this.customerRepository.getAllCustomers(query, mode, profileId);
+    customers.customers.forEach((customer: any) => {
+      customer.totalSpent = mode === Mode.live ? customer.totalSpendLive : customer.totalSpendTest;
+    });
+
+    customers.customers.forEach((customer: any) => {
+      delete customer.totalSpendLive;
+      delete customer.totalSpendTest;
+    });
 
     return {
       message: "Customers fetched successfully",
@@ -56,17 +60,11 @@ export class CustomerService {
   }
 
   async getSingleCustomer(
-    customerId: string, 
-    mode: Mode, 
+    customerId: string,
+    mode: Mode,
     profileId?: string
   ) {
-    let customer;
-    if(profileId){
-       customer = await this.customerRepository.findCustomerbyEmailorId(customerId, mode, profileId);
-    }else {
-      customer = await this.customerRepository.findCustomerbyEmailorId(customerId, mode);
-    }
-
+    const customer = await this.customerRepository.findCustomerbyEmailorId(customerId, mode, profileId);
     if (!customer) {
       throw new APIError("Customer not found.", STATUS.notFound);
     }

@@ -120,7 +120,7 @@ export class CustomerRepository {
         logger.info(`Adding customer to resend failed. Customerid: ${result.id}`);
       }
       await resend.contacts.segments.add({
-        contactId: <string>contact?.id,
+        contactId: contact?.id!,
         segmentId: segments.customer.id
       })
     } catch (error: any) {
@@ -204,7 +204,8 @@ export class CustomerRepository {
     // Amount spent filter
     const amountRange = this.mapAmountSpent(amountSpent);
     if (amountRange) {
-      where.totalSpent = amountRange;
+      if( mode === Mode.test) where.totalSpendLive = amountRange;
+      if( mode === Mode.live ) where.totalSpendTest = amountRange;
     }
 
     const customers = await db.customer.findMany({
@@ -350,15 +351,26 @@ export class CustomerRepository {
 
   async updateAmountSpent(
     customerId: string,
+    profileId: string,
     amount: number,
+    mode: Mode,
     type: "add" | "remove" = "add"
 
   ) {
-    return await db.customer.update({
-      where: { id: customerId },
-      data: {
-        totalSpent: type == "add" ? { increment: amount } : { decrement: amount }
-      }
+    let data;
+    if(mode === Mode.test){
+      data = { totalSpendTest: type == "add" ? { increment: amount } : { decrement: amount }}
+    }else {
+      data = { totalSpendLive: type == "add" ? { increment: amount } : { decrement: amount }}
+    }
+    return await db.userCustomer.update({
+      where: {
+        profileId_customerId: {
+          customerId,
+          profileId
+        }
+      }, 
+      data
     })
 
   }

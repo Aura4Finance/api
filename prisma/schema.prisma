@@ -122,7 +122,6 @@ model Customer {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @default(now())
   mode          Mode[]
-  totalSpent    Float            @default(0)
   userCustomers UserCustomer[]
   transactions  Transaction[]  @relation("CustomerTransactions")
   subscriptions Subscription[]
@@ -179,13 +178,14 @@ enum SubscriptionStatus {
 }
 
 model UserCustomer {
-  id         String          @id @default(cuid())
-  profile    BusinessProfile @relation("ProfileUserCustomers", fields: [profileId], references: [id], onDelete: Cascade)
-  profileId  String
-  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId String
-  createdAt  DateTime        @default(now())
-
+  id             String          @id @default(cuid())
+  profile        BusinessProfile @relation("ProfileUserCustomers", fields: [profileId], references: [id], onDelete: Cascade)
+  profileId      String
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     String
+  totalSpendLive Decimal         @default(0) @db.Decimal(20, 8)
+  totalSpendTest Decimal         @default(0) @db.Decimal(20, 8)
+  createdAt      DateTime        @default(now())
   @@unique([profileId, customerId])
 }
 
