@@ -26,20 +26,23 @@ type BalanceResult = {
 
 type ObjectResult =
     | {
-        error: null;
-        objectId: string;
-        version: string;
-        digest: string;
-        type: string;
-        owner: unknown;
-        content: {
-            dataType: "moveObject";
+        data: {
+            objectId: string;
+            version: string;
+            digest: string;
             type: string;
-            hasPublicTransfer: boolean;
-            fields: Record<string, unknown>;
-        } | null;
+            owner: unknown;
+            content: {
+                dataType: "moveObject";
+                type: string;
+                hasPublicTransfer: boolean;
+                fields: Record<string, unknown>;
+            } | null;
+        };
+        error?: null;
     }
     | {
+        data?: null;
         error: {
             code: "deleted" | "notExists" | "dynamicFieldNotFound" | "displayError";
             object_id: string;
@@ -81,6 +84,10 @@ type TatumRpcResponse<T> = {
     id: number;
     jsonrpc: string;
     result: T;
+    error?: {
+        code: number;
+        message: string;
+    };
 };
 
 type TatumRequestMethods = keyof MethodResponseMap;
@@ -154,7 +161,18 @@ export class TatumRpcClient {
             params,
         });
 
-        return response.data.result;
+        if (response.data.error) {
+    throw new APIError(
+        `Tatum RPC error on ${method}: ${response.data.error.message} (code ${response.data.error.code})`,
+        STATUS.bad
+    );
+}
+
+if (response.data.result === undefined) {
+    throw new APIError(`Tatum RPC returned no result for ${method}`, STATUS.bad);
+}
+
+return response.data.result;
     }
 
     async listCoins(req: TatumRequest): Promise<CoinsResult> {

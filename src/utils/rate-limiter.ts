@@ -47,17 +47,63 @@ function getLimiterDefaults(key: string) {
   return { maxConcurrent, minTime };
 }
 
+async function disconnectLimiterInstance(
+  limiter: Bottleneck,
+  key: string,
+  reason: string
+) {
+  try {
+    await limiter.disconnect(false);
+  } catch (error) {
+    logger.warn("Limiter disconnect failed", {
+      limiter: key,
+      reason,
+      error: String(error),
+    });
+  } finally {
+    limiter.removeAllListeners();
+  }
+
+  logger.info("Limiter cleaned up", {
+    limiter: key,
+    reason,
+  });
+}
+
+async function cleanupLimiter(key: string, reason = "manual") {
+  const limiter = limiterCache.get(key);
+  if (!limiter) return false;
+
+  limiterCache.delete(key);
+  await disconnectLimiterInstance(limiter, key, reason);
+
+  return true;
+}
+
+export async function cleanupLimiterForUrl(url: string, reason = "manual") {
+  try {
+    const hostname = new URL(url).hostname;
+    return cleanupLimiter(`domain:${hostname}`, reason);
+  } catch (error) {
+    logger.warn("Limiter cleanup skipped due to invalid URL", {
+      url,
+      reason,
+      error: String(error),
+    });
+
+    return false;
+  }
+}
+
 function registerShutdownHook() {
   if (shutdownHookRegistered) return;
   shutdownHookRegistered = true;
 
   const shutdown = async () => {
-    const limiters = Array.from(limiterCache.values());
-    if (limiters.length === 0) return;
+    const keys = Array.from(limiterCache.keys());
+    if (keys.length === 0) return;
 
-    await Promise.allSettled(
-      limiters.map((limiter) => limiter.stop({ dropWaitingJobs: false }))
-    );
+    await Promise.allSettled(keys.map((key) => cleanupLimiter(key, "shutdown")));
   };
 
   process.once("SIGTERM", shutdown);
@@ -81,8 +127,28 @@ export function getLimiter(
     ...options,
   });
 
+  let cleaningUp = false;
+
   limiter.on("error", (error) => {
-    logger.error("Limiter error", { limiter: key, error: String(error) });
+    const errorText = String(error);
+
+    logger.error("Limiter error", { limiter: key, error: errorText });
+
+    if (errorText.includes("SETTINGS_KEY_NOT_FOUND") && !cleaningUp) {
+      cleaningUp = true;
+
+      logger.warn("Limiter settings key missing in Redis; disconnecting orphaned limiter", {
+        limiter: key,
+      });
+
+      // Only remove from cache if this instance is still the cached one -
+      // a newer instance may have already replaced it under this key.
+      if (limiterCache.get(key) === limiter) {
+        limiterCache.delete(key);
+      }
+
+      void disconnectLimiterInstance(limiter, key, "redis-settings-key-not-found");
+    }
   });
 
   limiter.on("failed", (error, jobInfo) => {
@@ -117,4 +183,4 @@ export function getLimiterForUrl(url: string) {
   return getLimiter(`domain:${hostname}`, {
     timeout: DEFAULT_LIMITER_TIMEOUT_MS,
   });
-}
+    }
