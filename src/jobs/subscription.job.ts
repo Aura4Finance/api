@@ -102,7 +102,7 @@ async function acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
 }
 
 interface BatchStats {
-    phase: "reminder" | "trial" | "expiry" | "cancellation" | "reconciliation";
+    phase: "reminder" | "trial" | "expiry" | "cancellation" | "reconciliation" | "pending-expiry";
     attempted: number;
     skipped: number;   // lock already held
     succeeded: number;
@@ -126,6 +126,54 @@ function logStats(stats: BatchStats | ReconciliationStats): void {
         `succeeded=${stats.succeeded} failed=${stats.failed}` +
         reconciliationMetrics
     );
+}
+
+/**
+ * Marks a still-pending subscription as ABANDONED. Uses a conditional
+ * updateMany (not update) so a subscription that flipped to ACTIVE
+ * between the find and this call — e.g. payment confirmed right as
+ * this cron ran — is left untouched instead of clobbered.
+ */
+async function abandonPendingSubscription(
+  subscriptionId: string,
+): Promise<SubscriptionWithRelations | null> {
+  const { count } = await db.subscription.updateMany({
+    where: { id: subscriptionId, status: SubscriptionStatus.INITIATED },
+    data: { status: SubscriptionStatus.ABANDONED },
+  });
+
+  if (count === 0) return null;
+
+  return db.subscription.findUniqueOrThrow({
+    where: { id: subscriptionId },
+    include: { customer: true, plan: { include: { profile: true } } },
+  });
+}
+
+
+/**
+ * Fires the "subscription.abandoned" webhook and queues the abandoned email.
+ * Assumes the subscription has already been persisted as ABANDONED.
+ */
+async function notifySubscriptionAbandoned(
+  emailQueue: EmailQueue,
+  subscription: SubscriptionWithRelations,
+): Promise<void> {
+  await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
+    event: "subscription.abandoned",
+    data: {
+      subscriptionId: subscription.id,
+      status: "abandoned",
+      occuredAt: new Date().toISOString(),
+    },
+  });
+
+  await emailQueue.addSubscriptionAbandonedScheduler({
+    email: subscription.customer.email,
+    customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
+    merchantName: subscription.plan.profile?.businessName ?? "",
+    planName: subscription.plan.name,
+  });
 }
 
 
@@ -265,6 +313,52 @@ type SubscriptionWithRelations = Awaited<
 // ---------------------------------------------------------------------------
 // Phase handlers
 // ---------------------------------------------------------------------------
+
+const PENDING_EXPIRY_CONFIG = {
+  staleAfterMinutes: 10,
+  concurrencyLimit: RENEWAL_CONFIG.concurrencyLimit,
+  lockTtlSeconds: RENEWAL_CONFIG.lockTtlSeconds,
+} as const;
+
+async function processStalePendingSubscriptions(
+  emailQueue: EmailQueue,
+  now: Date,
+): Promise<BatchStats> {
+  const stats: BatchStats = { phase: "pending-expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+  const cutoff = new Date(now.getTime() - PENDING_EXPIRY_CONFIG.staleAfterMinutes * 60 * 1000);
+
+  const subscriptions = await db.subscription.findMany({
+    where: { status: SubscriptionStatus.INITIATED, createdAt: { lte: cutoff } },
+    include: { customer: true, plan: { include: { profile: true } } },
+  });
+
+  const limit = pLimit(PENDING_EXPIRY_CONFIG.concurrencyLimit);
+
+  await Promise.all(
+    subscriptions.map((sub: SubscriptionWithRelations) =>
+      limit(async () => {
+        stats.attempted++;
+        const dedupeKey = `subscription:pending-expiry:${sub.id}`;
+
+        const locked = await acquireLock(dedupeKey, PENDING_EXPIRY_CONFIG.lockTtlSeconds);
+        if (!locked) { stats.skipped++; return; }
+
+        try {
+          const abandoned = await abandonPendingSubscription(sub.id);
+          if (!abandoned) { stats.skipped++; return; } // race: no longer INITIATED
+
+          await notifySubscriptionAbandoned(emailQueue, abandoned);
+          stats.succeeded++;
+        } catch (err) {
+          stats.failed++;
+          logger.error(`[subscription-worker] pending-expiry failed for ${sub.id}: ${err}`);
+        }
+      })
+    )
+  );
+
+  return stats;
+}
 
 async function processReminders(
     paymentRepository: PaymentRepository,
@@ -490,9 +584,7 @@ async function processCancellations(
                         await webhookQueueSvc.addScheduler(sub.plan.profile.id, {
                             event: "subscription.disable",
                             data: {
-                                transactionId: sub.id,
-                                amount: sub.plan.amount,
-                                currency: sub.plan.currency,
+                                subscriptionId: sub.id,
                                 status: "disabled",
                                 occuredAt: cancelledAt.toISOString(),
                             },
@@ -637,15 +729,17 @@ export const startSubscriptionWorker = (): void => {
             if (job.name === jobs.PROCESS_RENEWALS) {
                 const now = new Date();
 
-                const [reminderStats, expiryStats, cancellationStats] = await Promise.all([
+                const [reminderStats, expiryStats, cancellationStats, staleStats] = await Promise.all([
                     processReminders(paymentRepository, walletService, emailQueue, now),
                     processExpiries(paymentRepository, walletService, emailQueue, now),
                     processCancellations(emailQueue, now),
+                    processStalePendingSubscriptions(emailQueue, now)
                 ]);
 
                 logStats(reminderStats);
                 logStats(expiryStats);
                 logStats(cancellationStats);
+                logStats(staleStats);
             } else if (job.name === jobs.PROCESS_TRIAL_SUBSCRIPTIONS) {
                 const now = new Date();
                 const trialStats = await processTrialExpirations(paymentRepository, paymentService, emailQueue, now);

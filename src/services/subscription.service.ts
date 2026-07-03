@@ -112,9 +112,8 @@ export class SubscriptionService {
       await this.webhookQueue.addScheduler(profileId, {
         event: "subscription.create",
         data: {
-          transactionId: subscription.id,
-          amount: <number>plan.amount,
-          currency: <string>plan.currency,
+          subscriptionId: subscription.id,
+          transactionId: txId,
           status: "created",
           occuredAt: new Date().toISOString(),
         },
@@ -149,9 +148,7 @@ export class SubscriptionService {
       await this.webhookQueue.addScheduler(profileId, {
         event: "subscription.not_renew",
         data: {
-          transactionId: subscription.id,
-          amount: subscription.plan.amount,
-          currency: subscription.plan.currency,
+          subscriptionId: subscription.id,
           status: "cancelled",
           occuredAt: new Date().toISOString(),
         },

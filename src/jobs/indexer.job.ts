@@ -47,7 +47,8 @@ async function triggerPostPaymentQueues(
 
     // 2) If linked to subscription, enqueue initial-subscription post-processing
     const subscriptionId = tx.payment?.subscriptionId;
-    if (subscriptionId) {
+    const subscriptionStatus = tx.payment?.subscription.status;
+    if (subscriptionId && subscriptionStatus === "PENDING") {
         await transactionQueue.add(
             jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
             {

@@ -25,6 +25,25 @@ interface BatchStats {
   failed: number;
 }
 
+function computeEndsAt(now: Date, duration: SubscriptionDuration): Date {
+  const out = new Date(now);
+  switch (duration) {
+    case SubscriptionDuration.WEEKLY:
+      out.setDate(out.getDate() + 7);
+      break;
+    case SubscriptionDuration.MONTHLY:
+      out.setMonth(out.getMonth() + 1);
+      break;
+    case SubscriptionDuration.SIX_MONTHS:
+      out.setMonth(out.getMonth() + 6);
+      break;
+    case SubscriptionDuration.YEARLY:
+      out.setFullYear(out.getFullYear() + 1);
+      break;
+  }
+  return out;
+}
+
 function logStats(stats: BatchStats): void {
   logger.info(
     `[transaction-worker] phase=${stats.phase} ` +
@@ -84,71 +103,70 @@ export const startTransactionWorker = () => {
     TRANSACTION_WORKER,
     async (job) => {
       if (job.name === jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT) {
-          const { subscriptionId } = job.data;
-          const emailQueue = Container.get(EmailQueue);
-          const stats: BatchStats = { phase: "subscription-verification", attempted: 1, skipped: 0, succeeded: 0, failed: 0 };
+        const { subscriptionId } = job.data;
+        const emailQueue = Container.get(EmailQueue);
+        const stats: BatchStats = { phase: "subscription-verification", attempted: 1, skipped: 0, succeeded: 0, failed: 0 };
 
-  try {
-    const subscription = await db.subscription.findUnique({
-      where: { id: subscriptionId },
-      include: { plan: { include: { profile: true } }, customer: true },
-    });
+        try {
+          const subscription = await db.subscription.findUnique({
+            where: { id: subscriptionId },
+            include: { plan: { include: { profile: true } }, customer: true },
+          });
 
-    if (!subscription) {
-      stats.skipped++;
-      logStats(stats);
-      return;
-    }
+          if (!subscription) {
+            stats.skipped++;
+            logStats(stats);
+            return;
+          }
 
-    if (subscription.status === SubscriptionStatus.ACTIVE) {
-      stats.skipped++;
-      logStats(stats);
-      return;
-    }
+          if (subscription.status === SubscriptionStatus.ACTIVE) {
+            stats.skipped++;
+            logStats(stats);
+            return;
+          }
 
-    const now = new Date();
-    const endsAt = computeEndsAt(now, subscription.plan.duration as SubscriptionDuration);
-    const updated = await db.subscription.update({
-      where: { id: subscription.id },
-      data: {
-        status: SubscriptionStatus.ACTIVE,
-        startsAt: now,
-        endsAt,
-      },
-      include: { customer: true, plan: { include: { profile: true } } },
-    });
+          const now = new Date();
+          const endsAt = computeEndsAt(now, subscription.plan.duration as SubscriptionDuration);
+          const updated = await db.subscription.update({
+            where: { id: subscription.id },
+            data: {
+              status: SubscriptionStatus.ACTIVE,
+              startsAt: now,
+              endsAt,
+            },
+            include: { customer: true, plan: { include: { profile: true } } },
+          });
 
-    await webhookQueueSvc.addScheduler(updated.plan.profileId, {
-      event: "subscription.active",
-      data: {
-        transactionId: updated.id,
-        amount: updated.plan.amount,
-        currency: updated.plan.currency,
-        status: "active",
-        occuredAt: new Date().toISOString(),
-      },
-    });
-    await emailQueue.addSubscriptionActiveScheduler({
-      email: updated.customer.email,
-      customerName: `${updated.customer.firstname} ${updated.customer.lastname}`,
-      merchantName: updated.plan.profile?.businessName ?? "",
-      planName: updated.plan.name,
-      duration: String(updated.plan.duration),
-      amount: updated.plan.amount,
-      currency: updated.plan.currency,
-      startsAt: now.toISOString();
-      expiresAt: endsAt.toISOString(),
-    });
-    stats.succeeded++;
-    logStats(stats);
-  } catch (error) {
-    stats.failed++;
-    logStats(stats);
-    throw error; // let BullMQ retry — do not reinterpret as abandonment here
+          await webhookQueueSvc.addScheduler(updated.plan.profileId, {
+            event: "subscription.active",
+            data: {
+              subscriptionId: updated.id,
+              status: "active",
+              occuredAt: new Date().toISOString(),
+            },
+          });
 
-  }
+          await emailQueue.addSubscriptionActiveScheduler({
+            email: updated.customer.email,
+            customerName: `${updated.customer.firstname} ${updated.customer.lastname}`,
+            merchantName: updated.plan.profile?.businessName ?? "",
+            planName: updated.plan.name,
+            duration: String(updated.plan.duration),
+            amount: updated.plan.amount,
+            currency: updated.plan.currency,
+            startsAt: now.toISOString(),
+            expiresAt: endsAt.toISOString(),
+          });
+          stats.succeeded++;
+          logStats(stats);
+        } catch (error) {
+          stats.failed++;
+          logStats(stats);
+          throw error; // let BullMQ retry — do not reinterpret as abandonment here
+
+        }
         return;
-}      
+      }
       if (job.name === jobs.EXPIRE_PENDING) {
         try {
           logger.info("⏱ Transaction expiry job running");
@@ -174,22 +192,22 @@ export const startTransactionWorker = () => {
         logger.info(`[transaction-worker] settling payment to ${toAddress} with amount ${amount} and token ${coinType}`);
         const walletService = Container.get(WalletService);
 
-        try{
-        const result = await walletService.splitSendToMerchantsAndAdmin(
-          walletPrivateKey,
-          coinObjectId,
-          amount,
-          toAddress,
-          coinType,
-          mode
-        )
-        if (result.$kind !== "Transaction") {
-          logTransactionError(result)
-        }
+        try {
+          const result = await walletService.splitSendToMerchantsAndAdmin(
+            walletPrivateKey,
+            coinObjectId,
+            amount,
+            toAddress,
+            coinType,
+            mode
+          )
+          if (result.$kind !== "Transaction") {
+            logTransactionError(result)
+          }
         } catch (error: unknown) {
-    logger.error(`[transaction-worker] settle payment job error: ${(error as Error).stack ?? error}`);
-    throw error; // rethrow so BullMQ retries
-  }
+          logger.error(`[transaction-worker] settle payment job error: ${(error as Error).stack ?? error}`);
+          throw error; // rethrow so BullMQ retries
+        }
       }
     },
     {

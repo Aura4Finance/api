@@ -141,6 +141,11 @@ async findPaymentById(id: string, mode?: Mode, profileIdOrWalletAddress?: string
       payment: {
         include: {
           wallet: true,
+          subscription: {
+            select: {
+              status: true
+            }
+          }
         },
       },
       refund: true,

@@ -31,10 +31,15 @@ export type EventType =
 export type WebhookPayload = {
   event: EventType,
   data: {
-    transactionId: string,
-    amount: number,
-    currency: string,
-    status: string,
-    occuredAt: string
+    transactionId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    occuredAt: string;
+  } | {
+    subscriptionId: string;
+    transactionId?: string;
+    status: string;
+    occuredAt: string;
   }
 }
