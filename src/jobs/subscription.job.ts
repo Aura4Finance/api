@@ -135,19 +135,19 @@ function logStats(stats: BatchStats | ReconciliationStats): void {
  * this cron ran — is left untouched instead of clobbered.
  */
 async function abandonPendingSubscription(
-  subscriptionId: string,
+    subscriptionId: string,
 ): Promise<SubscriptionWithRelations | null> {
-  const { count } = await db.subscription.updateMany({
-    where: { id: subscriptionId, status: SubscriptionStatus.INITIATED },
-    data: { status: SubscriptionStatus.ABANDONED },
-  });
+    const { count } = await db.subscription.updateMany({
+        where: { id: subscriptionId, status: SubscriptionStatus.PENDING },
+        data: { status: SubscriptionStatus.ABANDONED },
+    });
 
-  if (count === 0) return null;
+    if (count === 0) return null;
 
-  return db.subscription.findUniqueOrThrow({
-    where: { id: subscriptionId },
-    include: { customer: true, plan: { include: { profile: true } } },
-  });
+    return db.subscription.findUniqueOrThrow({
+        where: { id: subscriptionId },
+        include: { customer: true, plan: { include: { profile: true } } },
+    });
 }
 
 
@@ -156,24 +156,24 @@ async function abandonPendingSubscription(
  * Assumes the subscription has already been persisted as ABANDONED.
  */
 async function notifySubscriptionAbandoned(
-  emailQueue: EmailQueue,
-  subscription: SubscriptionWithRelations,
+    emailQueue: EmailQueue,
+    subscription: SubscriptionWithRelations,
 ): Promise<void> {
-  await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
-    event: "subscription.abandoned",
-    data: {
-      subscriptionId: subscription.id,
-      status: "abandoned",
-      occuredAt: new Date().toISOString(),
-    },
-  });
+    await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
+        event: "subscription.abandoned",
+        data: {
+            subscriptionId: subscription.id,
+            status: "abandoned",
+            occuredAt: new Date().toISOString(),
+        },
+    });
 
-  await emailQueue.addSubscriptionAbandonedScheduler({
-    email: subscription.customer.email,
-    customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
-    merchantName: subscription.plan.profile?.businessName ?? "",
-    planName: subscription.plan.name,
-  });
+    await emailQueue.addSubscriptionAbandonedScheduler({
+        email: subscription.customer.email,
+        customerName: `${subscription.customer.firstname} ${subscription.customer.lastname}`,
+        merchantName: subscription.plan.profile?.businessName ?? "",
+        planName: subscription.plan.name,
+    });
 }
 
 
@@ -298,9 +298,7 @@ async function findOrCreateTrialTransaction(
     };
 }
 
-// ---------------------------------------------------------------------------
-// Type alias for the hydrated subscription shape used throughout
-// ---------------------------------------------------------------------------
+
 type SubscriptionWithRelations = Awaited<
     ReturnType<typeof db.subscription.findMany<{
         include: {
@@ -310,54 +308,51 @@ type SubscriptionWithRelations = Awaited<
     }>>
 >[number];
 
-// ---------------------------------------------------------------------------
-// Phase handlers
-// ---------------------------------------------------------------------------
 
 const PENDING_EXPIRY_CONFIG = {
-  staleAfterMinutes: 10,
-  concurrencyLimit: RENEWAL_CONFIG.concurrencyLimit,
-  lockTtlSeconds: RENEWAL_CONFIG.lockTtlSeconds,
+    staleAfterMinutes: 10,
+    concurrencyLimit: RENEWAL_CONFIG.concurrencyLimit,
+    lockTtlSeconds: RENEWAL_CONFIG.lockTtlSeconds,
 } as const;
 
 async function processStalePendingSubscriptions(
-  emailQueue: EmailQueue,
-  now: Date,
+    emailQueue: EmailQueue,
+    now: Date,
 ): Promise<BatchStats> {
-  const stats: BatchStats = { phase: "pending-expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
-  const cutoff = new Date(now.getTime() - PENDING_EXPIRY_CONFIG.staleAfterMinutes * 60 * 1000);
+    const stats: BatchStats = { phase: "pending-expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
+    const cutoff = new Date(now.getTime() - PENDING_EXPIRY_CONFIG.staleAfterMinutes * 60 * 1000);
 
-  const subscriptions = await db.subscription.findMany({
-    where: { status: SubscriptionStatus.INITIATED, createdAt: { lte: cutoff } },
-    include: { customer: true, plan: { include: { profile: true } } },
-  });
+    const subscriptions = await db.subscription.findMany({
+        where: { status: SubscriptionStatus.PENDING, createdAt: { lte: cutoff } },
+        include: { customer: true, plan: { include: { profile: true } } },
+    });
 
-  const limit = pLimit(PENDING_EXPIRY_CONFIG.concurrencyLimit);
+    const limit = pLimit(PENDING_EXPIRY_CONFIG.concurrencyLimit);
 
-  await Promise.all(
-    subscriptions.map((sub: SubscriptionWithRelations) =>
-      limit(async () => {
-        stats.attempted++;
-        const dedupeKey = `subscription:pending-expiry:${sub.id}`;
+    await Promise.all(
+        subscriptions.map((sub: SubscriptionWithRelations) =>
+            limit(async () => {
+                stats.attempted++;
+                const dedupeKey = `subscription:pending-expiry:${sub.id}`;
 
-        const locked = await acquireLock(dedupeKey, PENDING_EXPIRY_CONFIG.lockTtlSeconds);
-        if (!locked) { stats.skipped++; return; }
+                const locked = await acquireLock(dedupeKey, PENDING_EXPIRY_CONFIG.lockTtlSeconds);
+                if (!locked) { stats.skipped++; return; }
 
-        try {
-          const abandoned = await abandonPendingSubscription(sub.id);
-          if (!abandoned) { stats.skipped++; return; } // race: no longer INITIATED
+                try {
+                    const abandoned = await abandonPendingSubscription(sub.id);
+                    if (!abandoned) { stats.skipped++; return; } // race: no longer INITIATED
 
-          await notifySubscriptionAbandoned(emailQueue, abandoned);
-          stats.succeeded++;
-        } catch (err) {
-          stats.failed++;
-          logger.error(`[subscription-worker] pending-expiry failed for ${sub.id}: ${err}`);
-        }
-      })
-    )
-  );
+                    await notifySubscriptionAbandoned(emailQueue, abandoned);
+                    stats.succeeded++;
+                } catch (err) {
+                    stats.failed++;
+                    logger.error(`[subscription-worker] pending-expiry failed for ${sub.id}: ${err}`);
+                }
+            })
+        )
+    );
 
-  return stats;
+    return stats;
 }
 
 async function processReminders(

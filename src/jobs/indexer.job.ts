@@ -47,7 +47,7 @@ async function triggerPostPaymentQueues(
 
     // 2) If linked to subscription, enqueue initial-subscription post-processing
     const subscriptionId = tx.payment?.subscriptionId;
-    const subscriptionStatus = tx.payment?.subscription.status;
+    const subscriptionStatus = tx.payment?.subscription?.status;
     if (subscriptionId && subscriptionStatus === "PENDING") {
         await transactionQueue.add(
             jobs.VERIFY_INITIAL_SUBSCRIPTION_PAYMENT,
@@ -93,7 +93,7 @@ async function handleTrackPaymentEvent(
         throw new Error(`[PaymentTracker] Missing smart contract package id for network ${network}`);
     }
 
-    const moveEventType = `${packageId}::main::PaymentProcessed`;
+    const MoveEventType = `${packageId}::main::PaymentProcessed`;
 
     const raw = await redisClient.get(keys.paymentCursor(walletId));
     let cursor = raw ? JSON.parse(raw) : null;
@@ -109,7 +109,7 @@ async function handleTrackPaymentEvent(
         }
 
         const result = await tatumRpcClient.queryEvents({
-            filter: { MoveEventType: moveEventType },
+            filter: { MoveEventType },
             cursor,
             limit: 50,
             mode,
@@ -174,7 +174,7 @@ async function handleTrackCoinBalance(
     logger.info(`[BalanceTracker] Payment confirmed tx=${transactionId}`);
 }
 
-export function startSuiIndexerWorker(): Worker {
+export function startSuiIndexerWorker() {
     const paymentRepo = Container.get(PaymentRepository);
     const paymentService = Container.get(PaymentService);
     const tatumRpcClient = Container.get(TatumRpcClient);
