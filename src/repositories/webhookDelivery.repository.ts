@@ -4,10 +4,18 @@ import { Service } from "typedi";
 
 @Service()
 export class WebhookDeliveryRepository {
+
     async createDeliveryRecord(
         webhookId: string,
         payload: WebhookPayload,
     ) {
+        let mapId: string;
+        if (payload.data.$kind === "subscription") {
+            mapId = payload.data.subscriptionId
+        } else {
+            mapId = payload.data.transactionId
+        }
+
         return await db.webhookDelivery.create({
             data: {
                 webhook: {
@@ -17,7 +25,7 @@ export class WebhookDeliveryRepository {
                 },
                 transaction: {
                     connect: {
-                        id: payload.data.transactionId
+                        id: mapId
                     }
                 },
                 payload,
@@ -67,12 +75,20 @@ export class WebhookDeliveryRepository {
 
     async findDeliveryRecordByTransactionIdEventTypeAndWebhookId(
         webhookId: string,
-        transactionId: string,
         event: EventType,
-    ){
+        transactionIdOrSubscriptionId: string,
+    ) {
         return await db.webhookDelivery.findFirst({
             where: {
-                transactionId,
+                OR: [
+                    {
+                        transactionId: transactionIdOrSubscriptionId
+                    },
+                    {
+                        subscriptionId: transactionIdOrSubscriptionId
+                    }
+
+                ],
                 webhookId,
                 event
             }
@@ -87,20 +103,22 @@ export class WebhookDeliveryRepository {
             status,
             event,
             transactionId,
+            subscriptionId,
             date,
             limit
         } = query;
 
         const where: any = {};
-        if(webhookId) where.webhookId = webhookId;
-        if(status) where.status = status;
-        if(event) where.event = event
-        if(transactionId)  where.transactionId = transactionId;
+        if (webhookId) where.webhookId = webhookId;
+        if (status) where.status = status;
+        if (event) where.event = event
+        if (transactionId) where.transactionId = transactionId;
+        if (subscriptionId) where.subscriptionId = subscriptionId;
 
-        if(date) {
+        if (date) {
             where.createdAt = {
                 gte: new Date(date.startDate),
-                lte:  new Date(date.endDate)
+                lte: new Date(date.endDate)
             }
         }
 
@@ -111,6 +129,6 @@ export class WebhookDeliveryRepository {
                 createdAt: "desc"
             }
         },
-    )
+        )
     }
 }

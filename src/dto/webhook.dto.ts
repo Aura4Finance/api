@@ -1,4 +1,5 @@
 import { TransactionStatus } from "@/generated/prisma/client";
+
 export interface RegisterWebhookDto {
   url: string;
 }
@@ -9,6 +10,7 @@ export interface subscribeToEventDto {
 
 export interface RetrieveWebhookDeliveries {
   status: TransactionStatus,
+  subscriptionId: string;
   transactionId: string,
   event: EventType,
   date: {
@@ -29,17 +31,21 @@ export type EventType =
   | "subscription.disable";
 
 export type WebhookPayload = {
-  event: EventType,
-  data: {
-    transactionId: string;
-    amount: number;
-    currency: string;
-    status: string;
-    occuredAt: string;
-  } | {
-    subscriptionId: string;
-    transactionId?: string;
-    status: string;
-    occuredAt: string;
-  }
-}
+  event: EventType;
+  data:
+    | {
+        $kind: "payment";
+        transactionId: string;
+        amount: number;
+        currency: string;
+        status: string;
+        occurredAt: string;
+      }
+    | {
+        $kind: "subscription";
+        subscriptionId: string;
+        transactionId?: string;
+        status: string;
+        occurredAt: string;
+      };
+};

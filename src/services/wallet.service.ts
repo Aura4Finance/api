@@ -109,7 +109,7 @@ export class WalletService {
 
   async generatePaymentWallet(
     merchantAddress: string,
-    amount: number,
+    amount: number | bigint,
     indexerIdentifier: string,
     token: Token,
     mode: Mode
@@ -117,12 +117,17 @@ export class WalletService {
     const smart_contract_address = await this.setActiveNetwork(mode);
     const admin_keypair = Ed25519Keypair.fromSecretKey(this.admin_secret_key);
 
+    let target = amount;
+    if(!(typeof target === "bigint")){
+      decimalToBigInt(target, getCoinDecimal(token))
+    }
+
     const tx = new Transaction();
     tx.moveCall({
       target: `${smart_contract_address}::main::generatePaymentWallet`,
       arguments: [
         tx.pure.address(merchantAddress),
-        tx.pure.u64(decimalToBigInt(amount, getCoinDecimal(token))),
+        tx.pure.u64(target),
         tx.pure.string(indexerIdentifier),
       ],
       typeArguments: [getCoinType(token, mode === "live" ? "mainnet" : "testnet")!],

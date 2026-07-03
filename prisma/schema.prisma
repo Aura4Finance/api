@@ -155,6 +155,8 @@ model Subscription {
   trialEndsAt DateTime?
   endsAt    DateTime?
   canceledAt DateTime?
+  webhookDelivery   WebhookDelivery[] @relation("WebhookDeliverySubscriptionMap")
+  webhookDeliveryId String?
   payments  Payment[]
   createdAt DateTime         @default(now())
   updatedAt DateTime         @default(now())
@@ -348,8 +350,10 @@ model WebhookDelivery {
   webhookId      String
   webhook        Webhook           @relation("WebhookDeliveryRegister", fields: [webhookId], references: [id])
   event          String
-  transaction    Transaction       @relation("WebhookDeliveryTransactionMap", fields: [transactionId], references: [id])
-  transactionId  String
+  transaction    Transaction?       @relation("WebhookDeliveryTransactionMap", fields: [transactionId], references: [id])
+  transactionId  String?
+  subscription   Subscription?      @relation("WebhookDeliverySubscriptionMap", fields: [subscriptionId], references: [id])
+  subscriptionId String?
   payload        Json
   status         TransactionStatus
   attemptCount   Int

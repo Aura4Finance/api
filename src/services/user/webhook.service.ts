@@ -71,19 +71,24 @@ export class WebhookService {
 
   async getWebhookDeliveries(query: RetrieveWebhookDeliveries, profileId?: string) {
     let deliveries;
-    if(profileId){
+    if (profileId) {
       const webhook = await this.webhookRepository.findWebhookByProfileId(profileId);
       deliveries = await this.webhookDeliveryRepository.getDeliveryRecord(query, webhook?.id);
-    }else {
+    } else {
       deliveries = await this.webhookDeliveryRepository.getDeliveryRecord(query);
     }
-  
+
     return {
       message: "Wehook deliveries retrieved successfully!",
       payload: deliveries
     }
   }
 
+}
+
+function toExternalPayload(payload: WebhookPayload) {
+  const { $kind, ...rest } = payload.data;
+  return rest
 }
 
 //triggered by a job
@@ -110,11 +115,18 @@ export async function triggerWebhook(
   const webhook = await webhookRepository.findWebhookByProfileId(profileId);
   if (!webhook || !webhook?.events.includes(payload.event)) return null;
 
-  let webhookDelivery = await webhookDeliveryRepository.findDeliveryRecordByTransactionIdEventTypeAndWebhookId(webhook.id, payload.data.transactionId, payload.event);
+  let mapId: string;
+  if (payload.data.$kind === "subscription") {
+    mapId = payload.data.subscriptionId
+  } else {
+    mapId = payload.data.transactionId
+  }
+
+  let webhookDelivery = await webhookDeliveryRepository.findDeliveryRecordByTransactionIdEventTypeAndWebhookId(webhook.id, payload.event, mapId);
   if (!webhookDelivery) {
     webhookDelivery = await webhookDeliveryRepository.createDeliveryRecord(webhook.id, payload);
   }
-  if(webhookDelivery?.status == "COMPLETED") return null;
+  if (webhookDelivery?.status == "COMPLETED") return null;
   const signature = crypto
     .createHmac("sha256", webhook.secret)
     .update(JSON.stringify(payload.data))
@@ -131,7 +143,7 @@ export async function triggerWebhook(
     const { response, latencyMs } = await sendHttpRequest(axios, {
       method: "POST",
       url: webhook.url,
-      data: payload,
+      data: toExternalPayload(payload),
       headers: requestHeaders,
       timeout: 8000,
     }, {

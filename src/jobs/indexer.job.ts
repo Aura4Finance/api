@@ -37,11 +37,12 @@ async function triggerPostPaymentQueues(
     await webhookQueue.addScheduler(tx.profileId, {
         event: "payment.success",
         data: {
+            $kind: "payment",
             transactionId: tx.id,
             amount: tx.amount,
             currency: tx.currency,
             status: "success",
-            occuredAt: new Date().toISOString(),
+            occurredAt: new Date().toISOString(),
         },
     });
 

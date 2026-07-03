@@ -162,9 +162,10 @@ async function notifySubscriptionAbandoned(
     await webhookQueueSvc.addScheduler(subscription.plan.profileId, {
         event: "subscription.abandoned",
         data: {
+            $kind: "subscription",
             subscriptionId: subscription.id,
             status: "abandoned",
-            occuredAt: new Date().toISOString(),
+            occurredAt: new Date().toISOString(),
         },
     });
 
@@ -244,11 +245,12 @@ async function findOrCreateRenewalTransaction(
             await webhookQueueSvc.addScheduler(context.plan.profile.id, {
                 event: "payment.create",
                 data: {
+                    $kind: "payment",
                     transactionId: tx.id,
                     amount: context.plan.amount,
                     currency: context.plan.currency,
                     status: "created",
-                    occuredAt: new Date().toISOString(),
+                    occurredAt: new Date().toISOString(),
                 },
             });
         } catch (webhookErr) {
@@ -579,9 +581,10 @@ async function processCancellations(
                         await webhookQueueSvc.addScheduler(sub.plan.profile.id, {
                             event: "subscription.disable",
                             data: {
+                                $kind: "subscription",
                                 subscriptionId: sub.id,
                                 status: "disabled",
-                                occuredAt: cancelledAt.toISOString(),
+                                occurredAt: cancelledAt.toISOString(),
                             },
                         });
                     } catch (webhookErr) {

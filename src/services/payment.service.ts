@@ -11,7 +11,6 @@ import { EmailQueue } from "@/services/schedule.email.service";
 import { jobs, transactionQueue } from "@/queues/transaction.queue";
 import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { getCoinDecimal, getCoinType } from "@/constants/tokens.constants";
-import { getTokenPrice } from "@7kprotocol/sdk-ts";
 import { redisClient } from "@/config/redis-config";
 import logger from "@/utils/logger";
 import { QuoteService } from "@/services/quote.service";
@@ -155,13 +154,14 @@ export class PaymentService {
 
     // 1) Always emit payment success webhook
     await this.webhookQueue.addScheduler(profileId, {
-      event: "payment.success",
+      event: "payment.create",
       data: {
+        $kind: "payment",
         transactionId: transaction.id,
         amount: transaction.amount,
         currency: transaction.currency,
-        status: "success",
-        occuredAt: new Date().toISOString(),
+        status: "created",
+        occurredAt: new Date().toISOString(),
       },
     });
 
@@ -253,16 +253,11 @@ export class PaymentService {
         payload: tx.payment.depositAddress,
       }
     }
-    let tokenPrice: number;
+    let tokenPrice: number | bigint;
     if (token == Token.USDC) {
       tokenPrice = tx.amountInUSDC;
     } else {
-      const rate = await getTokenPrice(getCoinType(token, tx.mode === "live" ? "mainnet" : "testnet")!);
-      if (!rate) {
-        logger.error(`7K-agg failed to return token price for ${token}`)
-        throw new APIError("Unsupported token.", STATUS.bad);
-      }
-      tokenPrice = tx.amountInUSDC / rate;
+       tokenPrice = await this.quoteService.getTokenPrice(tx.amountInUSDC, token, tx.mode);
     }
     const depositAddress = await this.walletService.generatePaymentWallet(
       <string>tx.profile.wallet[0]?.address,

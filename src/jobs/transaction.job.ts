@@ -52,7 +52,10 @@ function logStats(stats: BatchStats): void {
   );
 }
 
-async function processExpiredPendingTransactions(paymentService: PaymentService): Promise<BatchStats> {
+async function processExpiredPendingTransactions(
+  paymentService: PaymentService, 
+  webhookQueueSvc: WebhookQueue
+): Promise<BatchStats> {
   const stats: BatchStats = { phase: "expiry", attempted: 0, skipped: 0, succeeded: 0, failed: 0 };
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -61,13 +64,13 @@ async function processExpiredPendingTransactions(paymentService: PaymentService)
       status: TransactionStatus.PENDING,
       createdAt: { lte: cutoff },
     },
-    select: { id: true },
+    select: { id: true, profileId: true, amount: true, currency: true },
   });
 
   const limit = pLimit(EXPIRY_CONFIG.concurrencyLimit);
 
   await Promise.all(
-    pending.map((tx: { id: string; }) =>
+    pending.map(tx =>
       limit(async () => {
         stats.attempted++;
 
@@ -83,6 +86,18 @@ async function processExpiredPendingTransactions(paymentService: PaymentService)
             });
             stats.succeeded++;
             logger.info(`Transaction ${tx.id} expired and marked as failed`);
+
+            await webhookQueueSvc.addScheduler(tx.profileId, {
+              event: "payment.failed",
+              data: {
+                $kind: "payment",
+                transactionId: tx.id,
+                amount: tx.amount,
+                currency: tx.currency,
+                status: "failed",
+                occurredAt: new Date().toISOString(),
+              },
+            });
           } catch (updateError) {
             stats.failed++;
             logger.error(`[transaction-worker] failed to expire ${tx.id}: ${updateError}`);
@@ -140,9 +155,10 @@ export const startTransactionWorker = () => {
           await webhookQueueSvc.addScheduler(updated.plan.profileId, {
             event: "subscription.active",
             data: {
+              $kind: "subscription",
               subscriptionId: updated.id,
               status: "active",
-              occuredAt: new Date().toISOString(),
+              occurredAt: new Date().toISOString(),
             },
           });
 
@@ -170,7 +186,7 @@ export const startTransactionWorker = () => {
       if (job.name === jobs.EXPIRE_PENDING) {
         try {
           logger.info("⏱ Transaction expiry job running");
-          const expiryStats = await processExpiredPendingTransactions(paymentService);
+          const expiryStats = await processExpiredPendingTransactions(paymentService, webhookQueueSvc);
 
           logStats(expiryStats);
         } catch (error) {

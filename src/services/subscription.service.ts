@@ -112,10 +112,11 @@ export class SubscriptionService {
       await this.webhookQueue.addScheduler(profileId, {
         event: "subscription.create",
         data: {
+          $kind: "subscription",
           subscriptionId: subscription.id,
           transactionId: txId,
           status: "created",
-          occuredAt: new Date().toISOString(),
+          occurredAt: new Date().toISOString(),
         },
       });
     } catch {
@@ -141,16 +142,16 @@ export class SubscriptionService {
     const customer = await this.customerRepository.findCustomerById(subscription.customerId, profileId);
 
     if (!customer) throw new APIError("Subscription does not belong to your profile", STATUS.forbidden);
-
     const canceled = await this.subscriptionRepository.cancelSubscription(subscriptionId);
 
     try{
       await this.webhookQueue.addScheduler(profileId, {
         event: "subscription.not_renew",
         data: {
+          $kind: "subscription",
           subscriptionId: subscription.id,
           status: "cancelled",
-          occuredAt: new Date().toISOString(),
+          occurredAt: new Date().toISOString(),
         },
       });
 
