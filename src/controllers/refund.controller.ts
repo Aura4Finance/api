@@ -6,7 +6,6 @@ import { refundQuerySchemaValidation, retryRefundSchemaValidation } from "@/vali
 import { STATUS } from "@/constants/status.constant";
 import { formatErrorValidation } from "@/utils/format-validation-error";
 import { RefundDto, RetryRefundDto } from "@/dto/refund.dto";
-import { Wallet } from "@/generated/prisma/client";
 
 @Service()
 export class RefundController {
@@ -30,10 +29,10 @@ export class RefundController {
         const { originalTxId, reason, to }: RefundDto = value;
         const { message, payload } = await this.refundService.initiateRefund(
             to,
-            <string>reason,
+            reason!,
             originalTxId,
-            <Wallet>wallet,
-            <string>profileId,
+            wallet!,
+            profileId!,
             req.mode
         );
         return res.status(STATUS.ok).json({
@@ -55,9 +54,9 @@ export class RefundController {
         }
         const { transactionId }: RetryRefundDto = value;
         const { message, payload } = await this.refundService.retryRefund(
-            transactionId, 
-            <Wallet>wallet,
-            <string>profileId, 
+            transactionId,
+            wallet!,
+            profileId!,
             req.mode
         );
 

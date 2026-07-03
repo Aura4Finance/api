@@ -7,12 +7,14 @@ import { deriveWallet } from "@/utils/wallet/derive-wallet";
 import { PaymentRepository } from "@/repositories/payment.repository";
 import { Mode, TransactionStatus, TransactionType, Wallet } from "@/generated/prisma/client";
 import { logTransactionError } from "@/utils/log-transaction-error";
+import { CustomerRepository } from "@/repositories/customer.repository";
 
 
 @Service()
 export class RefundServices {
     constructor(
         private readonly refundRepository: RefundRepository,
+        private readonly customerRepository: CustomerRepository,
         private readonly walletService: WalletService,
         private readonly paymentRepository: PaymentRepository,
     ) { }
@@ -24,6 +26,8 @@ export class RefundServices {
         reciever: string,
         refundTxId: string,
         paymentTxId: string,
+        profileId: string,
+        customerId: string,
         mode: Mode
     ) {
 
@@ -59,6 +63,13 @@ export class RefundServices {
 
 
         await this.refundRepository.confirmRefund(refundTxId, paymentTxId, result?.Transaction.digest);
+        await this.customerRepository.updateAmountSpent(
+            customerId,
+            profileId,
+            amountInUSDC,
+            mode,
+            "remove"
+        );
         const gasUsed = result.Transaction?.effects?.gasUsed;
         const totalGas = Number(BigInt(Number(gasUsed?.computationCost)) + BigInt(Number(gasUsed?.storageCost)) - BigInt(Number(gasUsed?.storageRebate))) * 0.000000001;
 
@@ -95,9 +106,11 @@ export class RefundServices {
             wallet,
             tx.amount,
             tx.amountInUSDC,
-            <string>tx.refund?.walletAddress,
+            tx.refund?.walletAddress!,
             tx.id,
-            <string>tx.refund?.originalTxId,
+            tx.refund?.originalTxId!,
+            tx.customerId!,
+            tx.profileId!,
             mode
         );
     }
@@ -132,17 +145,19 @@ export class RefundServices {
             reason,
             paymentTx.id,
             to,
-            paymentTx?.customerId as string,
+            paymentTx?.customerId!,
             profileId,
             mode
         );
         return await this.finalizeRefund(
             wallet,
             paymentTx.amount,
-            <number>paymentTx?.amountInUSDC,
+            paymentTx?.amountInUSDC!,
             to,
             refundTx.id,
             paymentTx.id,
+            paymentTx.customerId!,
+            paymentTx.profileId!,
             mode
         );
     }

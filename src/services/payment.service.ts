@@ -257,7 +257,7 @@ export class PaymentService {
     if (token == Token.USDC) {
       tokenPrice = tx.amountInUSDC;
     } else {
-       tokenPrice = await this.quoteService.getTokenPrice(tx.amountInUSDC, token, tx.mode);
+      tokenPrice = await this.quoteService.getTokenPrice(tx.amountInUSDC, token, tx.mode);
     }
     const depositAddress = await this.walletService.generatePaymentWallet(
       <string>tx.profile.wallet[0]?.address,
@@ -340,8 +340,12 @@ export class PaymentService {
 
   async confirmPayment(tx: TransactionWithRelations, token?: Token) {
     await this.paymentRepository.confirmPaymentStatus(tx.id, token);
-    if (tx.mode == "live") await this.customerRepository.updateAmountSpent(tx.customerId!, tx.amountInUSDC);
-
+    await this.customerRepository.updateAmountSpent(
+      tx.customerId!,
+      tx.profileId,
+      tx.amountInUSDC,
+      tx.mode
+    );
     await this.sendEmailIfNotSent(tx.id, "success", async () => {
       await this.emailQueue.addPaymentSuccessScheduler(
         tx.customer?.email!,
