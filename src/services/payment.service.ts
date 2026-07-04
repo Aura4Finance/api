@@ -253,14 +253,14 @@ export class PaymentService {
         payload: tx.payment.depositAddress,
       }
     }
-    let tokenPrice: number | bigint;
-    if (token == Token.USDC) {
-      tokenPrice = tx.amountInUSDC;
+    let tokenPrice: bigint;
+    if (token === Token.USDC) {
+      tokenPrice = decimalToBigInt(tx.amountInUSDC, getCoinDecimal(Token.USDC));;
     } else {
       tokenPrice = await this.quoteService.getTokenPrice(tx.amountInUSDC, token, tx.mode);
     }
     const depositAddress = await this.walletService.generatePaymentWallet(
-      <string>tx.profile.wallet[0]?.address,
+      tx.profile.wallet[0]?.address!,
       tokenPrice,
       tx.id,
       token,
