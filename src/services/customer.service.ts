@@ -49,7 +49,7 @@ export class CustomerService {
     });
 
     customers.customers.forEach((customer: any) => {
-      delete customer.UserCustomer
+      delete customer.userCustomers
     });
 
     return {
