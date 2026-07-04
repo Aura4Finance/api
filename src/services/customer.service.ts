@@ -44,8 +44,9 @@ export class CustomerService {
   ) {
 
     const customers = await this.customerRepository.getAllCustomers(query, mode, profileId);
+    logger.info(customers);
     customers.customers.forEach((customer: any) => {
-      customer.totalSpent = mode === Mode.live ? customer.UserCustomer.totalSpendLive : customer.UserCustomer.totalSpendTest;
+      customer.totalSpent = mode === Mode.live ? customer.userCustomers?.totalSpendLive : customer.userCustomers?.totalSpendTest;
     });
 
     customers.customers.forEach((customer: any) => {
