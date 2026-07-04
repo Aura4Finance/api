@@ -190,6 +190,7 @@ export class CustomerRepository {
           profileId
         },
         select: {
+          createdAt: true,
           totalSpendLive: true,
           totalSpendTest: true
         },
@@ -197,6 +198,7 @@ export class CustomerRepository {
     } else {
       include.userCustomers = {
         select: {
+          createdAt: true,
           totalSpendLive: true,
           totalSpendTest: true
         }
