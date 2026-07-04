@@ -14,6 +14,7 @@ import {
 } from "@/utils/http-client";
 import { getLimiterForUrl } from "@/utils/rate-limiter";
 import { getNextRetryAt, isRetryableError } from "@/utils/retry-strategy";
+import { UnrecoverableError } from "bullmq";
 
 @Service()
 export class WebhookService {
@@ -126,7 +127,7 @@ export async function triggerWebhook(
   if (!webhookDelivery) {
     webhookDelivery = await webhookDeliveryRepository.createDeliveryRecord(webhook.id, payload);
   }
-  if (webhookDelivery?.status == "COMPLETED" || webhookDelivery?.attemptCount >= options?.maxAttempts!  ) return null;
+  if (webhookDelivery?.status == "COMPLETED" || webhookDelivery?.attemptCount >= options?.maxAttempts!) return null;
   const signature = crypto
     .createHmac("sha256", webhook.secret)
     .update(JSON.stringify(payload.data))
@@ -186,6 +187,9 @@ export async function triggerWebhook(
       nextRetryAt
     );
 
+    if (!shouldRetry) {
+      throw new UnrecoverableError(normalizedError.message);
+    }
     throw normalizedError;
   }
 }
