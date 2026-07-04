@@ -45,12 +45,11 @@ export class CustomerService {
 
     const customers = await this.customerRepository.getAllCustomers(query, mode, profileId);
     customers.customers.forEach((customer: any) => {
-      customer.totalSpent = mode === Mode.live ? customer.totalSpendLive : customer.totalSpendTest;
+      customer.totalSpent = mode === Mode.live ? customer.UserCustomer.totalSpendLive : customer.UserCustomer.totalSpendTest;
     });
 
     customers.customers.forEach((customer: any) => {
-      delete customer.totalSpendLive;
-      delete customer.totalSpendTest;
+      delete customer.UserCustomer
     });
 
     return {

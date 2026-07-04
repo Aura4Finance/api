@@ -93,9 +93,9 @@ export class SubscriptionService {
       // Verification is now orchestrated by indexer after on-chain confirmation.
       try {
         const paymentData: CreatePaymentDto = {
-          amount: <number>plan.amount,
+          amount: plan.amount!,
           customerId: input.customerId,
-          currency: <string>plan.currency,
+          currency: plan.currency!,
           network: input.network,
           txRef: `${crypto.randomBytes(4).toString("hex").slice(0,7)}-${subscription.id}`,
           type: PaymentMethod.SUBSCRIPTION,

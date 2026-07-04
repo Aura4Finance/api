@@ -190,13 +190,15 @@ export class CustomerRepository {
           profileId
         },
         select: {
-          createdAt: true,
+          totalSpendLive: true,
+          totalSpendTest: true
         },
       }
     } else {
       include.userCustomers = {
         select: {
-          createdAt: true
+          totalSpendLive: true,
+          totalSpendTest: true
         }
       }
     }

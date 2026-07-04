@@ -9,31 +9,25 @@ export class WebhookDeliveryRepository {
         webhookId: string,
         payload: WebhookPayload,
     ) {
-        let mapId: string;
-        if (payload.data.$kind === "subscription") {
-            mapId = payload.data.subscriptionId
-        } else {
-            mapId = payload.data.transactionId
+        let data: any = {
+            webhook: {
+                connect: {
+                    id: webhookId
+                }
+            },
+            payload,
+            status: "PENDING",
+            attemptCount: 0,
+            event: payload.event
         }
 
-        return await db.webhookDelivery.create({
-            data: {
-                webhook: {
-                    connect: {
-                        id: webhookId
-                    }
-                },
-                transaction: {
-                    connect: {
-                        id: mapId
-                    }
-                },
-                payload,
-                status: "PENDING",
-                attemptCount: 0,
-                event: payload.event
-            }
-        });
+        if (payload.data.$kind === "subscription") {
+            data.subscription.connect.id = payload.data.subscriptionId
+        } else {
+            data.transaction.connect.id = payload.data.transactionId
+        }
+
+        return await db.webhookDelivery.create({ data });
     }
 
     async markDeliverySuccess(

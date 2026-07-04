@@ -126,7 +126,7 @@ export async function triggerWebhook(
   if (!webhookDelivery) {
     webhookDelivery = await webhookDeliveryRepository.createDeliveryRecord(webhook.id, payload);
   }
-  if (webhookDelivery?.status == "COMPLETED") return null;
+  if (webhookDelivery?.status == "COMPLETED" || webhookDelivery?.attemptCount >= options?.maxAttempts!  ) return null;
   const signature = crypto
     .createHmac("sha256", webhook.secret)
     .update(JSON.stringify(payload.data))
