@@ -22,9 +22,17 @@ export class WebhookDeliveryRepository {
         }
 
         if (payload.data.$kind === "subscription") {
-            data.subscription.connect.id = payload.data.subscriptionId
+            data.subscription = {
+                connect: {
+                    id: payload.data.subscriptionId
+                }
+            }
         } else {
-            data.transaction.connect.id = payload.data.transactionId
+            data.transaction = {
+                connect: {
+                    id: payload.data.transactionId
+                }
+            }
         }
 
         return await db.webhookDelivery.create({ data });
