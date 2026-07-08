@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # FIX 1: Added --legacy-peer-deps to prevent the ERESOLVE crash from your first error
-RUN if [ -f package-lock.json ]; then npm ci --legacy-peer-deps; else npm install --legacy-peer-deps; fi
+RUN if [ -f package-lock.json ]; then npm ci ; else npm install; fi
 
 COPY . .
 
