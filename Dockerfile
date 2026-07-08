@@ -28,8 +28,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# FIX 3: Added --legacy-peer-deps here as well for the production flag install
-RUN if [ -f package-lock.json ]; then npm ci --omit=dev --legacy-peer-deps; else npm install --omit=dev --legacy-peer-deps; fi
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/html ./dist/html
